@@ -1,7 +1,7 @@
 // controllers/syncController.js
 const { User } = require('../database/models');
 const logger = require('../utils/logger');
-const websocket = require('../utils/websocket');
+const { broadcastUpdate } = require('../utils/socketManager');
 
 /**
  * Controller for handling data synchronization between frontend and backend
@@ -70,6 +70,7 @@ const pushUpdates = async (req, res, next) => {
   try {
     const { entityType } = req.params;
     const { updates } = req.body;
+    const { broadcastUpdate } = require('../utils/socketManager');
     
     // Validate entity type
     const validEntityTypes = ['users', 'collections', 'marketplace', 'transactions'];
@@ -107,8 +108,6 @@ const pushUpdates = async (req, res, next) => {
     
     // Process each update
     const results = [];
-    const successfulUpdates = [];
-    
     for (const update of updates) {
       const { id, data, operation } = update;
       
@@ -117,12 +116,18 @@ const pushUpdates = async (req, res, next) => {
         case 'create':
           const newRecord = new Model(data);
           result = await newRecord.save();
+          // Broadcast the creation to WebSocket clients
+          broadcastUpdate(entityType, 'create', result);
           break;
         case 'update':
           result = await Model.findByIdAndUpdate(id, { $set: data }, { new: true });
+          // Broadcast the update to WebSocket clients
+          broadcastUpdate(entityType, 'update', result);
           break;
         case 'delete':
           result = await Model.findByIdAndDelete(id);
+          // Broadcast the deletion to WebSocket clients
+          broadcastUpdate(entityType, 'delete', { _id: id });
           break;
         default:
           results.push({
@@ -133,33 +138,15 @@ const pushUpdates = async (req, res, next) => {
           continue;
       }
       
-      const resultObj = {
+      results.push({
         id: result ? result._id : id,
         success: !!result,
         message: result ? 'Operation successful' : 'Record not found'
-      };
-      
-      results.push(resultObj);
-      
-      // If successful, add to list for broadcasting
-      if (resultObj.success) {
-        successfulUpdates.push({
-          ...resultObj,
-          operation,
-          data: result || data
-        });
-      }
+      });
     }
     
     // Log synchronization activity
     logger.info(`${results.length} updates processed for ${entityType}`);
-    
-    // Broadcast changes to connected clients via WebSocket
-    if (successfulUpdates.length > 0) {
-      const userId = req.user ? req.user.id : null;
-      websocket.broadcastChanges(entityType, successfulUpdates, userId);
-      logger.info(`Broadcasting ${successfulUpdates.length} changes for ${entityType}`);
-    }
     
     return res.status(200).json({
       success: true,

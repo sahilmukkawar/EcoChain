@@ -143,6 +143,4 @@ transactionSchema.statics.getTransactionStatsByCategory = async function(userId)
   ]);
 };
 
-const Transaction = mongoose.model('Transaction', transactionSchema);
-
-module.exports = Transaction;
+module.exports = mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);

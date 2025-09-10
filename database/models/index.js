@@ -1,16 +1,25 @@
-// database/models/index.js
 const User = require('./User');
 const GarbageCollection = require('./GarbageCollection');
-const { Product, Order, Review } = require('./Marketplace');
+const Product = require('./Product');
+const Order = require('./Order');
+const EcoTokenTransaction = require('./EcoTokenTransaction');
+const Factory = require('./Factory');
+const ProductReview = require('./ProductReview');
+const SystemConfiguration = require('./SystemConfiguration');
 const Transaction = require('./Transaction');
-const VisionInference = require('./VisionInference');
+const Analytics = require('./Analytics');
 
 module.exports = {
   User,
   GarbageCollection,
   Product,
   Order,
-  Review,
+  EcoTokenTransaction,
+  Factory,
+  ProductReview,
+  SystemConfiguration,
   Transaction,
-  VisionInference
+  Analytics
 };
+
+

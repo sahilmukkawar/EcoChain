@@ -2,29 +2,18 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth');
-
-// Get all transactions for the authenticated user
-router.get('/', authenticate, (req, res, next) => {
-  // TODO: Implement get all user transactions
-  res.status(501).json({ message: 'Not implemented yet' });
-});
-
-// Get a specific transaction
-router.get('/:id', authenticate, (req, res, next) => {
-  // TODO: Implement get transaction by ID
-  res.status(501).json({ message: 'Not implemented yet' });
-});
+const transactionController = require('../controllers/transactionController');
 
 // Create a new transaction
-router.post('/', authenticate, (req, res, next) => {
-  // TODO: Implement create transaction
-  res.status(501).json({ message: 'Not implemented yet' });
-});
+router.post('/', authenticate, transactionController.createTransaction);
+
+// Get all transactions for the authenticated user
+router.get('/', authenticate, transactionController.getUserTransactions);
+
+// Get a single transaction by ID
+router.get('/:id', authenticate, transactionController.getTransactionById);
 
 // Get transaction history
-router.get('/history', authenticate, (req, res, next) => {
-  // TODO: Implement get transaction history
-  res.status(501).json({ message: 'Not implemented yet' });
-});
+router.get('/history', authenticate, transactionController.getTransactionHistory);
 
 module.exports = router;

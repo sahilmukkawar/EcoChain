@@ -26,7 +26,8 @@ const SyncContext = createContext<SyncContextType>({
   syncError: null,
   startSync: async () => ({}),
   queueUpdate: () => {},
-  clearSyncError: () => {}
+  clearSyncError: () => {},
+  isWebSocketConnected: () => false
 });
 
 // Custom hook to use the sync context
@@ -170,7 +171,7 @@ const connectWebSocket = async () => {
     startSync,
     queueUpdate,
     clearSyncError,
-    isWebSocketConnected: () => websocketService.isConnectedToServer()
+    isWebSocketConnected: websocketService.isConnectedToServer
   };
   
   return (

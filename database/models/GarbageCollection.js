@@ -216,6 +216,4 @@ garbageCollectionSchema.statics.findNearbyCollections = async function(longitude
   }).populate('userId', 'personalInfo.name personalInfo.phone');
 };
 
-const GarbageCollection = mongoose.model('GarbageCollection', garbageCollectionSchema);
-
-module.exports = GarbageCollection;
+module.exports = mongoose.models.GarbageCollection || mongoose.model('GarbageCollection', garbageCollectionSchema);

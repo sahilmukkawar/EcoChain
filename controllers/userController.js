@@ -1,7 +1,7 @@
 // controllers/userController.js
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../database/models');
+const User = require('../database/models/User');
 
 /**
  * Register a new user

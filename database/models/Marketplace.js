@@ -371,10 +371,10 @@ orderSchema.methods.updateStatus = async function(newStatus, notes = '') {
   return this;
 };
 
-// Create models
-const Product = mongoose.model('Product', productSchema);
-const Order = mongoose.model('Order', orderSchema);
-const Review = mongoose.model('Review', reviewSchema);
+// Create models with overwrite protection
+const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
+const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
+const Review = mongoose.models.Review || mongoose.model('Review', reviewSchema);
 
 module.exports = {
   Product,

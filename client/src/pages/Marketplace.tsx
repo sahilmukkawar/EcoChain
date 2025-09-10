@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import '../App.css';
+import './Marketplace.css';
 import { marketplaceAPI } from '../services/api.ts';
 
 interface Product {
@@ -10,18 +11,28 @@ interface Product {
   price?: { tokenAmount?: number; fiatAmount?: number };
   sustainabilityScore?: number;
   status?: string;
+  category?: string;
 }
 
 const Marketplace: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'popular'|'price_low'|'price_high'>('popular');
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
+  // Fetch products from backend
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        setLoading(true);
         const res = await marketplaceAPI.getProducts();
-        setProducts(res.data.products || []);
+        const payload: any = res.data;
+        const list: Product[] = payload?.data || payload?.products || payload;
+        setProducts(Array.isArray(list) ? list : []);
       } catch (e) {
         setError('Failed to load products');
       } finally {
@@ -31,35 +42,209 @@ const Marketplace: React.FC = () => {
     fetchProducts();
   }, []);
 
-  if (loading) return <div className="loading">Loading products...</div>;
-  if (error) return <div className="error">{error}</div>;
+  // Filter + sort + paginate (memoized for performance)
+  const computed = useMemo(() => {
+    let result = [...products];
+    if (activeCategory !== 'all') {
+      result = result.filter(p => p.category === activeCategory);
+    }
+    if (searchTerm) {
+      const t = searchTerm.toLowerCase();
+      result = result.filter(p =>
+        (p.name || '').toLowerCase().includes(t) ||
+        (p.description || '').toLowerCase().includes(t)
+      );
+    }
+    if (sortBy === 'price_low') result.sort((a,b)=>(a.price?.fiatAmount||0)-(b.price?.fiatAmount||0));
+    if (sortBy === 'price_high') result.sort((a,b)=>(b.price?.fiatAmount||0)-(a.price?.fiatAmount||0));
+    // popular keeps seed order
+    const total = result.length;
+    const start = (page-1)*pageSize;
+    const end = start + pageSize;
+    return { total, items: result.slice(start, end) };
+  }, [products, activeCategory, searchTerm, sortBy, page]);
+
+  useEffect(() => {
+    setFilteredProducts(computed.items);
+  }, [computed]);
+
+  // Add product to cart
+  const addToCart = (product: Product) => {
+    const existingItem = cart.find(item => item.product.id === product.id);
+    
+    if (existingItem) {
+      setCart(cart.map(item => 
+        item.product.id === product.id 
+          ? { ...item, quantity: item.quantity + 1 } 
+          : item
+      ));
+    } else {
+      setCart([...cart, { product, quantity: 1 }]);
+    }
+  };
+
+  // Remove product from cart
+  const removeFromCart = (productId: string) => {
+    setCart(cart.filter(item => item.product.id !== productId));
+  };
+
+  // Update product quantity in cart
+  const updateQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    
+    setCart(cart.map(item => 
+      item.product.id === productId 
+        ? { ...item, quantity } 
+        : item
+    ));
+  };
+
+  // Calculate cart totals
+  const cartTotal = cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+  const tokenTotal = cart.reduce((total, item) => total + (item.product.tokenPrice * item.quantity), 0);
+  const maxTokensUsable = Math.min(tokenTotal, totalEcoTokens || 0);
+
+  // Get unique categories from products
+  const categories = ['all', ...new Set(products.map(product => product.category || 'uncategorized'))];
+  const totalPages = Math.max(1, Math.ceil(computed.total / pageSize));
+
+  if (loading) {
+    return <div className="loading">Loading products...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error}</div>;
+  }
 
   return (
     <div className="marketplace-container">
-      <h1>Marketplace</h1>
-      <div className="products-grid">
-        {products.map((p) => (
-          <div className="product-card" key={p._id}>
-            <div className="product-image">
-              <img src={(p.images && p.images[0]) || '/logo192.png'} alt={p.name} />
-            </div>
-            <div className="product-info">
-              <h3>{p.name}</h3>
-              <p className="product-desc">{p.description}</p>
-              <div className="product-meta">
-                <span className="product-price">
-                  {p.price?.tokenAmount ? `${p.price.tokenAmount} EcoTokens` : '—'}
-                </span>
-                {typeof p.sustainabilityScore === 'number' && (
-                  <span className="product-score">♻ {p.sustainabilityScore}</span>
-                )}
+      <div className="marketplace-header">
+        <h1>EcoChain Marketplace</h1>
+        <p>Browse eco-friendly products made from recycled materials</p>
+        
+        <div className="token-balance-display">
+          <span className="token-icon">🌱</span>
+          <span className="token-amount">{totalEcoTokens || 0}</span>
+          <span className="token-label">EcoTokens Available</span>
+        </div>
+      </div>
+
+      <div className="marketplace-filters">
+        <div className="search-bar">
+          <input 
+            type="text" 
+            placeholder="Search products..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className="category-filters">
+          {categories.map(category => (
+            <button 
+              key={category} 
+              className={`category-button ${activeCategory === category ? 'active' : ''}`}
+              onClick={() => setActiveCategory(category)}
+            >
+              {category.charAt(0).toUpperCase() + category.slice(1)}
+            </button>
+          ))}
+        </div>
+        <div className="sort-controls">
+          <select value={sortBy} onChange={e=>{setSortBy(e.target.value as any); setPage(1);}}>
+            <option value="popular">Most Popular</option>
+            <option value="price_low">Price: Low to High</option>
+            <option value="price_high">Price: High to Low</option>
+            <option value="rating">Top Rated</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="marketplace-content">
+        <div className="products-grid">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map(p => (
+              <div className="product-card" key={p._id}>
+                <div className="product-image">
+                  <img src={(p.images && p.images[0]) || '/logo192.png'} alt={p.name} />
+                  {p.status === 'sold_out' && <span className="out-of-stock">Sold Out</span>}
+                </div>
+                <div className="product-info">
+                  <h3>{p.name}</h3>
+                  <p className="product-desc">{p.description}</p>
+                  <div className="product-meta">
+                    <span className="product-price">{p.price?.tokenAmount ? `${p.price.tokenAmount} EcoTokens` : '—'}</span>
+                    {typeof p.sustainabilityScore === 'number' && (
+                      <span className="product-score">♻ {p.sustainabilityScore}</span>
+                    )}
+                  </div>
+                  <button className="add-to-cart-button" disabled={p.status === 'sold_out'}>
+                    {p.status === 'sold_out' ? 'Sold Out' : 'Buy'}
+                  </button>
+                </div>
               </div>
-              <button className="buy-button" disabled={p.status === 'sold_out'}>
-                {p.status === 'sold_out' ? 'Sold Out' : 'Buy'}
-              </button>
+            ))
+          ) : (
+            <div className="no-products">
+              <p>No products found. Try different filters.</p>
+              <button onClick={() => { setActiveCategory('all'); setSearchTerm(''); }}>Clear Filters</button>
+            </div>
+          )}
+        </div>
+
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))}>Prev</button>
+            <span>Page {page} of {totalPages}</span>
+            <button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))}>Next</button>
+          </div>
+        )}
+
+        {cart.length > 0 && (
+          <div className="cart-sidebar">
+            <h2>Your Cart</h2>
+            <div className="cart-items">
+              {cart.map(item => (
+                <div key={item.product.id} className="cart-item">
+                  <div className="cart-item-info">
+                    <h4>{item.product.name}</h4>
+                    <div className="cart-item-price">
+                      <span>₹{item.product.price}</span>
+                      <span>+ {item.product.tokenPrice} Tokens</span>
+                    </div>
+                  </div>
+                  <div className="cart-item-actions">
+                    <div className="quantity-controls">
+                      <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>-</button>
+                      <span>{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>+</button>
+                    </div>
+                    <button className="remove-button" onClick={() => removeFromCart(item.product.id)}>Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="cart-summary">
+              <div className="cart-total">
+                <span>Subtotal:</span>
+                <span>₹{cartTotal}</span>
+              </div>
+              <div className="token-usage">
+                <span>EcoTokens Applied:</span>
+                <span>{maxTokensUsable} tokens</span>
+              </div>
+              <div className="final-total">
+                <span>Total:</span>
+                <span>₹{cartTotal - (maxTokensUsable * 5)}</span>
+              </div>
+              <button className="checkout-button">Proceed to Checkout</button>
             </div>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

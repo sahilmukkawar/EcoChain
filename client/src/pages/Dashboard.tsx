@@ -3,51 +3,165 @@ import '../App.css';
 import './Dashboard.css';
 import SyncStatus from '../components/SyncStatus.tsx';
 import { useSync } from '../contexts/SyncContext.tsx';
-
-interface CollectionData {
-  id: string;
-  date: string;
-  wasteType: string;
-  quantity: number;
-  status: string;
-}
+import { useEcoChain } from '../contexts/EcoChainContext';
 
 const Dashboard: React.FC = () => {
-  const [collections, setCollections] = useState<CollectionData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { startSync, lastSyncTime } = useSync();
+  const { ecoTokens, collectionHistory, environmentalImpact, totalEcoTokens } = useEcoChain();
 
   useEffect(() => {
-    // This would be replaced with an actual API call
-    const fetchCollections = async () => {
-      try {
-        // Simulated data for now
-        const mockData: CollectionData[] = [
-          { id: '1', date: '2023-01-15', wasteType: 'Plastic', quantity: 2.5, status: 'Verified' },
-          { id: '2', date: '2023-01-20', wasteType: 'Paper', quantity: 3.0, status: 'Pending' },
-          { id: '3', date: '2023-01-25', wasteType: 'Glass', quantity: 1.5, status: 'Verified' },
-        ];
-        
-        setCollections(mockData);
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch collections');
-        setLoading(false);
-      }
-    };
+    // Set loading to false once we have data from the EcoChain context
+    if (ecoTokens.length > 0 && collectionHistory.length > 0) {
+      setLoading(false);
+    }
+  }, [ecoTokens, collectionHistory, lastSyncTime]); // Re-check when data or lastSyncTime changes
 
-    fetchCollections();
-  }, [lastSyncTime]); // Re-fetch when lastSyncTime changes
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div className="loading">Loading...</div>;
+  if (error) return <div className="error">Error: {error}</div>;
 
   const handleRefresh = async () => {
     try {
-      await startSync({ entityTypes: ['collections'] });
+      await startSync({ entityTypes: ['collections', 'ecoTokens', 'environmentalImpact'] });
     } catch (error) {
       console.error('Sync failed:', error);
+      setError('Failed to sync data');
+    }
+  };
+
+  return (
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <h2>User Dashboard</h2>
+        <SyncStatus />
+        <button className="refresh-button" onClick={handleRefresh}>Refresh Data</button>
+      </div>
+      
+      <div className="dashboard-summary">
+        <div className="summary-card token-balance">
+          <h3>EcoToken Balance</h3>
+          <div className="token-amount">{totalEcoTokens}</div>
+          <p>Available tokens to use</p>
+        </div>
+        
+        <div className="summary-card collection-summary">
+          <h3>Collection Summary</h3>
+          <div className="collection-stats">
+            <div className="stat">
+              <span className="stat-value">{collectionHistory.length}</span>
+              <span className="stat-label">Total Collections</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">
+                {collectionHistory.filter(c => c.status === 'pending').length}
+              </span>
+              <span className="stat-label">Pending</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="summary-card environmental-impact">
+          <h3>Environmental Impact</h3>
+          <div className="impact-stats">
+            <div className="stat">
+              <span className="stat-value">{environmentalImpact.wasteRecycled} kg</span>
+              <span className="stat-label">Waste Recycled</span>
+            </div>
+            <div className="stat">
+              <span className="stat-value">{environmentalImpact.co2Reduced} kg</span>
+              <span className="stat-label">CO2 Reduced</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="dashboard-details">
+        <div className="detail-section">
+          <h3>Recent EcoTokens</h3>
+          <div className="token-history">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Source</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ecoTokens.map(token => (
+                  <tr key={token.id}>
+                    <td>{token.date}</td>
+                    <td>{token.source}</td>
+                    <td className="token-value">+{token.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div className="detail-section">
+          <h3>Collection History</h3>
+          <div className="collection-history">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Waste Type</th>
+                  <th>Quantity</th>
+                  <th>Tokens</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {collectionHistory.map(collection => (
+                  <tr key={collection.id}>
+                    <td>{collection.date}</td>
+                    <td>{collection.wasteType}</td>
+                    <td>{collection.quantity} kg</td>
+                    <td className="token-value">+{collection.tokensEarned}</td>
+                    <td>
+                      <span className={`status-badge ${collection.status}`}>
+                        {collection.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div className="detail-section environmental-details">
+          <h3>Environmental Impact Details</h3>
+          <div className="impact-details">
+            <div className="impact-card">
+              <div className="impact-icon tree-icon">🌳</div>
+              <div className="impact-value">{environmentalImpact.treesEquivalent}</div>
+              <div className="impact-label">Trees Saved</div>
+            </div>
+            
+            <div className="impact-card">
+              <div className="impact-icon water-icon">💧</div>
+              <div className="impact-value">{environmentalImpact.waterSaved}L</div>
+              <div className="impact-label">Water Saved</div>
+            </div>
+            
+            <div className="impact-card">
+              <div className="impact-icon waste-icon">♻️</div>
+              <div className="impact-value">{environmentalImpact.wasteRecycled}kg</div>
+              <div className="impact-label">Waste Recycled</div>
+            </div>
+            
+            <div className="impact-card">
+              <div className="impact-icon co2-icon">🌿</div>
+              <div className="impact-value">{environmentalImpact.co2Reduced}kg</div>
+              <div className="impact-label">CO2 Reduced</div>
+            </div>
+          </div>
+        </div>
+      </div>
     }
   };
 

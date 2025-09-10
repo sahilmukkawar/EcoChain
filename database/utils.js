@@ -27,7 +27,8 @@ async function repairSeededPasswords() {
   }
 }
 const mongoose = require('mongoose');
-const { User: UserModel, GarbageCollection, Transaction, Product, Order, VisionInference } = require('./models');
+const { User: UserModel, GarbageCollection, Transaction } = require('./models');
+const { Product, Order } = require('./models/Marketplace');
 
 /**
  * Utility functions for common database operations
@@ -306,7 +307,7 @@ const processGarbageCollection = async (collectionData) => {
  * Process vision inference results and update collection
  * @param {Object} inferenceData - Inference data
  * @param {string} collectionId - Collection ID
- * @returns {Promise<Object>} - Updated collection and inference
+ * @returns {Promise<Object>} - Updated collection
  */
 const processVisionInference = async (inferenceData, collectionId) => {
   const session = await mongoose.startSession();
@@ -319,46 +320,35 @@ const processVisionInference = async (inferenceData, collectionId) => {
       throw new Error('Collection not found');
     }
 
-    // Create vision inference record
-    const inference = new VisionInference({
-      inferenceId: generateUniqueId('inf'),
-      collectionId: collection._id,
-      userId: collection.userId,
-      ...inferenceData,
-      status: 'completed'
-    });
-
-    await inference.save({ session });
-
     // Update collection with inference results
     collection.visionInference = {
-      material_type: inference.results.material_type,
-      sub_type: inference.results.sub_type,
-      quality_score: inference.results.quality_score,
-      inferenceId: inference.inferenceId
+      material_type: inferenceData.material_type,
+      sub_type: inferenceData.sub_type,
+      quality_score: inferenceData.quality_score,
+      inferenceId: generateUniqueId('inf')
     };
 
     // Update collection details if not already set
     if (!collection.collectionDetails.type) {
-      collection.collectionDetails.type = inference.results.material_type;
+      collection.collectionDetails.type = inferenceData.material_type;
     }
-    if (!collection.collectionDetails.subType && inference.results.sub_type) {
-      collection.collectionDetails.subType = inference.results.sub_type;
+    if (!collection.collectionDetails.subType && inferenceData.sub_type) {
+      collection.collectionDetails.subType = inferenceData.sub_type;
     }
-    if (!collection.collectionDetails.quality && inference.results.quality_score) {
+    if (!collection.collectionDetails.quality && inferenceData.quality_score) {
       // Map quality score to quality level
       let quality = 'fair';
-      if (inference.results.quality_score >= 80) {
+      if (inferenceData.quality_score >= 80) {
         quality = 'excellent';
-      } else if (inference.results.quality_score >= 60) {
+      } else if (inferenceData.quality_score >= 60) {
         quality = 'good';
-      } else if (inference.results.quality_score < 40) {
+      } else if (inferenceData.quality_score < 40) {
         quality = 'poor';
       }
       collection.collectionDetails.quality = quality;
     }
-    if (!collection.collectionDetails.weight && inference.results.estimated_weight) {
-      collection.collectionDetails.weight = inference.results.estimated_weight;
+    if (!collection.collectionDetails.weight && inferenceData.estimated_weight) {
+      collection.collectionDetails.weight = inferenceData.estimated_weight;
     }
 
     await collection.save({ session });
@@ -367,7 +357,7 @@ const processVisionInference = async (inferenceData, collectionId) => {
     await session.commitTransaction();
     session.endSession();
 
-    return { collection, inference };
+    return { collection };
   } catch (error) {
     // Abort transaction on error
     await session.abortTransaction();

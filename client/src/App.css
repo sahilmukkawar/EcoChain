@@ -1,25 +1,57 @@
+.navbar { display:flex; align-items:center; }
+.nav-list { list-style:none; display:flex; gap:16px; margin:0; padding:0; }
+.nav-link { color:#2f3b2f; text-decoration:none; padding:8px 12px; border-radius:8px; font-weight:600; }
+.nav-link.active, .nav-link:hover { background:rgba(46,125,50,0.08); color:#1b5e20; }
+
+.auth-container { min-height: calc(100vh - 120px); display:grid; place-items:center; padding:24px; }
+.auth-card { width:100%; max-width:420px; background:#ffffff; border:1px solid #e5e7eb; border-radius:16px; padding:32px; box-shadow:0 10px 30px rgba(0,0,0,0.08); }
+.auth-card h1 { margin:0 0 8px; color:#0f172a; }
+.auth-subtitle { color:#64748b; margin:0 0 24px; }
+.auth-form { display:grid; gap:12px; }
+.auth-form input, .auth-form select { background:#ffffff; border:1px solid #d1d5db; color:#111827; padding:12px 14px; border-radius:10px; outline:none; }
+.auth-form input:focus, .auth-form select:focus { border-color:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,0.25); }
+.primary-button { background:#16a34a; color:#ffffff; border:none; padding:12px 16px; border-radius:10px; cursor:pointer; font-weight:700; }
+.primary-button:disabled { opacity:0.6; cursor:not-allowed; }
+.quick-fill { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; align-items:center; }
+.quick-fill span { color:#9ca3af; margin-right:8px; }
+.quick-fill button { background:#111827; border:1px solid #1f2937; color:#e5e7eb; padding:6px 10px; border-radius:8px; cursor:pointer; }
 :root {
-  --bg: #0b1020;
-  --card: #11162a;
-  --muted: #a3b1c6;
-  --text: #e6eef8;
-  --primary: #22d3ee;
-  --primary-600: #0891b2;
-  --accent: #7c3aed;
-  --success: #10b981;
-  --danger: #ef4444;
-  --ring: rgba(34, 211, 238, 0.35);
+  --primary-color: #2e7d32;
+  --secondary-color: #1b5e20;
+  --accent-color: #8bc34a;
+  --text-color: #1f2937;
+  --light-bg: #ffffff;
+  --surface: #f7faf9;
+  --footer-bg: #f1f5f9;
+  --border-radius: 10px;
+  --box-shadow: 0 8px 20px rgba(11, 127, 69, 0.08);
+  --transition: all 0.25s ease;
+  --primary: #2e7d32;
+  --accent: #8bc34a;
+  --text: #0f172a;
+  --muted: #64748b;
+  --ring: rgba(46,125,50,0.25);
+  --danger: #dc2626;
+  --success: #16a34a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color);
+  background: var(--surface) url('https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1600&auto=format&fit=crop') no-repeat center 120px/cover;
 }
 
 .App {
-  text-align: left;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: radial-gradient(1200px 800px at -10% -10%, rgba(124,58,237,0.35), transparent),
-              radial-gradient(900px 700px at 110% -20%, rgba(34,211,238,0.25), transparent),
-              var(--bg);
-  color: var(--text);
 }
 
 .main-content {
@@ -34,9 +66,9 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  backdrop-filter: saturate(180%) blur(10px);
-  background: rgba(10, 14, 30, 0.6);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: saturate(180%) blur(6px);
+  background: rgba(255,255,255,0.85);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-container {
@@ -49,10 +81,10 @@
 }
 
 .logo a {
-  color: var(--text);
+  color: var(--primary);
   text-decoration: none;
-  font-weight: 800;
-  font-size: 1.25rem;
+  font-weight: 900;
+  font-size: 1.35rem;
   letter-spacing: 0.5px;
 }
 
@@ -65,15 +97,15 @@
 }
 
 .main-nav a {
-  color: var(--muted);
+  color: #2f3b2f;
   text-decoration: none;
   padding: 8px 12px;
   border-radius: 8px;
 }
 
 .main-nav a:hover {
-  color: var(--text);
-  background: rgba(255,255,255,0.06);
+  color: var(--secondary-color);
+  background: rgba(46,125,50,0.08);
 }
 
 .auth-buttons .login-button,
@@ -83,14 +115,14 @@
 .sync-button,
 .buy-button,
 .cta-button {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: #0b1020;
+  background: linear-gradient(135deg, #2e7d32, #8bc34a);
+  color: #ffffff;
   border: none;
   padding: 10px 14px;
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 6px 20px var(--ring);
+  box-shadow: 0 6px 20px rgba(46,125,50,0.18);
   transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
 }
 
@@ -111,7 +143,9 @@
 .home-container .hero-section {
   display: grid;
   gap: 16px;
-  padding: 48px 0 24px;
+  padding: 72px 0 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+  border-radius: 16px;
 }
 
 .features-section {
@@ -127,11 +161,11 @@
 .feature-card,
 .stat-card,
 .product-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-  border: 1px solid rgba(255,255,255,0.06);
+  background:#ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  box-shadow: var(--box-shadow);
 }
 
 .dashboard-container {
@@ -155,12 +189,12 @@
 .collections-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .marketplace-container h1 { margin-bottom: 16px; }
 .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.product-image { height: 160px; overflow: hidden; border-radius: 10px; background: #0d1326; display:flex; align-items:center; justify-content:center; }
+.product-image { height: 160px; overflow: hidden; border-radius: 10px; background: #f0fdf4; display:flex; align-items:center; justify-content:center; }
 .product-image img { width: 100%; height: 100%; object-fit: cover; }
 .product-info { display: grid; gap: 8px; margin-top: 10px; }
 .product-desc { color: var(--muted); font-size: 0.95rem; line-height: 1.35; }
@@ -174,8 +208,8 @@
 
 .App-footer {
   margin-top: auto;
-  background: rgba(10, 14, 30, 0.6);
-  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
 }
 
 .footer-container {
@@ -188,8 +222,8 @@
 }
 
 .copyright {
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid #e5e7eb;
   padding: 12px 24px;
-  color: var(--muted);
+  color: #64748b;
   text-align: center;
 }

@@ -1,117 +1,65 @@
 // client/src/utils/auth.ts
 
-// Constants
-const TOKEN_KEY = 'token';
-const USER_KEY = 'user';
-
 /**
- * Set authentication token in local storage
- */
-export const setAuthToken = (token: string): void => {
-  localStorage.setItem(TOKEN_KEY, token);
-};
-
-/**
- * Get authentication token from local storage
+ * Get the authentication token from local storage
+ * @returns The authentication token or null if not found
  */
 export const getAuthToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem('token');
 };
 
 /**
- * Remove authentication token from local storage
+ * Set the authentication token in local storage
+ * @param token The token to store
+ */
+export const setAuthToken = (token: string): void => {
+  localStorage.setItem('token', token);
+};
+
+/**
+ * Remove the authentication token from local storage
  */
 export const removeAuthToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('token');
 };
 
 /**
- * Set user data in local storage
- */
-export const setUserData = (user: any): void => {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-};
-
-/**
- * Get user data from local storage
- */
-export const getUserData = (): any | null => {
-  const userData = localStorage.getItem(USER_KEY);
-  return userData ? JSON.parse(userData) : null;
-};
-
-/**
- * Remove user data from local storage
- */
-export const removeUserData = (): void => {
-  localStorage.removeItem(USER_KEY);
-};
-
-/**
- * Check if user is authenticated
+ * Check if the user is authenticated
+ * @returns True if the user is authenticated, false otherwise
  */
 export const isAuthenticated = (): boolean => {
   return !!getAuthToken();
 };
 
 /**
- * Logout user by removing all auth data
+ * Get the current user from local storage
+ * @returns The user object or null if not found
  */
-export const logout = (): void => {
-  removeAuthToken();
-  removeUserData();
-  // Additional cleanup can be added here
+export const getCurrentUser = (): any | null => {
+  const userJson = localStorage.getItem('user');
+  return userJson ? JSON.parse(userJson) : null;
 };
 
 /**
- * Parse JWT token to get payload
+ * Set the current user in local storage
+ * @param user The user object to store
  */
-export const parseJwt = (token: string): any => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error parsing JWT:', error);
-    return null;
-  }
+export const setCurrentUser = (user: any): void => {
+  localStorage.setItem('user', JSON.stringify(user));
 };
 
 /**
- * Check if token is expired
+ * Remove the current user from local storage
  */
-export const isTokenExpired = (token: string): boolean => {
-  try {
-    const decoded = parseJwt(token);
-    if (!decoded || !decoded.exp) return true;
-    
-    // Check if expiration timestamp is in the past
-    const currentTime = Date.now() / 1000;
-    return decoded.exp < currentTime;
-  } catch (error) {
-    console.error('Error checking token expiration:', error);
-    return true;
-  }
+export const removeCurrentUser = (): void => {
+  localStorage.removeItem('user');
 };
 
 /**
- * Get user role from token
+ * Get the current user's role from local storage
+ * @returns The role string or null if not available
  */
 export const getUserRole = (): string | null => {
-  const token = getAuthToken();
-  if (!token) return null;
-  
-  try {
-    const decoded = parseJwt(token);
-    return decoded?.role || null;
-  } catch (error) {
-    console.error('Error getting user role:', error);
-    return null;
-  }
+  const user = getCurrentUser();
+  return user?.role || null;
 };

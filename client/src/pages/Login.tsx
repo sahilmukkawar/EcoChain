@@ -5,8 +5,8 @@ import { getUserRole } from '../utils/auth.ts';
 
 const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
-  const [email, setEmail] = useState('admin@ecochain.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -24,15 +24,27 @@ const Login: React.FC = () => {
     }
   };
 
+  const quickFill = (e: string, p: string) => { setEmail(e); setPassword(p); };
+
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header"><h1>Login</h1></div>
-      <form onSubmit={onSubmit} style={{maxWidth:480, margin:'0 auto', display:'grid', gap:12}}>
-        {error && <div className="error">{error}</div>}
-        <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
-        <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
-        <button className="buy-button" type="submit" disabled={isLoading}>{isLoading ? 'Logging in...' : 'Login'}</button>
-      </form>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h1>Welcome back</h1>
+        <p className="auth-subtitle">Sign in to your EcoChain account</p>
+        <form onSubmit={onSubmit} className="auth-form">
+          {error && <div className="error">{error}</div>}
+          <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required />
+          <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+          <button className="primary-button" type="submit" disabled={isLoading}>{isLoading ? 'Logging in...' : 'Login'}</button>
+        </form>
+        <div className="quick-fill">
+          <span>Quick Accounts:</span>
+          <button onClick={()=>quickFill('admin@ecochain.com','Admin@123')}>Admin</button>
+          <button onClick={()=>quickFill('factory@ecochain.com','Factory@123')}>Factory</button>
+          <button onClick={()=>quickFill('collector@ecochain.com','Collector@123')}>Collector</button>
+          <button onClick={()=>quickFill('user@ecochain.com','User@123')}>User</button>
+        </div>
+      </div>
     </div>
   );
 };

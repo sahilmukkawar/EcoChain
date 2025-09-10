@@ -11,7 +11,8 @@
     "seed": "node database/seed.js",
     "setup-db": "node setup-database.js",
     "init-db": "node database/init.js",
-    "test-db": "node database/test-connection.js"
+    "test-db": "node database/test-connection.js",
+    "repair-passwords": "node scripts/repair-passwords.js"
   },
   "jest": {
     "testPathIgnorePatterns": [

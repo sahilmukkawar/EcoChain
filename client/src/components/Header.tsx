@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import SyncStatus from './SyncStatus.tsx';
 import './SyncStatus.css';
+import NavBar from './NavBar.tsx';
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -13,22 +14,7 @@ const Header: React.FC = () => {
         <div className="logo">
           <Link to="/">EcoChain</Link>
         </div>
-        <nav className="main-nav">
-          <ul>
-            <li><Link to="/">Home</Link></li>
-            {isAuthenticated && (
-              <>
-                <li><Link to="/dashboard">Dashboard</Link></li>
-                <li><Link to="/marketplace">Marketplace</Link></li>
-                <li><Link to="/wallet">Wallet</Link></li>
-                <li><Link to="/achievements">Achievements</Link></li>
-                <li><Link to="/factory">Factory</Link></li>
-                <li><Link to="/collector">Collector</Link></li>
-                <li><Link to="/admin">Admin</Link></li>
-              </>
-            )}
-          </ul>
-        </nav>
+        <NavBar />
         <div className="header-right">
           {isAuthenticated && (
             <div className="sync-indicator-container">
@@ -43,8 +29,8 @@ const Header: React.FC = () => {
               </>
             ) : (
               <>
-                <Link className="login-button" to="/login">Login</Link>
-                <Link className="signup-button" to="/signup">Sign Up</Link>
+                <Link to="/login" className="login-button">Login</Link>
+                <Link to="/signup" className="signup-button">Sign Up</Link>
               </>
             )}
           </div>

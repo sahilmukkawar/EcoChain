@@ -10,6 +10,9 @@ router.post('/', authenticate, garbageCollectionController.createCollection);
 // Get all garbage collections for the authenticated user
 router.get('/', authenticate, garbageCollectionController.getAllCollections);
 
+// Alias path for client compatibility
+router.get('/user', authenticate, garbageCollectionController.getAllCollections);
+
 // Get a single garbage collection by ID
 router.get('/:id', authenticate, garbageCollectionController.getCollectionById);
 
@@ -25,11 +28,8 @@ router.get('/factory/:factoryId', authenticate, authorize(['factory']), (req, re
   res.status(501).json({ message: 'Not implemented yet' });
 });
 
-// Update a garbage collection status (placeholder route)
-router.put('/:collectionId/status', authenticate, (req, res, next) => {
-  // TODO: Implement update collection status
-  res.status(501).json({ message: 'Not implemented yet' });
-});
+// Update a garbage collection status
+router.put('/:collectionId/status', authenticate, garbageCollectionController.updateCollectionStatus);
 
 // Submit vision inference for a collection
 router.post('/:collectionId/vision', authenticate, authorize(['collector']), (req, res) => {

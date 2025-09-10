@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User, userService } from '../services/index.ts';
-import { setAuthToken, setUserData, removeAuthToken, removeUserData } from '../utils/auth.ts';
 
 interface AuthContextType {
   user: User | null;
@@ -49,8 +48,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await userService.login({ email, password });
       setUser(response.user);
       setToken(response.token);
-      setAuthToken(response.token);
-      setUserData(response.user);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
     } catch (error) {
       throw error;
     } finally {
@@ -65,8 +64,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await userService.register({ name, email, password });
       setUser(response.user);
       setToken(response.token);
-      setAuthToken(response.token);
-      setUserData(response.user);
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
     } catch (error) {
       throw error;
     } finally {
@@ -76,8 +75,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Logout function
   const logout = () => {
-    removeAuthToken();
-    removeUserData();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setToken(null);
   };
