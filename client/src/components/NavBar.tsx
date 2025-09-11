@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useCart } from '../contexts/CartContext.tsx';
 
 const NavBar: React.FC = () => {
   const { user } = useAuth();
+  const { cart } = useCart();
   const role = user?.role || 'guest';
   const location = useLocation();
 
@@ -53,6 +55,13 @@ const NavBar: React.FC = () => {
             <Link className={isActive(link.to)} to={link.to}>{link.label}</Link>
           </li>
         ))}
+        {(role === 'user' || role === 'guest') && (
+          <li>
+            <Link className={isActive('/checkout')} to='/checkout'>
+              Cart {cart && cart.length > 0 && `(${cart.length})`}
+            </Link>
+          </li>
+        )}
       </ul>
     </nav>
   );

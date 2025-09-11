@@ -41,26 +41,38 @@ export interface CreateOrderData {
 const orderService = {
   // Create a new order
   createOrder: async (orderData: CreateOrderData): Promise<Order> => {
-    const response = await api.post<Order>('/orders', orderData);
-    return response.data;
+    const response = await api.post('/orders', orderData);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to create order');
   },
 
   // Get all orders for the current user
   getUserOrders: async (): Promise<Order[]> => {
-    const response = await api.get<Order[]>('/orders/user');
-    return response.data;
+    const response = await api.get('/orders/user');
+    if (response.data.success) {
+      return response.data.data || [];
+    }
+    throw new Error(response.data.message || 'Failed to fetch orders');
   },
 
   // Get order by ID
   getOrderById: async (id: string): Promise<Order> => {
-    const response = await api.get<Order>(`/orders/${id}`);
-    return response.data;
+    const response = await api.get(`/orders/${id}`);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to fetch order');
   },
 
   // Cancel an order
   cancelOrder: async (id: string): Promise<Order> => {
-    const response = await api.put<Order>(`/orders/${id}/cancel`);
-    return response.data;
+    const response = await api.put(`/orders/${id}/cancel`);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to cancel order');
   },
 
   // Calculate order summary (preview before placing order)
@@ -73,7 +85,10 @@ const orderService = {
     tokensUsed: number;
   }> => {
     const response = await api.post('/orders/calculate', { items, tokenAmount });
-    return response.data;
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to calculate order');
   },
 
   // Track order status
@@ -84,7 +99,10 @@ const orderService = {
     updates: { status: string; timestamp: string; location: string }[];
   }> => {
     const response = await api.get(`/orders/track/${trackingNumber}`);
-    return response.data;
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to track order');
   },
 };
 

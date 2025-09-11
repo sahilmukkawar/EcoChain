@@ -12,7 +12,7 @@ const api = axios.create({
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config: AxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,10 +31,8 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     // Handle 401 Unauthorized errors (token expired, etc.)
     if (error.response && error.response.status === 401) {
-      // Clear local storage and redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Don't redirect immediately - let AuthContext handle token refresh
+      console.warn('API request unauthorized - token may be expired');
     }
     return Promise.reject(error);
   }
@@ -42,23 +40,26 @@ api.interceptors.response.use(
 
 // Authentication API endpoints
 const authAPI = {
-  register: (userData: { name: string; email: string; phone: string; password: string; role: string }) => {
-    return api.post('/users/register', userData);
+  register: (userData: { name: string; email: string; phone?: string; password: string; role?: string; address?: any }) => {
+    return api.post('/auth/register', userData);
   },
   login: (credentials: { email: string; password: string }) => {
-    return api.post('/users/login', credentials);
+    return api.post('/auth/login', credentials);
   },
   refreshToken: (refreshToken: string) => {
-    return api.post('/auth/refresh-token', { refreshToken });
+    return api.post('/auth/refresh', { refreshToken });
   },
   logout: () => {
     return api.post('/auth/logout');
   },
   getCurrentUser: () => {
-    return api.get('/users/profile');
+    return api.get('/auth/me');
   },
   updateProfile: (userData: any) => {
-    return api.put('/users/profile', userData);
+    return api.put('/auth/profile', userData);
+  },
+  changePassword: (passwordData: { currentPassword: string; newPassword: string }) => {
+    return api.put('/auth/change-password', passwordData);
   },
 };
 
@@ -67,32 +68,44 @@ interface CollectionDetails {
   type: string;
   subType?: string;
   weight?: number;
+  quality?: string;
   description?: string;
   images?: string[];
 }
 
 interface LocationData {
-  pickupAddress: string;
-  coordinates: [number, number]; // [longitude, latitude]
+  address: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 interface SchedulingData {
-  requestedDate: string;
+  requestedDate?: string;
   preferredTimeSlot?: string;
 }
 
 interface CollectionRequestData {
-  collectionDetails: CollectionDetails;
-  location: LocationData;
-  scheduling: SchedulingData;
+  type: string;
+  subType?: string;
+  weight?: number;
+  quality?: string;
+  description?: string;
+  images?: string[];
+  location?: {
+    address: string;
+    coordinates?: {
+      lat: number;
+      lng: number;
+    };
+  };
+  preferredTimeSlot?: string;
 }
 
 interface CollectionStatusUpdate {
   status: string;
-  collectorNotes?: string;
-  actualWeight?: number;
-  qualityImages?: string[];
-  actualPickupTime?: string;
+  notes?: string;
 }
 
 const collectionsAPI = {
@@ -102,8 +115,8 @@ const collectionsAPI = {
   },
   
   // Get all collections for current user
-  getUserCollections: () => {
-    return api.get('/collections/user');
+  getUserCollections: (params?: { status?: string; page?: number; limit?: number }) => {
+    return api.get('/collections', { params });
   },
   
   // Get collection by ID
@@ -116,19 +129,14 @@ const collectionsAPI = {
     return api.put(`/collections/${collectionId}/status`, statusData);
   },
   
-  // Get available collections for collectors
-  getAvailableCollections: () => {
-    return api.get('/collections/available');
+  // Get nearby collections for collectors
+  getNearbyCollections: (params: { longitude: number; latitude: number; maxDistance?: number }) => {
+    return api.get('/collections/nearby', { params });
   },
   
-  // Get collections for a collector
-  getCollectorCollections: (collectorId: string) => {
-    return api.get(`/collections/collector/${collectorId}`);
-  },
-  
-  // Get collections for a factory
-  getFactoryCollections: (factoryId: string) => {
-    return api.get(`/collections/factory/${factoryId}`);
+  // Assign collector to collection
+  assignCollector: (collectionId: string) => {
+    return api.post(`/collections/${collectionId}/assign`);
   },
   
   // Submit vision inference for a collection
@@ -137,8 +145,8 @@ const collectionsAPI = {
   },
   
   // Complete a collection and issue tokens
-  completeCollection: (collectionId: string, completionData: any) => {
-    return api.post(`/collections/${collectionId}/complete`, completionData);
+  completeCollection: (collectionId: string, completionData?: any) => {
+    return api.post(`/collections/${collectionId}/complete`, completionData || {});
   },
 };
 

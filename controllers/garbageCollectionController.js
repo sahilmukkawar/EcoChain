@@ -8,24 +8,140 @@ const logger = require('../utils/logger');
  */
 const createCollection = async (req, res) => {
   try {
-    const { type, weight, location, images, notes } = req.body;
+    // Debug logging
+    console.log('=== CREATE COLLECTION DEBUG ===');
+    console.log('Request body:', req.body);
+    console.log('Request files:', req.files);
+    console.log('Request user:', req.user);
+    console.log('================================');
+    
+    const { 
+      type, 
+      subType, 
+      weight, 
+      quality, 
+      description, 
+      location, 
+      preferredTimeSlot,
+      pickupDate
+    } = req.body;
     const userId = req.user.id;
 
-    const collection = new GarbageCollection({
-      userId,
-      type,
-      weight,
-      location,
-      images,
-      notes,
-      status: 'pending'
-    });
+    // Validate required fields based on schema
+    if (!type) {
+      console.log('Error: Missing waste type');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Waste type is required' 
+      });
+    }
 
+    // Validate type enum
+    const validTypes = ['plastic', 'paper', 'metal', 'glass', 'electronic', 'organic', 'other'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Invalid waste type. Must be one of: ${validTypes.join(', ')}` 
+      });
+    }
+
+    if (!weight) {
+      console.log('Error: Missing weight');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Weight is required' 
+      });
+    }
+
+    if (!userId) {
+      console.log('Error: Missing user ID');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User authentication required' 
+      });
+    }
+
+    // Handle uploaded files
+    const images = req.files ? req.files.map(file => file.filename) : [];
+    console.log('Processed images:', images);
+
+    // Parse location if it's a string (from FormData)
+    let locationData = {};
+    if (typeof location === 'string') {
+      try {
+        locationData = JSON.parse(location);
+      } catch (e) {
+        console.log('Location parsing error:', e.message);
+        locationData = { address: location };
+      }
+    } else {
+      locationData = location || {};
+    }
+    console.log('Processed location:', locationData);
+
+    // Generate unique collection ID
+    const collectionId = 'COL' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+    console.log('Generated collection ID:', collectionId);
+
+    const collectionData = {
+      collectionId,
+      userId,
+      collectionDetails: {
+        type,
+        subType: subType || undefined,
+        weight: parseFloat(weight) || 0,
+        quality: quality || 'fair',
+        images: images,
+        description: description || ''
+      },
+      location: {
+        pickupAddress: locationData.address || ''
+        // No coordinates field at all to avoid GeoJSON issues
+      },
+      scheduling: {
+        requestedDate: pickupDate ? new Date(pickupDate) : new Date(),
+        preferredTimeSlot: preferredTimeSlot || ''
+      },
+      status: 'requested'
+    };
+    
+    // NOTE: Coordinates functionality removed temporarily to resolve MongoDB GeoJSON issues
+    
+    console.log('Creating collection with data:', JSON.stringify(collectionData, null, 2));
+
+    const collection = new GarbageCollection(collectionData);
     await collection.save();
-    res.status(201).json(collection);
+    
+    console.log('Collection saved successfully:', collection._id);
+    
+    // Broadcast update via WebSocket
+    if (global.broadcastUpdate) {
+      global.broadcastUpdate('garbage_collection', 'created', {
+        collectionId: collection.collectionId,
+        userId: collection.userId,
+        status: collection.status
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Garbage collection request created successfully',
+      data: collection
+    });
   } catch (error) {
+    console.error('=== CREATE COLLECTION ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('===============================');
+    
     logger.error('Error creating garbage collection:', error);
-    res.status(500).json({ message: 'Failed to create garbage collection', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create garbage collection', 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -35,11 +151,83 @@ const createCollection = async (req, res) => {
 const getAllCollections = async (req, res) => {
   try {
     const userId = req.user.id;
-    const collections = await GarbageCollection.find({ userId });
-    res.status(200).json(collections);
+    const { status, page = 1, limit = 10, assignedToMe } = req.query;
+    
+    console.log('=== GET ALL COLLECTIONS DEBUG ===');
+    console.log('getAllCollections - User:', req.user.role, 'UserId:', userId);
+    console.log('getAllCollections - Query params:', { status, page, limit, assignedToMe });
+    
+    let filter;
+    
+    // If assignedToMe is true, get collections assigned to the current collector
+    if (assignedToMe === 'true') {
+      filter = { collectorId: userId };
+      if (status) filter.status = status;
+    } else {
+      // For regular users or when getting all collections
+      // If user is a collector and status is 'requested', show available collections
+      if (req.user.role === 'collector' && status === 'requested') {
+        filter = { status: 'requested', $or: [{ collectorId: { $exists: false } }, { collectorId: null }] };
+        console.log('>>> COLLECTOR REQUESTING AVAILABLE COLLECTIONS <<<');
+      } else {
+        filter = { userId };
+        if (status) filter.status = status;
+      }
+    }
+    
+    console.log('getAllCollections - Filter being used:', JSON.stringify(filter, null, 2));
+    
+    const skip = (page - 1) * limit;
+    
+    // First, let's check what collections exist in total
+    const totalCollections = await GarbageCollection.find({});
+    console.log('getAllCollections - TOTAL collections in database:', totalCollections.length);
+    console.log('getAllCollections - Sample of all collections:', totalCollections.slice(0, 2).map(c => ({
+      id: c._id,
+      status: c.status,
+      collectorId: c.collectorId,
+      userId: c.userId
+    })));
+    
+    const collections = await GarbageCollection.find(filter)
+      .populate('userId', 'personalInfo.name personalInfo.phone')
+      .populate('collectorId', 'personalInfo.name personalInfo.phone')
+      .populate('factoryId', 'companyInfo.name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+      
+    const total = await GarbageCollection.countDocuments(filter);
+    
+    console.log('getAllCollections - Filter result count:', collections.length, 'total matching:', total);
+    console.log('getAllCollections - Sample filtered collection:', collections[0] ? {
+      id: collections[0]._id,
+      status: collections[0].status,
+      collectorId: collections[0].collectorId,
+      userId: collections[0].userId
+    } : 'No filtered collections found');
+    console.log('=== END GET ALL COLLECTIONS DEBUG ===');
+    
+    res.json({
+      success: true,
+      data: {
+        collections,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    });
   } catch (error) {
+    console.error('Error fetching garbage collections:', error);
     logger.error('Error fetching garbage collections:', error);
-    res.status(500).json({ message: 'Failed to fetch garbage collections', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch garbage collections', 
+      error: error.message 
+    });
   }
 };
 
@@ -129,64 +317,139 @@ const deleteCollection = async (req, res) => {
  */
 const updateCollectionStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, notes } = req.body;
     const collectionId = req.params.collectionId || req.params.id;
     
     if (!status) {
-      return res.status(400).json({ message: 'Status is required' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Status is required' 
+      });
     }
     
     const collection = await GarbageCollection.findById(collectionId);
     
     if (!collection) {
-      return res.status(404).json({ message: 'Garbage collection not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Garbage collection not found' 
+      });
     }
     
-    // Update status
-    collection.status = status;
+    // Use the model's updateStatus method for proper validation
+    await collection.updateStatus(status, notes);
     
-    // If status is completed, issue tokens to the user
+    // If status is completed, calculate and issue tokens
     if (status === 'completed') {
-      const userId = collection.userId;
-      const tokensToIssue = calculateTokens(collection.weight, collection.type);
+      const tokensEarned = collection.calculateTokens();
       
-      // Update user's token balance
-      await User.findByIdAndUpdate(userId, { $inc: { tokenBalance: tokensToIssue } });
+      // Update user's token balance using the User model method
+      const user = await User.findById(collection.userId);
+      if (user) {
+        await user.addTokens(tokensEarned, `Waste collection completed: ${collection.collectionId}`);
+      }
       
-      // Add token issuance to response
-      collection.tokensIssued = tokensToIssue;
+      collection.tokenCalculation.totalTokensIssued = tokensEarned;
+      await collection.save();
     }
     
-    await collection.save();
-    res.status(200).json(collection);
+    // Broadcast update via WebSocket
+    if (global.broadcastUpdate) {
+      global.broadcastUpdate('garbage_collection', 'status_updated', {
+        collectionId: collection.collectionId,
+        status: collection.status,
+        tokensIssued: collection.tokenCalculation?.totalTokensIssued
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Collection status updated successfully',
+      data: collection
+    });
   } catch (error) {
     logger.error('Error updating garbage collection status:', error);
-    res.status(500).json({ message: 'Failed to update garbage collection status', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Failed to update garbage collection status'
+    });
   }
 };
 
 /**
- * Helper function to calculate tokens based on weight and type
+ * Get nearby collections for collectors
  */
-const calculateTokens = (weight, type) => {
-  // Base rate per kg
-  const baseRate = 10;
-  
-  // Multipliers for different types
-  const typeMultipliers = {
-    'plastic': 1.2,
-    'paper': 0.8,
-    'metal': 1.5,
-    'glass': 1.0,
-    'electronic': 2.0,
-    'organic': 0.5,
-    'other': 0.7
-  };
-  
-  const multiplier = typeMultipliers[type] || 1.0;
-  
-  // Calculate tokens: weight * baseRate * typeMultiplier
-  return Math.round(weight * baseRate * multiplier);
+const getNearbyCollections = async (req, res) => {
+  try {
+    const { longitude, latitude, maxDistance = 10000 } = req.query;
+    
+    if (!longitude || !latitude) {
+      return res.status(400).json({
+        success: false,
+        message: 'Longitude and latitude are required'
+      });
+    }
+    
+    const collections = await GarbageCollection.findNearbyCollections(
+      parseFloat(longitude), 
+      parseFloat(latitude), 
+      parseInt(maxDistance)
+    );
+    
+    res.json({
+      success: true,
+      data: collections
+    });
+  } catch (error) {
+    logger.error('Error fetching nearby collections:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch nearby collections',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Assign collector to a collection
+ */
+const assignCollector = async (req, res) => {
+  try {
+    const { collectionId } = req.params;
+    const collectorId = req.user.id;
+    
+    const collection = await GarbageCollection.findById(collectionId);
+    
+    if (!collection) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collection not found'
+      });
+    }
+    
+    if (collection.status !== 'requested') {
+      return res.status(400).json({
+        success: false,
+        message: 'Collection is not available for assignment'
+      });
+    }
+    
+    collection.collectorId = collectorId;
+    await collection.updateStatus('scheduled', 'Assigned to collector');
+    
+    res.json({
+      success: true,
+      message: 'Collection assigned successfully',
+      data: collection
+    });
+  } catch (error) {
+    logger.error('Error assigning collector:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to assign collector',
+      error: error.message
+    });
+  }
 };
 
 module.exports = {
@@ -195,5 +458,7 @@ module.exports = {
   getCollectionById,
   updateCollection,
   deleteCollection,
-  updateCollectionStatus
+  updateCollectionStatus,
+  getNearbyCollections,
+  assignCollector
 };

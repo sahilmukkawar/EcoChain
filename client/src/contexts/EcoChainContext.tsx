@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useAuth } from '../context/AuthContext';
-import wasteService, { WasteSubmission } from '../services/wasteService';
-import { User } from '../services/userService';
+import { useAuth } from '../context/AuthContext.tsx';
+import wasteService, { WasteSubmission } from '../services/wasteService.ts';
+import userService, { User } from '../services/userService.ts';
 
 interface EnvironmentalImpact {
   co2Saved: number;
@@ -22,7 +22,7 @@ interface EcoChainContextType {
 const EcoChainContext = createContext<EcoChainContextType | undefined>(undefined);
 
 export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
   const [collectionHistory, setCollectionHistory] = useState<WasteSubmission[]>([]);
   const [environmentalImpact, setEnvironmentalImpact] = useState<EnvironmentalImpact>({
     co2Saved: 0,
@@ -31,26 +31,29 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
   });
 
   // Derived states
-  const pendingCollections = collectionHistory.filter(
+  const pendingCollections = Array.isArray(collectionHistory) ? collectionHistory.filter(
     collection => ['pending', 'approved'].includes(collection.status)
-  );
+  ) : [];
   
-  const completedCollections = collectionHistory.filter(
+  const completedCollections = Array.isArray(collectionHistory) ? collectionHistory.filter(
     collection => collection.status === 'collected'
-  );
+  ) : [];
 
-  const totalEcoTokens = user?.ecoTokens || 0;
+  const totalEcoTokens = user?.ecoWallet?.currentBalance || 0;
 
   // Fetch user's waste collection history
   const refreshCollections = async () => {
     try {
       const collections = await wasteService.getUserSubmissions();
-      setCollectionHistory(collections);
+      // Ensure we always set an array
+      setCollectionHistory(Array.isArray(collections) ? collections : []);
       
       // Calculate environmental impact based on collections
-      calculateEnvironmentalImpact(collections);
+      calculateEnvironmentalImpact(Array.isArray(collections) ? collections : []);
     } catch (error) {
       console.error('Failed to fetch collection history:', error);
+      // Set empty array on error to prevent filter errors
+      setCollectionHistory([]);
     }
   };
 
@@ -58,9 +61,11 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
   const refreshUserData = async () => {
     try {
       if (user) {
-        // This assumes userService.getCurrentUser() is implemented
         const updatedUser = await userService.getCurrentUser();
-        setUser(updatedUser);
+        // Note: setUser should be available from AuthContext
+        // If not available, we'll need to trigger a refresh through AuthContext methods
+        console.log('Updated user data:', updatedUser);
+        // The AuthContext should handle updating the user state
       }
     } catch (error) {
       console.error('Failed to refresh user data:', error);
@@ -69,14 +74,17 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Calculate environmental impact based on waste collections
   const calculateEnvironmentalImpact = (collections: WasteSubmission[]) => {
+    // Ensure collections is always an array
+    const safeCollections = Array.isArray(collections) ? collections : [];
+    
     // Simple calculation based on waste type and quantity
     // These are placeholder values - in a real app, you'd use more accurate conversion factors
     let co2Saved = 0;
     let treesEquivalent = 0;
     let waterSaved = 0;
 
-    collections.forEach(collection => {
-      const quantity = collection.quantity;
+    safeCollections.forEach(collection => {
+      const quantity = collection.quantity || 0;
       
       switch (collection.wasteType) {
         case 'plastic':

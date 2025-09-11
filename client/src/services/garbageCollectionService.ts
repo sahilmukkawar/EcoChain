@@ -1,4 +1,4 @@
-import api from './api';
+import api from './api.ts';
 
 export interface GarbageCollection {
   _id: string;

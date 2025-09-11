@@ -8,16 +8,35 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, allowedRoles = [] }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner">🌱</div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // If roles are specified and user doesn't have required role, redirect to dashboard
-  if (allowedRoles.length > 0 && user && !allowedRoles.includes((user as any).role)) {
-    return <Navigate to="/dashboard" replace />;
+  // If roles are specified and user doesn't have required role, redirect to appropriate dashboard
+  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+    // Redirect to role-specific dashboard
+    const roleDashboards = {
+      admin: '/admin-dashboard',
+      factory: '/factory-dashboard',
+      collector: '/collector-dashboard',
+      user: '/dashboard'
+    };
+    
+    const redirectPath = roleDashboards[user.role as keyof typeof roleDashboards] || '/dashboard';
+    return <Navigate to={redirectPath} replace />;
   }
 
   // User is authenticated and has required role (or no role required)

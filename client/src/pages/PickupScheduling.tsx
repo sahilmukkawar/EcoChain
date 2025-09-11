@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
-import '../PickupScheduling.css';
+import { useEcoChain } from '../contexts/EcoChainContext.tsx';
+import { collectionsAPI } from '../services/api.ts';
+import './PickupScheduling.css';
 
 interface TimeSlot {
   id: string;
@@ -17,9 +19,7 @@ interface PickupDate {
 const PickupScheduling: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
   const { user } = useAuth();
-  // Mock collections data - will be replaced with real API calls
-  const collectionHistory: any[] = [];
-  const refreshCollections = async () => {};
+  const { collectionHistory, refreshCollections } = useEcoChain();
   const navigate = useNavigate();
   
   const [collection, setCollection] = useState<any>(null);
@@ -31,13 +31,14 @@ const PickupScheduling: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [success, setSuccess] = useState<boolean>(false);
 
-  // Generate some dummy available dates (next 7 days)
+  // Generate available dates based on business logic (not dummy data)
   useEffect(() => {
     const generateAvailableDates = () => {
       const dates: PickupDate[] = [];
       const today = new Date();
       
-      for (let i = 1; i <= 7; i++) {
+      // Generate next 7 business days (excluding Sundays)
+      for (let i = 1; i <= 10; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
         
@@ -46,20 +47,21 @@ const PickupScheduling: React.FC = () => {
         
         const dateStr = date.toISOString().split('T')[0];
         
-        // Generate time slots from 9 AM to 5 PM
-        const slots: TimeSlot[] = [];
-        for (let hour = 9; hour <= 17; hour += 2) {
-          slots.push({
-            id: `${dateStr}-${hour}`,
-            time: `${hour}:00 - ${hour + 2}:00`,
-            available: Math.random() > 0.3 // Randomly make some slots unavailable
-          });
-        }
+        // Generate standard business time slots
+        const slots: TimeSlot[] = [
+          { id: `${dateStr}-9`, time: '09:00 - 11:00', available: true },
+          { id: `${dateStr}-11`, time: '11:00 - 13:00', available: true },
+          { id: `${dateStr}-14`, time: '14:00 - 16:00', available: true },
+          { id: `${dateStr}-16`, time: '16:00 - 18:00', available: true }
+        ];
         
         dates.push({
           date: dateStr,
           slots
         });
+        
+        // Stop once we have 7 valid dates
+        if (dates.length >= 7) break;
       }
       
       setAvailableDates(dates);
@@ -68,15 +70,26 @@ const PickupScheduling: React.FC = () => {
     generateAvailableDates();
   }, []);
 
-  // Find the collection by ID
+  // Find the collection by ID from EcoChain context
   useEffect(() => {
     if (collectionHistory && collectionId) {
-      const foundCollection = collectionHistory.find(c => c.id === collectionId);
+      const foundCollection = collectionHistory.find(c => c._id === collectionId);
       if (foundCollection) {
         setCollection(foundCollection);
         setError(null);
       } else {
-        setError('Collection not found');
+        // Try to fetch from API if not found in context
+        const fetchCollection = async () => {
+          try {
+            const response = await collectionsAPI.getCollectionById(collectionId);
+            setCollection(response.data);
+            setError(null);
+          } catch (err: any) {
+            console.error('Error fetching collection:', err);
+            setError('Collection not found');
+          }
+        };
+        fetchCollection();
       }
       setLoading(false);
     }
@@ -99,15 +112,22 @@ const PickupScheduling: React.FC = () => {
       return;
     }
     
+    if (!collection) {
+      setError('Collection not found');
+      return;
+    }
+    
     try {
       setSubmitting(true);
+      setError(null);
       
-      // In a real app, you would call an API here
-      // For now, we'll simulate a successful API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Update the collection with pickup scheduling information
+      // This would typically update the collection status and add scheduling details
+      await collectionsAPI.updateCollectionStatus(collection._id, {
+        status: 'scheduled',
+        notes: `Pickup scheduled for ${selectedDate} at ${availableDates.find(d => d.date === selectedDate)?.slots.find(s => s.id === selectedTimeSlot)?.time}`
+      });
       
-      // Update the collection status (in a real app, this would be done by the API)
-      // For now, we'll just show a success message
       setSuccess(true);
       
       // Refresh collections to get updated data
@@ -119,7 +139,8 @@ const PickupScheduling: React.FC = () => {
       }, 2000);
       
     } catch (err: any) {
-      setError(err.message || 'Failed to schedule pickup');
+      console.error('Error scheduling pickup:', err);
+      setError(err.response?.data?.message || 'Failed to schedule pickup. Please try again.');
     } finally {
       setSubmitting(false);
     }

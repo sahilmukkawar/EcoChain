@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../App.css';
-import '../Marketplace.css';
-// Mock cart context
+import './Marketplace.css';
+import { useCart } from '../contexts/CartContext.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
+import marketplaceService, { MarketplaceItem } from '../services/marketplaceService.ts';
+
 interface Product {
   id: string;
   name: string;
@@ -15,100 +18,16 @@ interface Product {
   status?: 'available' | 'sold_out';
 }
 
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
-
-const useCart = () => {
-  return {
-    cart: [] as CartItem[],
-    addToCart: (product: Product) => {},
-    removeFromCart: (productId: string) => {},
-    updateQuantity: (productId: string, quantity: number) => {},
-    cartTotal: 0,
-    tokenTotal: 0
-  };
-};
-
-// Mock auth context
-const useAuth = () => {
-  return {
-    user: {
-      id: '1',
-      name: 'Test User',
-      email: 'test@example.com',
-      ecoTokens: 100
-    }
-  };
-};
-
-// Mock marketplace service
-const marketplaceService = {
-  getAllItems: async () => {
-    return [
-      {
-        _id: '1',
-        sellerId: 'user1',
-        title: 'Recycled Paper Notebook',
-        description: 'Made from 100% recycled paper',
-        category: 'stationery',
-        price: 12.99,
-        imageUrl: 'https://example.com/notebook.jpg',
-        status: 'available',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        _id: '2',
-        sellerId: 'user2',
-        title: 'Bamboo Toothbrush',
-        description: 'Biodegradable bamboo handle with soft bristles',
-        category: 'personal-care',
-        price: 4.99,
-        imageUrl: 'https://example.com/toothbrush.jpg',
-        status: 'available',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        _id: '3',
-        sellerId: 'user1',
-        title: 'Reusable Water Bottle',
-        description: 'Stainless steel, BPA-free water bottle',
-        category: 'kitchen',
-        price: 19.99,
-        imageUrl: 'https://example.com/bottle.jpg',
-        status: 'available',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
-  }
-};
-
-// Adapter interface to map API response to our Product interface
-interface ApiProduct {
-  _id: string;
-  name: string;
-  description: string;
-  images?: string[];
-  price?: { tokenAmount?: number; fiatAmount?: number };
-  sustainabilityScore?: number;
-  status?: string;
-  category?: string;
-}
-
 // Function to convert API product to our Product interface
-const mapApiProductToProduct = (apiProduct: ApiProduct): Product => ({
+const mapApiProductToProduct = (apiProduct: MarketplaceItem): Product => ({
   id: apiProduct._id,
   name: apiProduct.name,
   description: apiProduct.description,
-  price: apiProduct.price?.fiatAmount || 0,
-  tokenPrice: apiProduct.price?.tokenAmount || 0,
+  price: apiProduct.price.fiatAmount || 0,
+  tokenPrice: apiProduct.price.tokenAmount || 0,
   category: apiProduct.category,
-  imageUrl: apiProduct.images?.[0],
-  sustainabilityScore: apiProduct.sustainabilityScore,
+  imageUrl: apiProduct.images?.[0] || 'https://via.placeholder.com/150',
+  sustainabilityScore: apiProduct.sustainabilityScore || 85,
   status: apiProduct.status === 'sold_out' ? 'sold_out' : 'available'
 });
 
@@ -116,7 +35,7 @@ const Marketplace: React.FC = () => {
   // Use cart context
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, tokenTotal } = useCart();
   const { user } = useAuth();
-  const totalEcoTokens = user?.ecoTokens || 0;
+  const totalEcoTokens = user?.ecoWallet?.currentBalance || 0;
   
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -133,24 +52,14 @@ const Marketplace: React.FC = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Use mock data for now until backend is fully integrated
         const apiProducts = await marketplaceService.getAllItems();
         // Map API products to our Product interface
-        const mappedProducts = apiProducts.map((item) => ({
-          id: item._id,
-          name: item.title,
-          description: item.description,
-          price: item.price,
-          tokenPrice: Math.round(item.price * 0.5), // Example conversion
-          category: item.category,
-          imageUrl: item.imageUrl || 'https://via.placeholder.com/150',
-          sustainabilityScore: Math.floor(Math.random() * 100), // Placeholder
-          status: item.status === 'sold' ? 'sold_out' : 'available'
-        }));
+        const mappedProducts = apiProducts.map(mapApiProductToProduct);
         setProducts(mappedProducts);
+        setError(null);
       } catch (e) {
         console.error('Error fetching products:', e);
-        setError('Failed to load products');
+        setError('Failed to load products. Please try again later.');
       } finally {
         setLoading(false);
       }

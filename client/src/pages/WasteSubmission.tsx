@@ -1,33 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useNavigate } from 'react-router-dom';
+import wasteService, { CreateWasteSubmissionData } from '../services/wasteService.ts';
 import '../App.css';
 import './WasteSubmission.css';
-// Mock wasteService
-const wasteService = {
-  submitWaste: async (data: any) => {
-    return { success: true, message: 'Waste submission successful' };
-  },
-  calculateEstimatedTokens: (wasteType: string, quantity: number) => {
-    const wasteTypeMap: {[key: string]: number} = {
-      'plastic': 5,
-      'paper': 3,
-      'glass': 4,
-      'metal': 6,
-      'electronics': 10,
-      'organic': 2,
-      'other': 1
-    };
-    return Math.round(wasteTypeMap[wasteType] * quantity);
-  },
-  createSubmission: async (data: any) => {
-    return { success: true, message: 'Waste submission successful' };
-  }
-};
 
 interface WasteSubmissionForm {
-  wasteType: string;
+  wasteType: 'plastic' | 'paper' | 'metal' | 'glass' | 'electronic' | 'organic' | 'other' | '';
   quantity: number;
+  quality: 'poor' | 'fair' | 'good' | 'excellent';
   description: string;
   pickupAddress: string;
   pickupDate: string;
@@ -42,8 +23,9 @@ const WasteSubmission: React.FC = () => {
   const [formData, setFormData] = useState<WasteSubmissionForm>({
     wasteType: '',
     quantity: 1,
+    quality: 'fair', // Default quality
     description: '',
-    pickupAddress: user?.address || '',
+    pickupAddress: '', // User will need to enter their address
     pickupDate: '',
     pickupTimeSlot: '',
     images: []
@@ -55,13 +37,13 @@ const WasteSubmission: React.FC = () => {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   
   const wasteTypes = [
-    { id: 'plastic', name: 'Plastic', tokenRate: 5 },
-    { id: 'paper', name: 'Paper', tokenRate: 3 },
-    { id: 'glass', name: 'Glass', tokenRate: 4 },
-    { id: 'metal', name: 'Metal', tokenRate: 6 },
-    { id: 'electronics', name: 'Electronics', tokenRate: 10 },
-    { id: 'organic', name: 'Organic', tokenRate: 2 },
-    { id: 'other', name: 'Other', tokenRate: 1 }
+    { id: 'plastic', name: 'Plastic', tokenRate: 10 },
+    { id: 'paper', name: 'Paper', tokenRate: 5 },
+    { id: 'glass', name: 'Glass', tokenRate: 8 },
+    { id: 'metal', name: 'Metal', tokenRate: 15 },
+    { id: 'electronic', name: 'Electronics', tokenRate: 20 },
+    { id: 'organic', name: 'Organic', tokenRate: 3 },
+    { id: 'other', name: 'Other', tokenRate: 2 }
   ];
   
   const timeSlots = [
@@ -108,7 +90,7 @@ const WasteSubmission: React.FC = () => {
   
   const calculateEstimatedTokens = (): number => {
     if (!formData.wasteType) return 0;
-    return wasteService.calculateEstimatedTokens(formData.wasteType, formData.quantity);
+    return wasteService.calculateEstimatedTokens(formData.wasteType, formData.quantity, formData.quality);
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,27 +99,36 @@ const WasteSubmission: React.FC = () => {
     setError(null);
     
     try {
-      // Submit waste data to the API
-      await wasteService.createSubmission({
-        wasteType: formData.wasteType,
+      // Validate required fields
+      if (!formData.wasteType || !formData.quantity || !formData.pickupAddress) {
+        throw new Error('Please fill in all required fields');
+      }
+      
+      // Create submission data
+      const submissionData: CreateWasteSubmissionData = {
+        wasteType: formData.wasteType as 'plastic' | 'paper' | 'metal' | 'glass' | 'electronic' | 'organic' | 'other',
         quantity: formData.quantity,
+        quality: formData.quality,
         description: formData.description,
         pickupAddress: formData.pickupAddress,
         pickupDate: formData.pickupDate,
         pickupTimeSlot: formData.pickupTimeSlot,
         images: formData.images
-      });
+      };
       
-      // Simulate success
+      // Submit waste data to the API
+      const result = await wasteService.createSubmission(submissionData);
+      
+      console.log('Waste submission successful:', result);
       setSuccess(true);
       
       // Redirect to dashboard after 2 seconds
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
-    } catch (err) {
-      setError('Failed to submit waste request. Please try again.');
+    } catch (err: any) {
       console.error('Submission error:', err);
+      setError(err.message || 'Failed to submit waste request. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -194,6 +185,22 @@ const WasteSubmission: React.FC = () => {
             onChange={handleInputChange}
             required
           />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="quality">Waste Quality</label>
+          <select 
+            id="quality" 
+            name="quality" 
+            value={formData.quality} 
+            onChange={handleInputChange}
+          >
+            <option value="poor">Poor</option>
+            <option value="fair">Fair</option>
+            <option value="good">Good</option>
+            <option value="excellent">Excellent</option>
+          </select>
+          <p className="form-help">Quality affects the token multiplier (Poor: 0.7x, Fair: 1.0x, Good: 1.2x, Excellent: 1.5x)</p>
         </div>
         
         <div className="form-group">

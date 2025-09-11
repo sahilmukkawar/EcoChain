@@ -8,43 +8,73 @@ const User = require('../database/models/User');
  */
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, phone, role = 'user' } = req.body;
+    const { name, email, password, phone, role = 'user', address } = req.body;
+    
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Name, email, and password are required' 
+      });
+    }
+    
+    // Check password requirements
+    if (password.length < 8) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Password must be at least 8 characters long' 
+      });
+    }
     
     // Check if user already exists
     const existingUser = await User.findOne({ 'personalInfo.email': email });
     if (existingUser) {
-      return res.status(409).json({ message: 'User already exists with this email' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User with this email already exists' 
+      });
     }
+    
+    // Generate unique userId
+    const userId = 'USR' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
     
     // Create new user
     const user = new User({
-      userId: `user_${Date.now()}`, // Generate a unique userId
+      userId,
       personalInfo: {
         name,
         email,
         phone
       },
       password,
-      role
+      role,
+      address: address || {}
     });
     
     await user.save();
     
-    // Generate token
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
-    );
+    // Generate tokens
+    const accessToken = user.generateAuthToken();
+    const refreshToken = user.generateRefreshToken();
+    await user.save(); // Save refresh token
     
     res.status(201).json({
+      success: true,
       message: 'User registered successfully',
-      token,
-      user: {
-        id: user._id,
-        name: user.personalInfo.name,
-        email: user.personalInfo.email,
-        role: user.role
+      data: {
+        user: {
+          id: user._id,
+          userId: user.userId,
+          name: user.personalInfo.name,
+          email: user.personalInfo.email,
+          role: user.role,
+          ecoWallet: user.ecoWallet,
+          sustainabilityScore: user.sustainabilityScore
+        },
+        tokens: {
+          accessToken,
+          refreshToken
+        }
       }
     });
   } catch (error) {
@@ -59,33 +89,65 @@ const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     
-    // Find user by email
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email and password are required' 
+      });
+    }
+    
+    // Find user by email and include password for verification
     const user = await User.findOne({ 'personalInfo.email': email }).select('+password');
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid email or password' 
+      });
     }
     
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+    // Check password using User model method
+    const isPasswordValid = await user.matchPassword(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid email or password' 
+      });
     }
     
-    // Generate token
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
-    );
+    // Check account status
+    if (user.accountStatus !== 'active') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Account is suspended or inactive' 
+      });
+    }
     
-    res.status(200).json({
+    // Update last active
+    await user.updateLastActive();
+    
+    // Generate tokens
+    const accessToken = user.generateAuthToken();
+    const refreshToken = user.generateRefreshToken();
+    await user.save();
+    
+    res.json({
+      success: true,
       message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        name: user.personalInfo.name,
-        email: user.personalInfo.email,
-        role: user.role
+      data: {
+        user: {
+          id: user._id,
+          userId: user.userId,
+          name: user.personalInfo.name,
+          email: user.personalInfo.email,
+          role: user.role,
+          ecoWallet: user.ecoWallet,
+          sustainabilityScore: user.sustainabilityScore
+        },
+        tokens: {
+          accessToken,
+          refreshToken
+        }
       }
     });
   } catch (error) {
@@ -98,23 +160,30 @@ const loginUser = async (req, res, next) => {
  */
 const getUserProfile = async (req, res, next) => {
   try {
-    const userId = req.user.userId;
-    
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
     }
     
-    res.status(200).json({
-      user: {
+    res.json({
+      success: true,
+      data: {
         id: user._id,
+        userId: user.userId,
         name: user.personalInfo.name,
         email: user.personalInfo.email,
         phone: user.personalInfo.phone,
-        address: user.address,
         role: user.role,
+        address: user.address,
+        ecoWallet: user.ecoWallet,
         sustainabilityScore: user.sustainabilityScore,
-        createdAt: user.createdAt
+        preferences: user.preferences,
+        kycStatus: user.kycStatus,
+        registrationDate: user.registrationDate,
+        lastActive: user.lastActive
       }
     });
   } catch (error) {
@@ -127,25 +196,32 @@ const getUserProfile = async (req, res, next) => {
  */
 const updateUserProfile = async (req, res, next) => {
   try {
-    const userId = req.user.userId;
-    const { name, phone, address } = req.body;
-    
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
     }
     
-    // Update fields
-    if (name) user.personalInfo.name = name;
-    if (phone) user.personalInfo.phone = phone;
-    if (address) user.address = address;
+    const allowedUpdates = ['personalInfo', 'address', 'preferences'];
+    const updates = {};
     
+    allowedUpdates.forEach(field => {
+      if (req.body[field]) {
+        updates[field] = { ...user[field], ...req.body[field] };
+      }
+    });
+    
+    Object.assign(user, updates);
     await user.save();
     
-    res.status(200).json({
+    res.json({
+      success: true,
       message: 'Profile updated successfully',
-      user: {
+      data: {
         id: user._id,
+        userId: user.userId,
         name: user.personalInfo.name,
         email: user.personalInfo.email,
         phone: user.personalInfo.phone,
@@ -163,18 +239,22 @@ const updateUserProfile = async (req, res, next) => {
  */
 const getUserWallet = async (req, res, next) => {
   try {
-    const userId = req.user.userId;
-    
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
     }
     
-    res.status(200).json({
-      wallet: {
-        balance: user.ecoWallet.currentBalance,
-        lifetimeEarned: user.ecoWallet.totalEarned,
-        lifetimeSpent: user.ecoWallet.totalSpent
+    res.json({
+      success: true,
+      data: {
+        wallet: {
+          currentBalance: user.ecoWallet.currentBalance,
+          totalEarned: user.ecoWallet.totalEarned,
+          totalSpent: user.ecoWallet.totalSpent
+        }
       }
     });
   } catch (error) {

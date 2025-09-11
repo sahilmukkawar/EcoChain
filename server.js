@@ -59,6 +59,8 @@ app.get('/', (req, res) => {
 const apiRoutes = require('./routes');
 // Serve static assets under API for dev proxy compatibility
 app.use('/api/assets', express.static('public'));
+// Serve uploaded files
+app.use('/uploads', express.static('public/uploads'));
 app.use('/api', apiRoutes);
 
 // Import error handling middleware

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { orderService, OrderItem, CreateOrderData, Address } from '../services/orderService.ts';
-import '../Checkout.css';
+import './Checkout.css';
 
 const Checkout: React.FC = () => {
   const { user } = useAuth();

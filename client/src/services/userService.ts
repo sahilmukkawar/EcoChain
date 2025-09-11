@@ -28,31 +28,44 @@ export interface AuthResponse {
 const userService = {
   // Login user
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/users/login', credentials);
-    return response.data;
+    const response = await api.post('/auth/login', credentials);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Login failed');
   },
 
   // Register new user
   register: async (userData: RegisterData): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/users/register', userData);
-    return response.data;
+    const response = await api.post('/auth/register', userData);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Registration failed');
   },
 
   // Get current user profile
   getCurrentUser: async (): Promise<User> => {
-    const response = await api.get<User>('/users/profile');
-    return response.data;
+    const response = await api.get('/auth/me');
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to get user data');
   },
 
   // Update user profile
   updateProfile: async (userData: Partial<User>): Promise<User> => {
-    const response = await api.put<User>('/users/profile', userData);
-    return response.data;
+    const response = await api.put('/auth/profile', userData);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to update profile');
   },
 
   // Logout (client-side only)
   logout: (): void => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     // Redirect to home page
     window.location.href = '/';

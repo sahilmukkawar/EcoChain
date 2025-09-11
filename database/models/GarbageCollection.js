@@ -43,18 +43,8 @@ const garbageCollectionSchema = new mongoose.Schema({
     inferenceId: { type: String }
   },
   location: {
-    pickupAddress: { type: String },
-    coordinates: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        default: 'Point'
-      },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-        index: '2dsphere'
-      }
-    }
+    pickupAddress: { type: String }
+    // Completely removed coordinates to avoid GeoJSON issues
   },
   scheduling: {
     requestedDate: { type: Date },
@@ -104,7 +94,7 @@ garbageCollectionSchema.index({ collectionId: 1 }, { unique: true });
 garbageCollectionSchema.index({ userId: 1 });
 garbageCollectionSchema.index({ collectorId: 1 });
 garbageCollectionSchema.index({ factoryId: 1 });
-garbageCollectionSchema.index({ 'location.coordinates': '2dsphere' });
+// garbageCollectionSchema.index({ 'location.coordinates': '2dsphere' }); // Temporarily disabled
 garbageCollectionSchema.index({ status: 1 });
 garbageCollectionSchema.index({ 'collectionDetails.type': 1 });
 garbageCollectionSchema.index({ 'scheduling.scheduledDate': 1 });

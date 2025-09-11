@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext.tsx';
 
 // Define the Product interface
 export interface Product {
@@ -39,28 +39,40 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [cart, setCart] = useState<CartItem[]>([]);
   const { user } = useAuth();
 
-  // Load cart from localStorage when component mounts
+  // Load cart from localStorage only for authenticated users
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
-        setCart(JSON.parse(savedCart));
-      } catch (error) {
-        console.error('Failed to parse cart from localStorage:', error);
-        localStorage.removeItem('cart');
+    if (user) {
+      const userCartKey = `cart_${user.id || user.userId}`;
+      const savedCart = localStorage.getItem(userCartKey);
+      if (savedCart) {
+        try {
+          setCart(JSON.parse(savedCart));
+        } catch (error) {
+          console.error('Failed to parse cart from localStorage:', error);
+          localStorage.removeItem(userCartKey);
+        }
       }
     }
-  }, []);
+  }, [user]);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage whenever it changes (for authenticated users only)
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
+    if (user && cart.length >= 0) {
+      const userCartKey = `cart_${user.id || user.userId}`;
+      localStorage.setItem(userCartKey, JSON.stringify(cart));
+    }
+  }, [cart, user]);
 
-  // Clear cart when user logs out
+  // Clear cart when user logs out and clean up user-specific cart data
   useEffect(() => {
     if (!user) {
       setCart([]);
+      // Clean up any cart data from localStorage when user logs out
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('cart_')) {
+          localStorage.removeItem(key);
+        }
+      });
     }
   }, [user]);
 
