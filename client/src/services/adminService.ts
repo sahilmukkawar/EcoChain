@@ -1,0 +1,98 @@
+// services/adminService.ts
+import api from './api.ts';
+
+export interface CollectionForPayment {
+  _id: string;
+  collectionId: string;
+  userId: {
+    _id: string;
+    personalInfo: {
+      name: string;
+      email: string;
+    };
+  };
+  collectorId: {
+    _id: string;
+    personalInfo: {
+      name: string;
+      email: string;
+    };
+  };
+  collectionDetails: {
+    type: string;
+    weight: number;
+    quality: string;
+  };
+  tokenCalculation: {
+    totalTokensIssued: number;
+  };
+  status: string;
+  updatedAt: string;
+  logistics?: {
+    actualPickupTime?: string;
+  };
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalCollectors: number;
+  totalFactories: number;
+  totalCollections: number;
+  pendingPayments: number;
+  completedCollections: number;
+  totalEcoTokensIssued: number;
+}
+
+class AdminService {
+  private baseURL = '/admin';
+
+  // Get collections ready for collector payment
+  async getCollectionsForPayment(page: number = 1, limit: number = 20) {
+    try {
+      const response = await api.get(`${this.baseURL}/collections/payment-pending?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching collections for payment:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch collections for payment');
+    }
+  }
+
+  // Process collector payment
+  async processCollectorPayment(collectionId: string, paymentData: { 
+    approveCollection?: boolean; 
+    paymentMethod?: string; 
+    adminNotes?: string;
+    // Legacy support
+    paymentAmount?: number;
+    notes?: string;
+  }) {
+    try {
+      // Handle legacy parameters
+      const requestData = {
+        approveCollection: paymentData.approveCollection !== undefined ? paymentData.approveCollection : true,
+        paymentMethod: paymentData.paymentMethod || 'digital_transfer',
+        adminNotes: paymentData.adminNotes || paymentData.notes || ''
+      };
+      
+      const response = await api.post(`${this.baseURL}/collections/${collectionId}/pay-collector`, requestData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error processing collector payment:', error);
+      throw new Error(error.response?.data?.message || 'Failed to process collector payment');
+    }
+  }
+
+  // Get admin dashboard statistics
+  async getAdminStats() {
+    try {
+      const response = await api.get(`${this.baseURL}/stats`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching admin stats:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch admin statistics');
+    }
+  }
+}
+
+const adminService = new AdminService();
+export default adminService;

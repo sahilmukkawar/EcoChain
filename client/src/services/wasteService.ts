@@ -272,6 +272,17 @@ class WasteService {
       throw new Error(error.response?.data?.message || 'Failed to complete collection');
     }
   }
+
+  // Mark collection as collected (collector action)
+  async markAsCollected(collectionId: string) {
+    try {
+      const response = await api.post(`${this.baseURL}/${collectionId}/collected`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Mark as collected error:', error);
+      throw new Error(error.response?.data?.message || 'Failed to mark collection as collected');
+    }
+  }
 }
 
 const wasteService = new WasteService();

@@ -60,6 +60,12 @@ const garbageCollectionService = {
   deleteCollection: async (id: string): Promise<void> => {
     await api.delete(`/collections/${id}`);
   },
+
+  // Mark collection as collected (for collectors)
+  markAsCollected: async (collectionId: string): Promise<any> => {
+    const response = await api.post(`/collections/${collectionId}/collected`);
+    return response.data;
+  },
 };
 
 export default garbageCollectionService;

@@ -47,4 +47,7 @@ router.post('/:collectionId/complete', authenticate, authorize(['collector', 'fa
   garbageCollectionController.updateCollectionStatus(req, res, next);
 });
 
+// Mark collection as collected (collector button action)
+router.post('/:collectionId/collected', authenticate, authorize(['collector']), garbageCollectionController.markAsCollected);
+
 module.exports = router;

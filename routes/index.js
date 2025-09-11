@@ -11,9 +11,11 @@ const authRoutes = require('./authRoutes');
 const orderRoutes = require('./orderRoutes');
 const productRoutes = require('./productRoutes');
 const ecoTokenRoutes = require('./ecoTokenRoutes');
+const adminRoutes = require('./adminRoutes');
 
 // API routes
 router.use('/auth', authRoutes);
+router.use('/admin', adminRoutes);
 router.use('/users', userRoutes);
 router.use('/collections', garbageCollectionRoutes);
 router.use('/marketplace', marketplaceRoutes);

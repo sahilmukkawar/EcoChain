@@ -36,6 +36,7 @@ interface CollectionHistory {
   collectionDetails: {
     type: string;
     weight: number;
+    quality?: string;
   };
   scheduling: {
     actualPickupDate?: string;
@@ -65,8 +66,33 @@ const CollectorDashboard: React.FC = () => {
   const [pickupRequests, setPickupRequests] = useState<PickupRequest[]>([]);
   const [collectionHistory, setCollectionHistory] = useState<CollectionHistory[]>([]);
   const [todaySchedule, setTodaySchedule] = useState<ScheduleItem[]>([]);
+  const [assignedCollections, setAssignedCollections] = useState<WasteSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Function to calculate payment in INR based on Indian industry standards
+  const calculatePaymentINR = (wasteType: string, weight: number, quality: string = 'fair') => {
+    const baseRates = {
+      plastic: 12,
+      paper: 8, 
+      metal: 25,
+      glass: 3,
+      electronic: 35,
+      organic: 2,
+      other: 5
+    };
+    
+    const qualityMultipliers = {
+      excellent: 1.4,
+      good: 1.2,
+      fair: 1.0,
+      poor: 0.7
+    };
+    
+    const baseRate = baseRates[wasteType] || baseRates.other;
+    const qualityMultiplier = qualityMultipliers[quality] || qualityMultipliers.fair;
+    return Math.round(baseRate * weight * qualityMultiplier);
+  };
   
   // Stats
   const [stats, setStats] = useState({
@@ -74,7 +100,9 @@ const CollectorDashboard: React.FC = () => {
     totalEarnings: 0,
     routeStops: 0,
     completedCollections: 0,
-    pendingCollections: 0
+    pendingCollections: 0,
+  totalEarningsINR: 0,
+  pendingPaymentsINR: 0
   });
   
   useEffect(() => {
@@ -109,6 +137,15 @@ const CollectorDashboard: React.FC = () => {
         // Fetch assigned collections for the current collector
         const assignedCollectionsResponse = await wasteService.getMyAssignedCollections(1, 20);
         const assignedCollections = assignedCollectionsResponse.data?.collections || [];
+        
+        console.log('=== COLLECTOR DASHBOARD DEBUG ===');
+        console.log('Assigned collections fetched:', assignedCollections.length);
+        console.log('Sample assigned collection:', assignedCollections[0]);
+        console.log('All assigned collections statuses:', assignedCollections.map(c => ({ id: c.collectionId, status: c.status })));
+        console.log('================================');
+        
+        // Set assigned collections state
+        setAssignedCollections(assignedCollections);
         
         // Filter completed collections for history
         const completedCollections = assignedCollections.filter(
@@ -164,9 +201,31 @@ const CollectorDashboard: React.FC = () => {
         
         setTodaySchedule(transformedSchedule);
         
-        // Calculate stats
+        // Calculate stats including INR payments
         const totalEarnings = transformedHistory.reduce((sum, item) => {
           return sum + (item.tokenCalculation?.totalTokensIssued || 0);
+        }, 0);
+        
+        // Calculate total INR earnings from completed collections
+        const totalEarningsINR = transformedHistory.reduce((sum, item) => {
+          return sum + calculatePaymentINR(
+            item.collectionDetails.type,
+            item.collectionDetails.weight,
+            item.collectionDetails.quality || 'fair'
+          );
+        }, 0);
+        
+        // Calculate pending INR payments from collected collections
+        const collectedCollections = assignedCollections.filter(
+          (collection: WasteSubmission) => collection.status === 'collected'
+        );
+        
+        const pendingPaymentsINR = collectedCollections.reduce((sum, item) => {
+          return sum + calculatePaymentINR(
+            item.collectionDetails.type,
+            item.collectionDetails.weight,
+            item.collectionDetails.quality || 'fair'
+          );
         }, 0);
         
         setStats({
@@ -174,7 +233,9 @@ const CollectorDashboard: React.FC = () => {
           totalEarnings: totalEarnings,
           routeStops: transformedSchedule.length,
           completedCollections: transformedHistory.length,
-          pendingCollections: transformedRequests.length
+          pendingCollections: transformedRequests.length,
+          totalEarningsINR: totalEarningsINR,
+          pendingPaymentsINR: pendingPaymentsINR
         });
         
         setLoading(false);
@@ -201,15 +262,67 @@ const CollectorDashboard: React.FC = () => {
       
       // Show success message with token information
       if (response.success && response.data?.tokensAwarded) {
-        alert(`Collection request accepted successfully! User has been awarded ${response.data.tokensAwarded} EcoTokens.`);
+        alert(`Collection request accepted successfully! User has been awarded ${response.data.tokensAwarded} EcoTokens. Collection is now scheduled.`);
       } else {
-        alert('Collection request accepted successfully!');
+        alert('Collection request accepted successfully! Collection is now scheduled.');
       }
       
-      // Refresh data after successful assignment
+      // Refresh both pickup requests and today's schedule
+      await refreshCollectorData();
+      
+    } catch (error: any) {
+      console.error('Error accepting request:', error);
+      alert(error.message || 'Failed to accept collection request');
+    }
+  };
+
+  // Handle updating collection status
+  const handleUpdateStatus = async (collectionId: string, newStatus: string) => {
+    try {
+      console.log(`Updating collection ${collectionId} to status: ${newStatus}`);
+      
+      let response;
+      
+      // Use specific endpoint for marking as collected
+      if (newStatus === 'collected') {
+        response = await wasteService.markAsCollected(collectionId);
+        
+        // Calculate expected payment to show to collector
+        const collection = assignedCollections.find(c => c._id === collectionId);
+        if (collection) {
+          const expectedPayment = calculatePaymentINR(
+            collection.collectionDetails.type,
+            collection.collectionDetails.weight,
+            collection.collectionDetails.quality
+          );
+          alert(`Collection marked as collected! Expected payment: ₹${expectedPayment}. This will now be sent to admin for approval and payment processing.`);
+        } else {
+          alert('Collection marked as collected! This will now be sent to admin for processing collector payment.');
+        }
+      } else {
+        response = await wasteService.updateCollectionStatus(collectionId, newStatus);
+        alert('Status updated successfully!');
+      }
+      
+      // Refresh all collector data
+      await refreshCollectorData();
+      
+    } catch (error: any) {
+      console.error('Error updating status:', error);
+      alert(error.message || 'Failed to update status');
+    }
+  };
+  
+  // Function to refresh all collector data
+  const refreshCollectorData = async () => {
+    try {
+      console.log('Refreshing collector dashboard data...');
+      
+      // Fetch available pickup requests (status: requested)
       const availableCollectionsResponse = await wasteService.getAvailableCollections(1, 20);
       const availableCollections = availableCollectionsResponse.data?.collections || [];
       
+      // Transform to PickupRequest interface
       const transformedRequests: PickupRequest[] = availableCollections.map((collection: WasteSubmission) => ({
         _id: collection._id,
         collectionId: collection.collectionId,
@@ -226,20 +339,21 @@ const CollectorDashboard: React.FC = () => {
       }));
       setPickupRequests(transformedRequests);
       
-    } catch (error: any) {
-      console.error('Error accepting request:', error);
-      alert(error.message || 'Failed to accept collection request');
-    }
-  };
-
-  // Handle updating collection status
-  const handleUpdateStatus = async (collectionId: string, newStatus: string) => {
-    try {
-      await wasteService.updateCollectionStatus(collectionId, newStatus);
-      
-      // Refresh assigned collections
+      // Fetch assigned collections for the current collector
       const assignedCollectionsResponse = await wasteService.getMyAssignedCollections(1, 20);
       const assignedCollections = assignedCollectionsResponse.data?.collections || [];
+      
+      console.log('=== REFRESH COLLECTOR DEBUG ===');
+      console.log('Refresh - Assigned collections fetched:', assignedCollections.length);
+      console.log('Refresh - All assigned collections:', assignedCollections.map(c => ({ 
+        id: c.collectionId, 
+        status: c.status,
+        scheduledDate: c.scheduling?.scheduledDate 
+      })));
+      console.log('===============================');
+      
+      // Set assigned collections state
+      setAssignedCollections(assignedCollections);
       
       // Update today's schedule with enhanced sorting
       const today = new Date().toISOString().split('T')[0];
@@ -262,9 +376,8 @@ const CollectorDashboard: React.FC = () => {
       
       // Sort by time slot for better organization
       transformedSchedule.sort((a, b) => {
-        // Extract hour from time slot (e.g., "10:00 AM - 12:00 PM" -> 10)
         const getHour = (timeSlot: string) => {
-          if (!timeSlot || timeSlot === 'TBD') return 24; // Put TBD at end
+          if (!timeSlot || timeSlot === 'TBD') return 24;
           const match = timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
           if (!match) return 24;
           let hour = parseInt(match[1]);
@@ -277,10 +390,40 @@ const CollectorDashboard: React.FC = () => {
       
       setTodaySchedule(transformedSchedule);
       
-      alert('Status updated successfully!');
-    } catch (error: any) {
-      console.error('Error updating status:', error);
-      alert(error.message || 'Failed to update status');
+      // Update collection history
+      const completedCollections = assignedCollections.filter(
+        (collection: WasteSubmission) => ['completed', 'delivered', 'verified'].includes(collection.status)
+      );
+      
+      const transformedHistory: CollectionHistory[] = completedCollections.map((collection: WasteSubmission) => ({
+        _id: collection._id,
+        collectionId: collection.collectionId,
+        location: collection.location,
+        collectionDetails: collection.collectionDetails,
+        scheduling: collection.scheduling,
+        tokenCalculation: collection.tokenCalculation,
+        status: collection.status as any
+      }));
+      setCollectionHistory(transformedHistory);
+      
+      // Calculate stats
+      const totalEarnings = transformedHistory.reduce((sum, item) => {
+        return sum + (item.tokenCalculation?.totalTokensIssued || 0);
+      }, 0);
+      
+        setStats({
+          todayPickups: transformedSchedule.length,
+          totalEarnings: totalEarnings,
+          routeStops: transformedSchedule.length,
+          completedCollections: transformedHistory.length,
+          pendingCollections: transformedRequests.length,
+          totalEarningsINR: totalEarningsINR,
+          pendingPaymentsINR: pendingPaymentsINR
+        });
+      
+      console.log('Collector data refresh completed');
+    } catch (error) {
+      console.error('Error refreshing collector data:', error);
     }
   };
   if (loading) return (
@@ -330,7 +473,15 @@ const CollectorDashboard: React.FC = () => {
         </div>
         <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <h3 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>Total Earnings</h3>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.totalEarnings} EcoTokens</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#28a745' }}>₹{stats.totalEarningsINR}</div>
+          <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px' }}>{stats.totalEarnings} EcoTokens</div>
+        </div>
+        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', border: stats.pendingPaymentsINR > 0 ? '2px solid #ffc107' : '1px solid #dee2e6' }}>
+          <h3 style={{ color: stats.pendingPaymentsINR > 0 ? '#856404' : '#1976d2', margin: '0 0 8px 0' }}>Pending Payments</h3>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: stats.pendingPaymentsINR > 0 ? '#856404' : '#666' }}>₹{stats.pendingPaymentsINR}</div>
+          {stats.pendingPaymentsINR > 0 && (
+            <div style={{ fontSize: '0.75rem', color: '#856404', marginTop: '4px' }}>⚠️ Awaiting admin approval</div>
+          )}
         </div>
         <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <h3 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>Route Stops</h3>
@@ -423,7 +574,7 @@ const CollectorDashboard: React.FC = () => {
               <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Address</th>
               <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Waste Type</th>
               <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Quantity</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>EcoTokens Earned</th>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Payment Earned (₹)</th>
               <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Status</th>
             </tr>
           </thead>
@@ -438,7 +589,14 @@ const CollectorDashboard: React.FC = () => {
                 <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collection.collectionDetails.type}</td>
                 <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collection.collectionDetails.weight}kg</td>
                 <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                  {collection.tokenCalculation?.totalTokensIssued || 0}
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#28a745' }}>
+                      ₹{calculatePaymentINR(collection.collectionDetails.type, collection.collectionDetails.weight, collection.collectionDetails.quality || 'fair')}
+                    </div>
+                    <div style={{ fontSize: '0.875rem', color: '#666' }}>
+                      {collection.tokenCalculation?.totalTokensIssued || 0} tokens
+                    </div>
+                  </div>
                 </td>
                 <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
                   <span style={getStatusStyle(collection.status)}>
@@ -462,6 +620,111 @@ const CollectorDashboard: React.FC = () => {
         </div>
       </div>
       
+      {/* Current Work Section */}
+      <h2 style={{ marginTop: '32px', marginBottom: '16px' }}>Current Work ({assignedCollections.length} active collections)</h2>
+      <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '32px' }}>        
+        {assignedCollections.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '32px', 
+            color: '#666'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📋</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>No active collections</div>
+            <div style={{ fontSize: '0.875rem' }}>Accept pickup requests to see them here</div>
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ backgroundColor: '#f5f5f5' }}>
+              <tr>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Collection ID</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Address</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Waste Details</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Expected Payment (₹)</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Status</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Scheduled Date</th>
+                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assignedCollections.map((collection) => (
+                <tr key={collection._id}>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>{collection.collectionId}</td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collection.location.pickupAddress}</td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold' }}>{collection.collectionDetails.weight}kg</div>
+                      <div style={{ fontSize: '0.875rem', color: '#666', textTransform: 'capitalize' }}>{collection.collectionDetails.type}</div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: '#28a745' }}>
+                        ₹{calculatePaymentINR(collection.collectionDetails.type, collection.collectionDetails.weight, collection.collectionDetails.quality || 'fair')}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#666' }}>Quality: {collection.collectionDetails.quality || 'fair'}</div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                    <span style={getStatusStyle(collection.status)}>
+                      {collection.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                    {collection.scheduling.scheduledDate ? 
+                      new Date(collection.scheduling.scheduledDate).toLocaleDateString() : 
+                      'Not scheduled'
+                    }
+                  </td>
+                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                    {collection.status === 'scheduled' && (
+                      <button 
+                        onClick={() => handleUpdateStatus(collection._id, 'in_progress')}
+                        style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.75rem', 
+                          backgroundColor: '#ff9800', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px', 
+                          cursor: 'pointer',
+                          fontWeight: 'bold',
+                          marginRight: '4px'
+                        }}
+                      >
+                        🚀 Start Pickup
+                      </button>
+                    )}
+                    {collection.status === 'in_progress' && (
+                      <button 
+                        onClick={() => handleUpdateStatus(collection._id, 'collected')}
+                        style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.75rem', 
+                          backgroundColor: '#4caf50', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px', 
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        ✅ Collect Waste
+                      </button>
+                    )}
+                    {collection.status === 'collected' && (
+                      <span style={{ color: '#28a745', fontWeight: 'bold', padding: '4px 8px', backgroundColor: '#d4edda', borderRadius: '4px' }}>
+                        ✅ Awaiting Admin Payment
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       {/* Today's Schedule and Performance Metrics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
@@ -562,7 +825,7 @@ const CollectorDashboard: React.FC = () => {
                             fontWeight: 'bold'
                           }}
                         >
-                          ✅ Mark Complete
+                          ✅ Collect Waste
                         </button>
                       )}
                     </div>

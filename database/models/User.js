@@ -108,6 +108,39 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  collectorStats: {
+    totalEarnings: {
+      type: Number,
+      default: 0
+    },
+    totalCollections: {
+      type: Number,
+      default: 0
+    },
+    paymentHistory: [{
+      collectionId: String,
+      amount: Number,
+      currency: {
+        type: String,
+        default: 'INR'
+      },
+      paymentDate: Date,
+      wasteType: String,
+      weight: Number,
+      calculation: {
+        breakdown: Object,
+        paymentSummary: Object
+      }
+    }],
+    averageRating: {
+      type: Number,
+      default: 0
+    },
+    completionRate: {
+      type: Number,
+      default: 0
+    }
+  },
   refreshToken: {
     type: String,
     select: false

@@ -442,7 +442,14 @@ const assignCollector = async (req, res) => {
     
     // Assign collector and update status
     collection.collectorId = collectorId;
+    
+    // Set scheduled date to today and ensure we have proper scheduling info
+    if (!collection.scheduling.scheduledDate) {
+      collection.scheduling.scheduledDate = new Date();
+    }
+    
     await collection.updateStatus('scheduled', 'Assigned to collector');
+    console.log(`Collection ${collection.collectionId} assigned to collector and scheduled for ${collection.scheduling.scheduledDate}`);
     
     // Calculate and award tokens to the user immediately when collector accepts
     const tokensEarned = collection.calculateTokens();
@@ -489,6 +496,69 @@ const assignCollector = async (req, res) => {
   }
 };
 
+/**
+ * Mark collection as collected (collector action)
+ */
+const markAsCollected = async (req, res) => {
+  try {
+    const { collectionId } = req.params;
+    const collectorId = req.user.id;
+    
+    const collection = await GarbageCollection.findById(collectionId);
+    
+    if (!collection) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collection not found'
+      });
+    }
+    
+    // Verify this collector is assigned to this collection
+    if (collection.collectorId.toString() !== collectorId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not assigned to this collection'
+      });
+    }
+    
+    // Verify collection is in correct status
+    if (collection.status !== 'scheduled' && collection.status !== 'in_progress') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot mark collection as collected. Current status: ${collection.status}`
+      });
+    }
+    
+    // Update status to collected
+    await collection.updateStatus('collected', `Waste collected by collector on ${new Date().toLocaleDateString()}`);
+    
+    console.log(`Collection ${collection.collectionId} marked as collected by collector ${req.user.name}`);
+    
+    // Broadcast update via WebSocket
+    if (global.broadcastUpdate) {
+      global.broadcastUpdate('garbage_collection', 'collected', {
+        collectionId: collection.collectionId,
+        status: collection.status,
+        collectorId: collectorId,
+        collectedAt: new Date()
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Collection marked as collected successfully. It will now be sent to admin for payment processing.',
+      data: collection
+    });
+  } catch (error) {
+    logger.error('Error marking collection as collected:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark collection as collected',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createCollection,
   getAllCollections,
@@ -497,5 +567,6 @@ module.exports = {
   deleteCollection,
   updateCollectionStatus,
   getNearbyCollections,
-  assignCollector
+  assignCollector,
+  markAsCollected
 };
