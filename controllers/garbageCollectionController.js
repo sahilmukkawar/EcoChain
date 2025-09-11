@@ -339,18 +339,24 @@ const updateCollectionStatus = async (req, res) => {
     // Use the model's updateStatus method for proper validation
     await collection.updateStatus(status, notes);
     
-    // If status is completed, calculate and issue tokens
-    if (status === 'completed') {
+    // Token awarding logic based on status
+    if (status === 'completed' && (!collection.tokenCalculation || !collection.tokenCalculation.totalTokensIssued)) {
+      // Only award tokens if they haven't been awarded yet (for cases where tokens weren't awarded on 'scheduled')
       const tokensEarned = collection.calculateTokens();
       
       // Update user's token balance using the User model method
       const user = await User.findById(collection.userId);
       if (user) {
         await user.addTokens(tokensEarned, `Waste collection completed: ${collection.collectionId}`);
+        
+        collection.tokenCalculation.totalTokensIssued = tokensEarned;
+        await collection.save();
+        
+        console.log(`Completion tokens awarded: ${tokensEarned} to user ${user.personalInfo.name} for collection ${collection.collectionId}`);
       }
-      
-      collection.tokenCalculation.totalTokensIssued = tokensEarned;
-      await collection.save();
+    } else if (status === 'collected') {
+      // When collection is marked as collected, we can add a small bonus if desired
+      console.log(`Collection ${collection.collectionId} has been collected. Tokens were already awarded when collector accepted.`);
     }
     
     // Broadcast update via WebSocket
@@ -434,13 +440,44 @@ const assignCollector = async (req, res) => {
       });
     }
     
+    // Assign collector and update status
     collection.collectorId = collectorId;
     await collection.updateStatus('scheduled', 'Assigned to collector');
     
+    // Calculate and award tokens to the user immediately when collector accepts
+    const tokensEarned = collection.calculateTokens();
+    
+    // Update user's token balance
+    const User = require('../database/models/User');
+    const user = await User.findById(collection.userId);
+    if (user) {
+      await user.addTokens(tokensEarned, `Waste collection accepted by collector: ${collection.collectionId}`);
+      
+      // Update the collection with token calculation
+      collection.tokenCalculation.totalTokensIssued = tokensEarned;
+      await collection.save();
+      
+      console.log(`Tokens awarded: ${tokensEarned} to user ${user.personalInfo.name} for collection ${collection.collectionId}`);
+    }
+    
+    // Broadcast update via WebSocket
+    if (global.broadcastUpdate) {
+      global.broadcastUpdate('garbage_collection', 'accepted', {
+        collectionId: collection.collectionId,
+        status: collection.status,
+        collectorId: collectorId,
+        tokensAwarded: tokensEarned,
+        userId: collection.userId
+      });
+    }
+    
     res.json({
       success: true,
-      message: 'Collection assigned successfully',
-      data: collection
+      message: `Collection assigned successfully! User has been awarded ${tokensEarned} EcoTokens.`,
+      data: {
+        ...collection.toObject(),
+        tokensAwarded: tokensEarned
+      }
     });
   } catch (error) {
     logger.error('Error assigning collector:', error);

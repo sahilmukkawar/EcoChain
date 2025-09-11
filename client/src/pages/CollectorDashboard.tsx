@@ -49,6 +49,8 @@ interface CollectionHistory {
 interface ScheduleItem {
   _id: string;
   time: string;
+  scheduledDate?: string;
+  requestedDate?: string;
   location: {
     pickupAddress: string;
   };
@@ -133,15 +135,33 @@ const CollectorDashboard: React.FC = () => {
           return scheduleDate === today;
         });
         
-        // Transform to ScheduleItem interface
+        // Transform to ScheduleItem interface and sort by time
         const transformedSchedule: ScheduleItem[] = todayCollections.map((collection: WasteSubmission) => ({
           _id: collection._id,
           time: collection.scheduling.preferredTimeSlot || 'TBD',
+          scheduledDate: collection.scheduling.scheduledDate,
+          requestedDate: collection.scheduling.requestedDate,
           location: collection.location,
           collectionDetails: collection.collectionDetails,
           status: collection.status === 'scheduled' ? 'scheduled' : 
                   collection.status === 'in_progress' ? 'in_progress' : 'completed'
         }));
+        
+        // Sort by time slot for better organization
+        transformedSchedule.sort((a, b) => {
+          // Extract hour from time slot (e.g., "10:00 AM - 12:00 PM" -> 10)
+          const getHour = (timeSlot: string) => {
+            if (!timeSlot || timeSlot === 'TBD') return 24; // Put TBD at end
+            const match = timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return 24;
+            let hour = parseInt(match[1]);
+            if (match[3].toUpperCase() === 'PM' && hour !== 12) hour += 12;
+            if (match[3].toUpperCase() === 'AM' && hour === 12) hour = 0;
+            return hour;
+          };
+          return getHour(a.time) - getHour(b.time);
+        });
+        
         setTodaySchedule(transformedSchedule);
         
         // Calculate stats
@@ -177,7 +197,14 @@ const CollectorDashboard: React.FC = () => {
   // Handle accepting a collection request
   const handleAcceptRequest = async (collectionId: string) => {
     try {
-      await wasteService.assignCollector(collectionId);
+      const response = await wasteService.assignCollector(collectionId);
+      
+      // Show success message with token information
+      if (response.success && response.data?.tokensAwarded) {
+        alert(`Collection request accepted successfully! User has been awarded ${response.data.tokensAwarded} EcoTokens.`);
+      } else {
+        alert('Collection request accepted successfully!');
+      }
       
       // Refresh data after successful assignment
       const availableCollectionsResponse = await wasteService.getAvailableCollections(1, 20);
@@ -199,7 +226,6 @@ const CollectorDashboard: React.FC = () => {
       }));
       setPickupRequests(transformedRequests);
       
-      alert('Collection request accepted successfully!');
     } catch (error: any) {
       console.error('Error accepting request:', error);
       alert(error.message || 'Failed to accept collection request');
@@ -215,7 +241,7 @@ const CollectorDashboard: React.FC = () => {
       const assignedCollectionsResponse = await wasteService.getMyAssignedCollections(1, 20);
       const assignedCollections = assignedCollectionsResponse.data?.collections || [];
       
-      // Update today's schedule
+      // Update today's schedule with enhanced sorting
       const today = new Date().toISOString().split('T')[0];
       const todayCollections = assignedCollections.filter((collection: WasteSubmission) => {
         if (!collection.scheduling.scheduledDate) return false;
@@ -226,11 +252,29 @@ const CollectorDashboard: React.FC = () => {
       const transformedSchedule: ScheduleItem[] = todayCollections.map((collection: WasteSubmission) => ({
         _id: collection._id,
         time: collection.scheduling.preferredTimeSlot || 'TBD',
+        scheduledDate: collection.scheduling.scheduledDate,
+        requestedDate: collection.scheduling.requestedDate,
         location: collection.location,
         collectionDetails: collection.collectionDetails,
         status: collection.status === 'scheduled' ? 'scheduled' : 
                 collection.status === 'in_progress' ? 'in_progress' : 'completed'
       }));
+      
+      // Sort by time slot for better organization
+      transformedSchedule.sort((a, b) => {
+        // Extract hour from time slot (e.g., "10:00 AM - 12:00 PM" -> 10)
+        const getHour = (timeSlot: string) => {
+          if (!timeSlot || timeSlot === 'TBD') return 24; // Put TBD at end
+          const match = timeSlot.match(/(\d+):(\d+)\s*(AM|PM)/i);
+          if (!match) return 24;
+          let hour = parseInt(match[1]);
+          if (match[3].toUpperCase() === 'PM' && hour !== 12) hour += 12;
+          if (match[3].toUpperCase() === 'AM' && hour === 12) hour = 0;
+          return hour;
+        };
+        return getHour(a.time) - getHour(b.time);
+      });
+      
       setTodaySchedule(transformedSchedule);
       
       alert('Status updated successfully!');
@@ -421,61 +465,131 @@ const CollectorDashboard: React.FC = () => {
       {/* Today's Schedule and Performance Metrics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h3>Today's Schedule</h3>
-          <div>
-            {todaySchedule.map((item) => (
-              <div key={item._id} style={{ padding: '16px 0', borderBottom: '1px solid #eee' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 'bold' }}>{item.time}</span>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={getStatusStyle(item.status)}>
-                      {item.status === 'completed' ? '✓ ' : item.status === 'in_progress' ? '🚛 ' : '⏰ '}
-                      {item.status}
-                    </span>
-                    {item.status === 'scheduled' && (
-                      <button 
-                        onClick={() => handleUpdateStatus(item._id, 'in_progress')}
-                        style={{ 
-                          padding: '4px 8px', 
-                          fontSize: '0.75rem', 
-                          backgroundColor: '#ff9800', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer' 
-                        }}
-                      >
-                        Start
-                      </button>
-                    )}
-                    {item.status === 'in_progress' && (
-                      <button 
-                        onClick={() => handleUpdateStatus(item._id, 'collected')}
-                        style={{ 
-                          padding: '4px 8px', 
-                          fontSize: '0.75rem', 
-                          backgroundColor: '#4caf50', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer' 
-                        }}
-                      >
-                        Complete
-                      </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0 }}>Today's Schedule</h3>
+            <div style={{ fontSize: '0.875rem', color: '#666', fontWeight: 'bold' }}>
+              {new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </div>
+          </div>
+          
+          {todaySchedule.length === 0 ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '32px', 
+              color: '#666',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '8px',
+              border: '2px dashed #ddd'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📅</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>No collections scheduled for today</div>
+              <div style={{ fontSize: '0.875rem' }}>Check back later or accept new pickup requests</div>
+            </div>
+          ) : (
+            <div>
+              {todaySchedule.map((item, index) => (
+                <div key={item._id} style={{ 
+                  padding: '16px', 
+                  marginBottom: '12px',
+                  backgroundColor: item.status === 'completed' ? '#f8f9fa' : 
+                                  item.status === 'in_progress' ? '#e3f2fd' : '#fff',
+                  border: '1px solid #eee',
+                  borderRadius: '8px',
+                  borderLeft: `4px solid ${
+                    item.status === 'completed' ? '#4caf50' : 
+                    item.status === 'in_progress' ? '#2196f3' : '#ff9800'
+                  }`
+                }}>
+                  {/* Time and Status Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ 
+                        fontWeight: 'bold', 
+                        fontSize: '1.1rem',
+                        color: '#1976d2'
+                      }}>
+                        🕐 {item.time}
+                      </span>
+                      <span style={{ 
+                        fontSize: '0.8rem', 
+                        color: '#666',
+                        backgroundColor: '#f0f0f0',
+                        padding: '2px 8px',
+                        borderRadius: '12px'
+                      }}>
+                        #{index + 1}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <span style={getStatusStyle(item.status)}>
+                        {item.status === 'completed' ? '✅ ' : item.status === 'in_progress' ? '🚛 ' : '⏰ '}
+                        {item.status === 'scheduled' ? 'Scheduled' :
+                         item.status === 'in_progress' ? 'In Progress' : 'Completed'}
+                      </span>
+                      {item.status === 'scheduled' && (
+                        <button 
+                          onClick={() => handleUpdateStatus(item._id, 'in_progress')}
+                          style={{ 
+                            padding: '6px 12px', 
+                            fontSize: '0.75rem', 
+                            backgroundColor: '#ff9800', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '4px', 
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          🚀 Start Pickup
+                        </button>
+                      )}
+                      {item.status === 'in_progress' && (
+                        <button 
+                          onClick={() => handleUpdateStatus(item._id, 'collected')}
+                          style={{ 
+                            padding: '6px 12px', 
+                            fontSize: '0.75rem', 
+                            backgroundColor: '#4caf50', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '4px', 
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          ✅ Mark Complete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Location and Details */}
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ marginRight: '8px', fontSize: '1.1rem' }}>📍</span>
+                    <span style={{ fontWeight: '500', color: '#333' }}>{item.location.pickupAddress}</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.875rem', color: '#666' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>🗂️</span>
+                      <span>Waste Type: <strong>{item.collectionDetails.type}</strong></span>
+                    </div>
+                    {item.scheduledDate && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>📅</span>
+                        <span>Scheduled: {new Date(item.scheduledDate).toLocaleDateString()}</span>
+                      </div>
                     )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ marginRight: '8px' }}>📍</span>
-                  <span>{item.location.pickupAddress}</span>
-                </div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                  Waste Type: {item.collectionDetails.type}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
         
         {/* Performance Metrics */}

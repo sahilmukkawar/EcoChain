@@ -7,11 +7,12 @@ import { useEcoChain } from '../contexts/EcoChainContext.tsx';
 import { orderService } from '../services/orderService.ts';
 import { Order } from '../services/orderService.ts';
 import wasteService, { WasteSubmission } from '../services/wasteService.ts';
+import { authAPI } from '../services/api.ts';
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { 
     collectionHistory, 
     environmentalImpact, 
@@ -27,13 +28,31 @@ const Dashboard: React.FC = () => {
   const [wasteRequests, setWasteRequests] = useState<WasteSubmission[]>([]);
   const [wasteLoading, setWasteLoading] = useState<boolean>(true);
   const [wasteError, setWasteError] = useState<string | null>(null);
+  
+  // Add current token balance state from database
+  const [currentTokenBalance, setCurrentTokenBalance] = useState<number>(user?.ecoWallet?.currentBalance || 0);
+  const [lastTokenUpdate, setLastTokenUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
     // Set loading to false once we have user data
     if (user) {
+      console.log('Dashboard useEffect - User detected, initializing...');
+      console.log('User initial token balance:', user.ecoWallet?.currentBalance);
+      
       setLoading(false);
+      
+      // Only update token balance if it's different from current state
+      const userTokenBalance = user.ecoWallet?.currentBalance || 0;
+      if (userTokenBalance !== currentTokenBalance) {
+        setCurrentTokenBalance(userTokenBalance);
+      }
+      
+      // Fetch all dashboard data
       fetchOrders();
       fetchWasteRequests();
+      
+      // Fetch latest user data only once on initial load
+      fetchLatestUserData();
     } else {
       setLoading(false);
     }
@@ -66,16 +85,61 @@ const Dashboard: React.FC = () => {
       setWasteLoading(false);
     }
   };
+  
+  // Function to fetch latest user data including updated token balance
+  const fetchLatestUserData = async () => {
+    try {
+      console.log('Fetching latest user data from database...');
+      const response = await authAPI.getCurrentUser();
+      if (response.data.success) {
+        const latestUserData = response.data.data;
+        const newTokenBalance = latestUserData.ecoWallet?.currentBalance || 0;
+        
+        console.log('Previous token balance:', currentTokenBalance);
+        console.log('New token balance from database:', newTokenBalance);
+        
+        // Only update if the token balance has actually changed
+        if (newTokenBalance !== currentTokenBalance) {
+          setCurrentTokenBalance(newTokenBalance);
+          setLastTokenUpdate(new Date());
+          console.log('Token balance updated from', currentTokenBalance, 'to', newTokenBalance);
+        } else {
+          console.log('Token balance unchanged, skipping update');
+        }
+        
+        // Update user in AuthContext with fresh data (but only if significantly different)
+        if (updateUser && (newTokenBalance !== currentTokenBalance || !user?.ecoWallet)) {
+          updateUser(latestUserData);
+          console.log('Updated user in AuthContext with fresh data');
+        }
+        
+        return newTokenBalance;
+      } else {
+        console.error('Failed to fetch user data:', response.data.message);
+      }
+    } catch (err: any) {
+      console.error('Error fetching latest user data:', err);
+      console.error('Error details:', err.response?.data || err.message);
+    }
+  };
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">Error: {error}</div>;
 
   const handleRefresh = async () => {
     try {
+      console.log('Dashboard refresh initiated...');
       setLoading(true);
-      await refreshCollections();
-      await fetchOrders();
-      await fetchWasteRequests();
+      
+      // Refresh all data in parallel for better performance
+      await Promise.all([
+        refreshCollections(),
+        fetchOrders(),
+        fetchWasteRequests(),
+        fetchLatestUserData() // Always refresh user token balance
+      ]);
+      
+      console.log('Dashboard refresh completed successfully');
       setLoading(false);
     } catch (error) {
       console.error('Refresh failed:', error);
@@ -97,7 +161,38 @@ const Dashboard: React.FC = () => {
             <h3>Your EcoTokens</h3>
             <div className="token-display">
               <span className="token-icon">🌱</span>
-              <span className="token-amount">{totalEcoTokens}</span>
+              <span className="token-amount">{currentTokenBalance}</span>
+            </div>
+            {lastTokenUpdate && (
+              <div style={{
+                fontSize: '0.75rem',
+                color: '#666',
+                marginTop: '4px',
+                fontStyle: 'italic'
+              }}>
+                Last updated: {lastTokenUpdate.toLocaleTimeString()}
+              </div>
+            )}
+            <div className="token-refresh">
+              <button 
+                onClick={() => {
+                  console.log('Manual token balance refresh clicked');
+                  fetchLatestUserData();
+                }}
+                style={{
+                  background: 'linear-gradient(45deg, #4caf50, #45a049)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)'
+                }}
+              >
+                🔄 Refresh Balance
+              </button>
             </div>
             <div className="environmental-impact">
               <h4>Your Environmental Impact</h4>

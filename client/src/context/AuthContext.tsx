@@ -25,6 +25,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, phone?: string, role?: string) => Promise<void>;
   logout: () => void;
   refreshAccessToken: () => Promise<void>;
+  updateUser: (userData: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -154,6 +155,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Update user function
+  const updateUser = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
   // Logout function
   const logout = () => {
     try {
@@ -188,6 +195,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         refreshAccessToken,
+        updateUser,
       }}
     >
       {children}
