@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { orderService, Order } from '../mockServices.ts';
+import { orderService, Order } from '../services/orderService.ts';
 import '../OrderConfirmation.css';
 
 const OrderConfirmation: React.FC = () => {

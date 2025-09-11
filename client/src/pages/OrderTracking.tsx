@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { orderService } from '../mockServices.ts';
+import { orderService } from '../services/orderService.ts';
 import '../OrderTracking.css';
 
 interface TrackingUpdate {

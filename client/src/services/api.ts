@@ -43,10 +43,10 @@ api.interceptors.response.use(
 // Authentication API endpoints
 const authAPI = {
   register: (userData: { name: string; email: string; phone: string; password: string; role: string }) => {
-    return api.post('/auth/register', userData);
+    return api.post('/users/register', userData);
   },
   login: (credentials: { email: string; password: string }) => {
-    return api.post('/auth/login', credentials);
+    return api.post('/users/login', credentials);
   },
   refreshToken: (refreshToken: string) => {
     return api.post('/auth/refresh-token', { refreshToken });

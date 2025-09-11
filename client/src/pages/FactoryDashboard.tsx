@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../App.css';
 import { marketplaceAPI } from '../services/api.ts';
-import { useAuth } from '../mockHooks.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface Product {
   _id: string;

@@ -1,24 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import { useAuth } from '../context/AuthContext.tsx';
 import { getUserRole } from '../utils/auth.ts';
 
 const Login: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const role = getUserRole();
+      if (role === 'admin') navigate('/admin-dashboard');
+      else if (role === 'factory') navigate('/factory-dashboard');
+      else if (role === 'collector') navigate('/collector-dashboard');
+      else navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
       await login(email, password);
-      const role = getUserRole();
-      if (role === 'admin') window.location.href = '/admin';
-      else if (role === 'factory') window.location.href = '/factory';
-      else if (role === 'collector') window.location.href = '/collector';
-      else window.location.href = '/dashboard';
+      // Navigation will be handled by the useEffect above
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Login failed');
     }

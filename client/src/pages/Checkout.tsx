@@ -1,35 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart, useAuth } from '../mockHooks.tsx';
-import { orderService } from '../mockServices.ts';
+import { useAuth } from '../context/AuthContext.tsx';
+import { orderService, OrderItem, CreateOrderData, Address } from '../services/orderService.ts';
 import '../Checkout.css';
 
-// Mock types
-interface Address {
-  street: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-}
-
-interface OrderItem {
-  itemId: string;
-  quantity: number;
-  price: number;
-}
-
-interface CreateOrderData {
-  items: OrderItem[];
-  shippingAddress: Address;
-  paymentMethod: string;
-  totalAmount: number;
-}
-
 const Checkout: React.FC = () => {
-  const { cart, cartTotal, tokenTotal, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Mock cart data - will be replaced with real cart implementation
+  const cart = useMemo(() => [], []);
+  const cartTotal = 0;
+  const tokenTotal = 0;
+  const clearCart = () => {};
   
   const [address, setAddress] = useState<Address>({
     street: user?.address || '',

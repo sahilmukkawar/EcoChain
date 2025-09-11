@@ -1,16 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import './Auth.css';
-import { useAuth } from '../mockHooks.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import { Link } from 'react-router-dom';
 
 const Register: React.FC = () => {
-  const { register, isLoading } = useAuth();
+  const { register, isLoading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +32,7 @@ const Register: React.FC = () => {
     
     try {
       await register(name, email, password);
-      window.location.href = '/dashboard';
+      // Navigation will be handled by the useEffect above
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Registration failed');
     }

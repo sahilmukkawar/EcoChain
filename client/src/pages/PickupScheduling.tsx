@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth, useEcoChain } from '../mockHooks.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import '../PickupScheduling.css';
 
 interface TimeSlot {
@@ -17,7 +17,9 @@ interface PickupDate {
 const PickupScheduling: React.FC = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
   const { user } = useAuth();
-  const { collectionHistory, refreshCollections } = useEcoChain();
+  // Mock collections data - will be replaced with real API calls
+  const collectionHistory: any[] = [];
+  const refreshCollections = async () => {};
   const navigate = useNavigate();
   
   const [collection, setCollection] = useState<any>(null);

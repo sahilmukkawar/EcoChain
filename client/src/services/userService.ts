@@ -40,13 +40,13 @@ const userService = {
 
   // Get current user profile
   getCurrentUser: async (): Promise<User> => {
-    const response = await api.get<User>('/users/me');
+    const response = await api.get<User>('/users/profile');
     return response.data;
   },
 
   // Update user profile
   updateProfile: async (userData: Partial<User>): Promise<User> => {
-    const response = await api.put<User>('/users/me', userData);
+    const response = await api.put<User>('/users/profile', userData);
     return response.data;
   },
 

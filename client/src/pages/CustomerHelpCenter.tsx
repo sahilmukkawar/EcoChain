@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../mockHooks.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 
 const CustomerHelpCenter: React.FC = () => {
   const { user } = useAuth();

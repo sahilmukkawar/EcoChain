@@ -2,31 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../App.css';
 import './Dashboard.css';
-import { useSync, useEcoChain, useAuth } from '../mockHooks.tsx';
-import { orderService } from '../mockServices.ts';
-import { Order } from '../mockServices.ts';
+import { useAuth } from '../context/AuthContext.tsx';
+import { orderService } from '../services/orderService.ts';
+import { Order } from '../services/orderService.ts';
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { startSync, lastSyncTime } = useSync();
   const { user } = useAuth();
-  const { collectionHistory, environmentalImpact, totalEcoTokens, refreshCollections } = useEcoChain();
+  // Mock data for now - will be replaced with real API calls
+  const collectionHistory: any[] = [];
+  const environmentalImpact = { co2Saved: 0, treesEquivalent: 0, waterSaved: 0 };
+  const totalEcoTokens = user?.ecoTokens || 0;
+  const refreshCollections = async () => {};
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState<boolean>(true);
   const [ordersError, setOrdersError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Set loading to false once we have data from the EcoChain context
-    if (collectionHistory.length > 0 || user) {
+    // Set loading to false once we have user data
+    if (user) {
+      setLoading(false);
+      fetchOrders();
+    } else {
       setLoading(false);
     }
-    
-    if (user) {
-      fetchOrders();
-    }
-  }, [collectionHistory, user, lastSyncTime]); // Re-check when data or lastSyncTime changes
+  }, [user]);
   
   const fetchOrders = async () => {
     try {

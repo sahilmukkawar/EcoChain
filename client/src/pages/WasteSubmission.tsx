@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../mockHooks.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import './WasteSubmission.css';

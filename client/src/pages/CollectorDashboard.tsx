@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../App.css';
-import { useAuth } from '../mockHooks.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface PickupRequest {
   id: string;

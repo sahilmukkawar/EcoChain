@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../mockContext.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface ProtectedRouteProps {
   element: React.ReactElement;
@@ -16,7 +16,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, allowedRoles =
   }
 
   // If roles are specified and user doesn't have required role, redirect to dashboard
-  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles.length > 0 && user && !allowedRoles.includes((user as any).role)) {
     return <Navigate to="/dashboard" replace />;
   }
 

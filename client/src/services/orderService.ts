@@ -1,4 +1,4 @@
-import api from './api';
+import api from './api.ts';
 import { CartItem } from '../contexts/CartContext';
 
 export interface OrderItem {
@@ -89,3 +89,5 @@ const orderService = {
 };
 
 export default orderService;
+export { orderService };
+export type { OrderItem, Order, Address, CreateOrderData };

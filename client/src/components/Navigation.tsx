@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth, useCart } from '../mockHooks.tsx';
+import { useAuth } from '../context/AuthContext.tsx';
 import './Navigation.css';
 
 const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
-  const { cart } = useCart();
   const location = useLocation();
 
   return (
@@ -43,16 +42,13 @@ const Navigation: React.FC = () => {
         <div className="nav-auth">
           <Link to="/checkout" className="cart-icon">
             <span role="img" aria-label="Shopping Cart">🛒</span>
-            {cart && cart.length > 0 && (
-              <span className="cart-count">{cart.length}</span>
-            )}
           </Link>
           
           {user ? (
             <div className="user-info">
               <div className="token-balance">
                 <span className="token-icon">🌱</span>
-                <span>{user.ecoTokens || 0} EcoTokens</span>
+                <span>{(user as any).ecoTokens || 0} EcoTokens</span>
               </div>
               <button className="logout-btn" onClick={logout}>Logout</button>
             </div>
