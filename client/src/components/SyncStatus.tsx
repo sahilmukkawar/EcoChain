@@ -1,6 +1,6 @@
 // client/src/components/SyncStatus.tsx
 import React from 'react';
-import { useSync } from '../contexts/SyncContext.tsx';
+import { useSync } from '../contexts/SyncContext';
 import './SyncStatus.css';
 
 interface SyncStatusProps {

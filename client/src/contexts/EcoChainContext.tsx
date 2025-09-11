@@ -1,130 +1,144 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface EcoToken {
-  id: string;
-  amount: number;
-  date: string;
-  source: string;
-}
-
-interface CollectionHistory {
-  id: string;
-  date: string;
-  wasteType: string;
-  quantity: number;
-  tokensEarned: number;
-  status: 'pending' | 'collected' | 'processed';
-}
+import { useAuth } from '../context/AuthContext';
+import wasteService, { WasteSubmission } from '../services/wasteService';
+import { User } from '../services/userService';
 
 interface EnvironmentalImpact {
-  wasteRecycled: number;
-  co2Reduced: number;
+  co2Saved: number;
   treesEquivalent: number;
   waterSaved: number;
 }
 
 interface EcoChainContextType {
-  ecoTokens: EcoToken[];
-  collectionHistory: CollectionHistory[];
-  environmentalImpact: EnvironmentalImpact;
+  collectionHistory: WasteSubmission[];
+  pendingCollections: WasteSubmission[];
+  completedCollections: WasteSubmission[];
   totalEcoTokens: number;
-  fetchEcoTokens: () => Promise<void>;
-  fetchCollectionHistory: () => Promise<void>;
-  fetchEnvironmentalImpact: () => Promise<void>;
+  environmentalImpact: EnvironmentalImpact;
+  refreshCollections: () => Promise<void>;
+  refreshUserData: () => Promise<void>;
 }
 
 const EcoChainContext = createContext<EcoChainContextType | undefined>(undefined);
 
+export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user, setUser } = useAuth();
+  const [collectionHistory, setCollectionHistory] = useState<WasteSubmission[]>([]);
+  const [environmentalImpact, setEnvironmentalImpact] = useState<EnvironmentalImpact>({
+    co2Saved: 0,
+    treesEquivalent: 0,
+    waterSaved: 0
+  });
+
+  // Derived states
+  const pendingCollections = collectionHistory.filter(
+    collection => ['pending', 'approved'].includes(collection.status)
+  );
+  
+  const completedCollections = collectionHistory.filter(
+    collection => collection.status === 'collected'
+  );
+
+  const totalEcoTokens = user?.ecoTokens || 0;
+
+  // Fetch user's waste collection history
+  const refreshCollections = async () => {
+    try {
+      const collections = await wasteService.getUserSubmissions();
+      setCollectionHistory(collections);
+      
+      // Calculate environmental impact based on collections
+      calculateEnvironmentalImpact(collections);
+    } catch (error) {
+      console.error('Failed to fetch collection history:', error);
+    }
+  };
+
+  // Refresh user data including token balance
+  const refreshUserData = async () => {
+    try {
+      if (user) {
+        // This assumes userService.getCurrentUser() is implemented
+        const updatedUser = await userService.getCurrentUser();
+        setUser(updatedUser);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  };
+
+  // Calculate environmental impact based on waste collections
+  const calculateEnvironmentalImpact = (collections: WasteSubmission[]) => {
+    // Simple calculation based on waste type and quantity
+    // These are placeholder values - in a real app, you'd use more accurate conversion factors
+    let co2Saved = 0;
+    let treesEquivalent = 0;
+    let waterSaved = 0;
+
+    collections.forEach(collection => {
+      const quantity = collection.quantity;
+      
+      switch (collection.wasteType) {
+        case 'plastic':
+          co2Saved += quantity * 2.5; // kg of CO2 saved per kg of plastic recycled
+          waterSaved += quantity * 100; // liters of water saved
+          break;
+        case 'paper':
+          co2Saved += quantity * 1.8;
+          treesEquivalent += quantity * 0.017; // trees saved per kg of paper
+          break;
+        case 'glass':
+          co2Saved += quantity * 0.3;
+          waterSaved += quantity * 50;
+          break;
+        case 'metal':
+          co2Saved += quantity * 4.0;
+          waterSaved += quantity * 20;
+          break;
+        case 'electronics':
+          co2Saved += quantity * 5.0;
+          waterSaved += quantity * 30;
+          break;
+        default:
+          co2Saved += quantity * 0.5;
+      }
+    });
+
+    setEnvironmentalImpact({
+      co2Saved: Math.round(co2Saved * 10) / 10, // Round to 1 decimal place
+      treesEquivalent: Math.round(treesEquivalent * 10) / 10,
+      waterSaved: Math.round(waterSaved)
+    });
+  };
+
+  // Initial data load
+  useEffect(() => {
+    if (user) {
+      refreshCollections();
+    }
+  }, [user]);
+
+  const contextValue: EcoChainContextType = {
+    collectionHistory,
+    pendingCollections,
+    completedCollections,
+    totalEcoTokens,
+    environmentalImpact,
+    refreshCollections,
+    refreshUserData
+  };
+
+  return (
+    <EcoChainContext.Provider value={contextValue}>
+      {children}
+    </EcoChainContext.Provider>
+  );
+};
+
 export const useEcoChain = () => {
   const context = useContext(EcoChainContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useEcoChain must be used within an EcoChainProvider');
   }
   return context;
-};
-
-interface EcoChainProviderProps {
-  children: ReactNode;
-}
-
-export const EcoChainProvider: React.FC<EcoChainProviderProps> = ({ children }) => {
-  const [ecoTokens, setEcoTokens] = useState<EcoToken[]>([]);
-  const [collectionHistory, setCollectionHistory] = useState<CollectionHistory[]>([]);
-  const [environmentalImpact, setEnvironmentalImpact] = useState<EnvironmentalImpact>({
-    wasteRecycled: 0,
-    co2Reduced: 0,
-    treesEquivalent: 0,
-    waterSaved: 0,
-  });
-
-  const totalEcoTokens = ecoTokens.reduce((sum, token) => sum + token.amount, 0);
-
-  // Mock API calls - would be replaced with actual API calls in a real application
-  const fetchEcoTokens = async () => {
-    // Simulate API call
-    try {
-      // Mock data
-      const mockEcoTokens: EcoToken[] = [
-        { id: '1', amount: 50, date: '2023-10-15', source: 'Plastic recycling' },
-        { id: '2', amount: 30, date: '2023-10-10', source: 'Paper recycling' },
-        { id: '3', amount: 25, date: '2023-10-05', source: 'Glass recycling' },
-        { id: '4', amount: 40, date: '2023-09-28', source: 'E-waste recycling' },
-      ];
-      setEcoTokens(mockEcoTokens);
-    } catch (error) {
-      console.error('Error fetching eco tokens:', error);
-    }
-  };
-
-  const fetchCollectionHistory = async () => {
-    // Simulate API call
-    try {
-      // Mock data
-      const mockCollectionHistory: CollectionHistory[] = [
-        { id: '1', date: '2023-10-15', wasteType: 'Plastic', quantity: 5, tokensEarned: 50, status: 'processed' },
-        { id: '2', date: '2023-10-10', wasteType: 'Paper', quantity: 3, tokensEarned: 30, status: 'processed' },
-        { id: '3', date: '2023-10-05', wasteType: 'Glass', quantity: 2.5, tokensEarned: 25, status: 'processed' },
-        { id: '4', date: '2023-09-28', wasteType: 'E-waste', quantity: 4, tokensEarned: 40, status: 'processed' },
-        { id: '5', date: '2023-10-20', wasteType: 'Plastic', quantity: 3, tokensEarned: 30, status: 'pending' },
-      ];
-      setCollectionHistory(mockCollectionHistory);
-    } catch (error) {
-      console.error('Error fetching collection history:', error);
-    }
-  };
-
-  const fetchEnvironmentalImpact = async () => {
-    // Simulate API call
-    try {
-      // Mock data
-      const mockEnvironmentalImpact: EnvironmentalImpact = {
-        wasteRecycled: 14.5, // kg
-        co2Reduced: 43.5, // kg
-        treesEquivalent: 2,
-        waterSaved: 290, // liters
-      };
-      setEnvironmentalImpact(mockEnvironmentalImpact);
-    } catch (error) {
-      console.error('Error fetching environmental impact:', error);
-    }
-  };
-
-  // Load initial data
-  useEffect(() => {
-    fetchEcoTokens();
-    fetchCollectionHistory();
-    fetchEnvironmentalImpact();
-  }, []);
-
-  const value = {
-    ecoTokens,
-    collectionHistory,
-    environmentalImpact,
-    totalEcoTokens,
-    fetchEcoTokens,
-    fetchCollectionHistory,
-    fetchEnvironmentalImpact,
-  };
-
-  return <EcoChainContext.Provider value={value}>{children}</EcoChainContext.Provider>;
 };

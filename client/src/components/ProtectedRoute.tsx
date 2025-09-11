@@ -1,22 +1,27 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { isAuthenticated, getUserRole } from '../utils/auth.ts';
+import { useAuth } from '../mockContext.tsx';
 
-const ProtectedRoute: React.FC<{ children: React.ReactElement; roles?: string[] }> = ({ children, roles }) => {
-  if (!isAuthenticated()) {
+interface ProtectedRouteProps {
+  element: React.ReactElement;
+  allowedRoles?: string[];
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, allowedRoles = [] }) => {
+  const { isAuthenticated, user } = useAuth();
+
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  if (roles && roles.length > 0) {
-    const role = getUserRole();
-    if (!role || !roles.includes(role)) {
-      // Redirect to a sensible default based on role, or home
-      if (role === 'admin') return <Navigate to="/admin" replace />;
-      if (role === 'factory') return <Navigate to="/factory" replace />;
-      if (role === 'collector') return <Navigate to="/collector" replace />;
-      return <Navigate to="/dashboard" replace />;
-    }
+
+  // If roles are specified and user doesn't have required role, redirect to dashboard
+  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
   }
-  return children;
+
+  // User is authenticated and has required role (or no role required)
+  return element;
 };
 
 export default ProtectedRoute;

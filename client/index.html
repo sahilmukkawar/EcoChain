@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EcoChain - Smart Waste-to-Product E-Commerce Platform</title>
+  <!-- Polyfill for missing MUI module -->
+  <script>
+    window.muiErrorMessageModule = function formatMuiErrorMessage(code) {
+      const url = `https://mui.com/production-error/?code=${code}`;
+      return `MUI: Error code ${code}\nFor more info, see ${url}`;
+    };
+  </script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

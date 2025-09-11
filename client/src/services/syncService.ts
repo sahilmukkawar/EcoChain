@@ -1,6 +1,6 @@
 // client/src/services/syncService.ts
 import axios from 'axios';
-import { getAuthToken } from '../utils/auth.ts';
+import { getAuthToken } from '../utils/auth';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 

@@ -1,9 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.tsx';
-import SyncStatus from './SyncStatus.tsx';
+import { useAuth } from '../context/AuthContext';
+import SyncStatus from './SyncStatus';
 import './SyncStatus.css';
-import NavBar from './NavBar.tsx';
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -14,7 +13,17 @@ const Header: React.FC = () => {
         <div className="logo">
           <Link to="/">EcoChain</Link>
         </div>
-        <NavBar />
+        <nav className="main-nav">
+          <ul>
+            <li><Link to="/">Home</Link></li>
+            {isAuthenticated && (
+              <>
+                <li><Link to="/dashboard">Dashboard</Link></li>
+                <li><Link to="/marketplace">Marketplace</Link></li>
+              </>
+            )}
+          </ul>
+        </nav>
         <div className="header-right">
           {isAuthenticated && (
             <div className="sync-indicator-container">
@@ -29,8 +38,8 @@ const Header: React.FC = () => {
               </>
             ) : (
               <>
-                <Link to="/login" className="login-button">Login</Link>
-                <Link to="/signup" className="signup-button">Sign Up</Link>
+                <button className="login-button">Login</button>
+                <button className="signup-button">Sign Up</button>
               </>
             )}
           </div>

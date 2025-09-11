@@ -12,7 +12,8 @@ timeout /t 3 /nobreak > nul
 
 echo Starting frontend server...
 cd client
-start cmd /k "npm start"
+set "REACT_APP_SKIP_PREFLIGHT_CHECK=true"
+start cmd /k "set NODE_OPTIONS=--no-warnings && node ./node_modules/react-scripts/scripts/start.js"
 
 echo Both servers are starting. The React app should open in your browser shortly.
 echo Backend running at: http://localhost:3001

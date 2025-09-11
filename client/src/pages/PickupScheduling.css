@@ -1,0 +1,41 @@
+/* Pickup scheduling styles */
+.pickup-scheduling {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.pickup-scheduling-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.pickup-scheduling-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pickup-scheduling-calendar {
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.pickup-scheduling-options {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.pickup-scheduling-actions {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 2rem;
+}

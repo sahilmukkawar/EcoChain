@@ -1,7 +1,7 @@
-/* EcoChain Dashboard Styles */
+/* client/src/pages/Dashboard.css */
 
 .dashboard-container {
-  padding: 1.5rem;
+  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -15,247 +15,271 @@
 
 .dashboard-header h1 {
   margin: 0;
-  font-size: 1.8rem;
-  color: var(--primary-color);
+  font-size: 24px;
+  color: #333;
 }
 
 .refresh-button {
-  background-color: var(--primary-color);
+  background-color: #3498db;
   color: white;
   border: none;
-  border-radius: var(--border-radius);
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: var(--transition);
+  transition: background-color 0.2s;
 }
 
 .refresh-button:hover {
-  background-color: var(--secondary-color);
+  background-color: #2980b9;
 }
 
 .dashboard-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.dashboard-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
 }
 
-.summary-card {
-  background-color: white;
-  border-radius: var(--border-radius);
+.dashboard-sidebar {
+  grid-column: 1;
+  background-color: #f5f5f5;
   padding: 1.5rem;
-  box-shadow: var(--box-shadow);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-stats {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
 }
 
-.summary-card h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  color: var(--secondary-color);
-  font-size: 1.2rem;
+.token-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #4CAF50;
 }
 
-.token-balance {
-  border-top: 4px solid var(--accent-color);
-}
-
-.collection-summary {
-  border-top: 4px solid var(--primary-color);
+.token-icon {
+  font-size: 1.8rem;
 }
 
 .environmental-impact {
-  border-top: 4px solid var(--secondary-color);
+  background-color: #e8f5e9;
+  padding: 1rem;
+  border-radius: 6px;
 }
 
-.token-amount {
-  font-size: 2.5rem;
-  font-weight: bold;
+.environmental-impact h4 {
+  margin-top: 0;
   margin-bottom: 0.5rem;
-  color: var(--accent-color);
+  color: #2e7d32;
 }
 
-.collection-stats,
-.impact-stats {
-  display: flex;
-  justify-content: space-around;
+.environmental-impact ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.environmental-impact li {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.dashboard-main {
+  grid-column: 2;
+}
+
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.stat-label {
-  font-size: 0.9rem;
+.stat-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
   color: #666;
 }
 
-.dashboard-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+.stat-card p {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
 }
 
-.detail-section {
-  background-color: white;
-  border-radius: var(--border-radius);
-  padding: 1.5rem;
-  box-shadow: var(--box-shadow);
+.collections-section {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.detail-section h3 {
+.collections-section h2 {
   margin-top: 0;
-  margin-bottom: 1.5rem;
-  color: var(--secondary-color);
-  font-size: 1.2rem;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.5rem;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #333;
 }
 
-table {
+.collections-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
 }
 
-th, td {
-  padding: 0.75rem;
+.collections-table th,
+.collections-table td,
+.orders-table th,
+.orders-table td {
+  padding: 12px;
   text-align: left;
   border-bottom: 1px solid #eee;
 }
 
-th {
+.collections-table th,
+.orders-table th {
   font-weight: 600;
   color: #555;
   background-color: #f9f9f9;
 }
 
-.token-value {
-  color: var(--success);
+.collections-table tr:hover,
+.orders-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.no-data, .no-data-message {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 2rem 0;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.loading, .loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  font-size: 1.2rem;
+  color: #666;
+  background-color: #f5f5f5;
+}
+
+.error, .error-state {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.orders-section {
+  margin-top: 2rem;
+}
+
+.order-actions-cell {
+  display: flex;
+  gap: 10px;
+}
+
+.view-order-link, .track-order-link {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.8rem;
   font-weight: 600;
+  text-align: center;
+}
+
+.view-order-link {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.track-order-link {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.view-order-link:hover, .track-order-link:hover {
+  opacity: 0.9;
+}
+
+.collections-table td {
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.collections-table th {
+  font-weight: 600;
+  color: #666;
+  background-color: #f8f9fa;
+}
+
+.collections-table tr:last-child td {
+  border-bottom: none;
 }
 
 .status-badge {
   display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 1rem;
-  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 500;
-  text-transform: capitalize;
+  text-transform: uppercase;
 }
 
-.pending {
-  background-color: #fff3cd;
-  color: #856404;
+.status-verified,
+.status-badge.collected,
+.status-badge.completed,
+.status-badge.delivered {
+  background-color: #e3fcef;
+  color: #0d9f6e;
 }
 
-.collected {
-  background-color: #d1ecf1;
-  color: #0c5460;
+.status-pending,
+.status-badge.pending {
+  background-color: #fef3c7;
+  color: #d97706;
 }
 
-.processed {
-  background-color: #d4edda;
-  color: #155724;
+.status-badge.processing,
+.status-badge.shipped {
+  background-color: #e3f2fd;
+  color: #1565c0;
 }
 
-/* Environmental Impact Details */
-.impact-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-.impact-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: var(--border-radius);
-  transition: var(--transition);
-}
-
-.impact-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--box-shadow);
-}
-
-.impact-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-.impact-value {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--primary-color);
-  margin-bottom: 0.25rem;
-}
-
-.impact-label {
-  font-size: 0.9rem;
-  color: #666;
-}
-
-/* Loading and Error States */
-.loading,
-.error {
-  text-align: center;
-  padding: 2rem;
-  background-color: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  margin: 2rem auto;
-  max-width: 500px;
-}
-
-.error {
-  color: var(--danger);
-  border-left: 4px solid var(--danger);
-}
-
-/* Responsive Adjustments */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .dashboard-summary {
+  .dashboard-content {
     grid-template-columns: 1fr;
   }
   
-  .impact-details {
-    grid-template-columns: repeat(2, 1fr);
+  .dashboard-sidebar {
+    grid-column: 1;
+    grid-row: 1;
   }
   
-  table {
-    font-size: 0.9rem;
-  }
-  
-  th, td {
-    padding: 0.5rem;
-  }
-  
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .dashboard-main {
+    grid-column: 1;
+    grid-row: 2;
   }
 }
