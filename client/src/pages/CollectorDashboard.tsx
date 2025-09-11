@@ -411,15 +411,37 @@ const CollectorDashboard: React.FC = () => {
         return sum + (item.tokenCalculation?.totalTokensIssued || 0);
       }, 0);
       
-        setStats({
-          todayPickups: transformedSchedule.length,
-          totalEarnings: totalEarnings,
-          routeStops: transformedSchedule.length,
-          completedCollections: transformedHistory.length,
-          pendingCollections: transformedRequests.length,
-          totalEarningsINR: totalEarningsINR,
-          pendingPaymentsINR: pendingPaymentsINR
-        });
+      // Calculate total INR earnings from completed collections
+      const totalEarningsINR = transformedHistory.reduce((sum, item) => {
+        return sum + calculatePaymentINR(
+          item.collectionDetails.type,
+          item.collectionDetails.weight,
+          item.collectionDetails.quality || 'fair'
+        );
+      }, 0);
+      
+      // Calculate pending INR payments from collected collections
+      const collectedCollections = assignedCollections.filter(
+        (collection: WasteSubmission) => collection.status === 'collected'
+      );
+      
+      const pendingPaymentsINR = collectedCollections.reduce((sum, item) => {
+        return sum + calculatePaymentINR(
+          item.collectionDetails.type,
+          item.collectionDetails.weight,
+          item.collectionDetails.quality || 'fair'
+        );
+      }, 0);
+      
+      setStats({
+        todayPickups: transformedSchedule.length,
+        totalEarnings: totalEarnings,
+        routeStops: transformedSchedule.length,
+        completedCollections: transformedHistory.length,
+        pendingCollections: transformedRequests.length,
+        totalEarningsINR: totalEarningsINR,
+        pendingPaymentsINR: pendingPaymentsINR
+      });
       
       console.log('Collector data refresh completed');
     } catch (error) {

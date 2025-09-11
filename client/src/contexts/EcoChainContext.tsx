@@ -84,9 +84,9 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
     let waterSaved = 0;
 
     safeCollections.forEach(collection => {
-      const quantity = collection.quantity || 0;
+      const quantity = collection.collectionDetails?.weight || 0;
       
-      switch (collection.wasteType) {
+      switch (collection.collectionDetails?.type) {
         case 'plastic':
           co2Saved += quantity * 2.5; // kg of CO2 saved per kg of plastic recycled
           waterSaved += quantity * 100; // liters of water saved
