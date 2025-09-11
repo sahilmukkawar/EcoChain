@@ -13,4 +13,13 @@ router.post('/collections/:collectionId/pay-collector', authenticate, adminContr
 // Get admin dashboard statistics
 router.get('/stats', authenticate, adminController.getAdminStats);
 
+// Get real users data
+router.get('/users', authenticate, adminController.getAllUsers);
+
+// Get real collectors data
+router.get('/collectors', authenticate, adminController.getAllCollectors);
+
+// Get real factories data
+router.get('/factories', authenticate, adminController.getAllFactories);
+
 module.exports = router;

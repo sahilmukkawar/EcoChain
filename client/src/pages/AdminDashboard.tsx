@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import '../App.css';
 import { useAuth } from '../context/AuthContext.tsx';
-import adminService, { CollectionForPayment, AdminStats } from '../services/adminService.ts';
+import adminService, { CollectionForPayment, AdminStats, UserData, CollectorData, FactoryData } from '../services/adminService.ts';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  const [factories, setFactories] = useState<any[]>([]);
-  const [collectors, setCollectors] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [factories, setFactories] = useState<FactoryData[]>([]);
+  const [collectors, setCollectors] = useState<CollectorData[]>([]);
   const [collectionsForPayment, setCollectionsForPayment] = useState<CollectionForPayment[]>([]);
   const [systemStats, setSystemStats] = useState<AdminStats>({
     totalUsers: 0,
@@ -150,28 +150,56 @@ const AdminDashboard: React.FC = () => {
         setSystemStats(statsData);
         setCollectionsForPayment(collectionsData);
         
-        // Mock users data for now (can be replaced with real API later)
-        const mockUsers = [
-          { id: 1, name: 'John Doe', email: 'user@ecochain.com', role: 'user', ecoTokens: 120, collections: 5 },
-          { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'user', ecoTokens: 85, collections: 3 },
-          { id: 3, name: 'Admin User', email: 'admin@ecochain.com', role: 'admin', ecoTokens: 0, collections: 0 },
-        ];
+        // Fetch real users data
+        try {
+          console.log('Fetching real users data...');
+          const usersResponse = await adminService.getAllUsers();
+          console.log('Users response:', usersResponse);
+          
+          if (usersResponse && usersResponse.success && usersResponse.data && Array.isArray(usersResponse.data.users)) {
+            setUsers(usersResponse.data.users);
+          } else {
+            console.warn('Invalid users response format:', usersResponse);
+            setUsers([]);
+          }
+        } catch (usersError: any) {
+          console.warn('Failed to fetch users, using empty array:', usersError.message);
+          setUsers([]);
+        }
         
-        // Mock factories data
-        const mockFactories = [
-          { id: 1, name: 'EcoPlastics Inc.', email: 'factory@ecochain.com', materialsProcessed: 1250, productsListed: 15 },
-          { id: 2, name: 'GreenPaper Co.', email: 'greenpaper@example.com', materialsProcessed: 980, productsListed: 8 },
-        ];
+        // Fetch real factories data
+        try {
+          console.log('Fetching real factories data...');
+          const factoriesResponse = await adminService.getAllFactories();
+          console.log('Factories response:', factoriesResponse);
+          
+          if (factoriesResponse && factoriesResponse.success && factoriesResponse.data && Array.isArray(factoriesResponse.data.factories)) {
+            setFactories(factoriesResponse.data.factories);
+          } else {
+            console.warn('Invalid factories response format:', factoriesResponse);
+            setFactories([]);
+          }
+        } catch (factoriesError: any) {
+          console.warn('Failed to fetch factories, using empty array:', factoriesError.message);
+          setFactories([]);
+        }
         
-        // Mock collectors data
-        const mockCollectors = [
-          { id: 1, name: 'City Collectors', email: 'collector@ecochain.com', collectionsCompleted: 78, rating: 4.8 },
-          { id: 2, name: 'EcoPickup Services', email: 'ecopickup@example.com', collectionsCompleted: 56, rating: 4.5 },
-        ];
-        
-        setUsers(mockUsers);
-        setFactories(mockFactories);
-        setCollectors(mockCollectors);
+        // Fetch real collectors data
+        try {
+          console.log('Fetching real collectors data...');
+          const collectorsResponse = await adminService.getAllCollectors();
+          console.log('Collectors response:', collectorsResponse);
+          
+          if (collectorsResponse && collectorsResponse.success && collectorsResponse.data && Array.isArray(collectorsResponse.data.collectors)) {
+            setCollectors(collectorsResponse.data.collectors);
+          } else {
+            console.warn('Invalid collectors response format:', collectorsResponse);
+            setCollectors([]);
+          }
+        } catch (collectorsError: any) {
+          console.warn('Failed to fetch collectors, using empty array:', collectorsError.message);
+          setCollectors([]);
+        }
         setLoading(false);
       } catch (err) {
         console.error('Critical error in fetchAdminData:', err);
@@ -413,17 +441,53 @@ const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{user.id}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{user.name}</td>
+                {users.length > 0 ? users.map((user) => (
+                  <tr key={user._id}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', color: '#0066cc', fontWeight: 'bold' }}>{user._id.slice(-6)}</td>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>{user.name}</td>
                     <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{user.email}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{user.role}</td>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', textTransform: 'capitalize' }}>
+                      <span style={{ 
+                        backgroundColor: user.role === 'admin' ? '#ff9800' : '#4caf50', 
+                        color: 'white', 
+                        padding: '4px 8px', 
+                        borderRadius: '12px', 
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold'
+                      }}>
+                        {user.role}
+                      </span>
+                    </td>
                     <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <button style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.875rem', 
+                          backgroundColor: '#1976d2', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px', 
+                          cursor: 'pointer' 
+                        }}>View</button>
+                        <button style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.875rem', 
+                          backgroundColor: '#ff9800', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px', 
+                          cursor: 'pointer' 
+                        }}>Edit</button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
+                      {loading ? 'Loading users...' : 'No users found'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -443,16 +507,49 @@ const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {factories.map((factory) => (
-                  <tr key={factory.id}>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{factory.id}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{factory.name}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{factory.materialsProcessed} kg</td>
+                {factories.length > 0 ? factories.map((factory) => (
+                  <tr key={factory._id}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', color: '#0066cc', fontWeight: 'bold' }}>{factory._id.slice(-6)}</td>
                     <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <button style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
+                      <div>
+                        <div style={{ fontWeight: 'bold' }}>{factory.name}</div>
+                        <div style={{ fontSize: '0.875rem', color: '#666' }}>{factory.email}</div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                      <div style={{ fontWeight: 'bold', color: '#2e7d32' }}>{factory.materialsProcessed} kg</div>
+                      <div style={{ fontSize: '0.875rem', color: '#666' }}>{factory.productsListed} products listed</div>
+                    </td>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.875rem', 
+                          backgroundColor: '#1976d2', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px', 
+                          cursor: 'pointer' 
+                        }}>View</button>
+                        <button style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.875rem', 
+                          backgroundColor: '#ff9800', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px', 
+                          cursor: 'pointer' 
+                        }}>Edit</button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={4} style={{ padding: '20px', textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
+                      {loading ? 'Loading factories...' : 'No factories found'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -473,17 +570,56 @@ const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {collectors.map((collector) => (
-                  <tr key={collector.id}>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collector.id}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collector.name}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collector.collectionsCompleted}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collector.rating}</td>
+                {collectors.length > 0 ? collectors.map((collector) => (
+                  <tr key={collector._id}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', color: '#0066cc', fontWeight: 'bold' }}>{collector._id.slice(-6)}</td>
                     <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <button style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
+                      <div>
+                        <div style={{ fontWeight: 'bold' }}>{collector.name}</div>
+                        <div style={{ fontSize: '0.875rem', color: '#666' }}>{collector.email}</div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                      <div style={{ fontWeight: 'bold', color: '#2e7d32' }}>{collector.completedCollections}</div>
+                      <div style={{ fontSize: '0.875rem', color: '#666' }}>{collector.pendingCollections} pending</div>
+                    </td>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>⭐</span>
+                        <span style={{ fontWeight: 'bold' }}>{collector.rating.toFixed(1)}</span>
+                        <span style={{ fontSize: '0.875rem', color: '#666' }}>({collector.completionRate}%)</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.875rem', 
+                          backgroundColor: '#1976d2', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px', 
+                          cursor: 'pointer' 
+                        }}>View</button>
+                        <button style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.875rem', 
+                          backgroundColor: '#ff9800', 
+                          color: 'white', 
+                          border: 'none', 
+                          borderRadius: '4px', 
+                          cursor: 'pointer' 
+                        }}>Edit</button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
+                      {loading ? 'Loading collectors...' : 'No collectors found'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

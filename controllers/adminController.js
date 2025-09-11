@@ -278,8 +278,233 @@ const getAdminStats = async (req, res) => {
   }
 };
 
+/**
+ * Get real users data for admin dashboard
+ */
+const getAllUsers = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { page = 1, limit = 50 } = req.query;
+    
+    // Get regular users (not admin, collector, or factory)
+    const users = await User.find({ role: 'user' })
+      .select('personalInfo.name personalInfo.email personalInfo.phone ecoWallet role accountStatus createdAt')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+    
+    const total = await User.countDocuments({ role: 'user' });
+    
+    // Get user collections count
+    const usersWithStats = await Promise.all(
+      users.map(async (user) => {
+        const collectionsCount = await GarbageCollection.countDocuments({ userId: user._id });
+        const completedCollections = await GarbageCollection.countDocuments({ 
+          userId: user._id, 
+          status: { $in: ['completed', 'delivered', 'verified'] } 
+        });
+        
+        return {
+          _id: user._id,
+          name: user.personalInfo.name,
+          email: user.personalInfo.email,
+          phone: user.personalInfo.phone,
+          role: user.role,
+          accountStatus: user.accountStatus,
+          ecoTokens: user.ecoWallet.currentBalance,
+          totalEarned: user.ecoWallet.totalEarned,
+          totalCollections: collectionsCount,
+          completedCollections: completedCollections,
+          joinedDate: user.createdAt
+        };
+      })
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        users: usersWithStats,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get real collectors data for admin dashboard
+ */
+const getAllCollectors = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { page = 1, limit = 50 } = req.query;
+    
+    const collectors = await User.find({ role: 'collector' })
+      .select('personalInfo.name personalInfo.email personalInfo.phone collectorStats accountStatus createdAt')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+    
+    const total = await User.countDocuments({ role: 'collector' });
+    
+    // Get collector statistics
+    const collectorsWithStats = await Promise.all(
+      collectors.map(async (collector) => {
+        const assignedCollections = await GarbageCollection.countDocuments({ collectorId: collector._id });
+        const completedCollections = await GarbageCollection.countDocuments({ 
+          collectorId: collector._id, 
+          status: { $in: ['completed', 'delivered', 'verified'] } 
+        });
+        const pendingCollections = await GarbageCollection.countDocuments({ 
+          collectorId: collector._id, 
+          status: { $in: ['scheduled', 'in_progress', 'collected'] } 
+        });
+        
+        // Calculate completion rate
+        const completionRate = assignedCollections > 0 ? 
+          Math.round((completedCollections / assignedCollections) * 100) : 0;
+        
+        return {
+          _id: collector._id,
+          name: collector.personalInfo.name,
+          email: collector.personalInfo.email,
+          phone: collector.personalInfo.phone,
+          role: collector.role,
+          accountStatus: collector.accountStatus,
+          totalEarnings: collector.collectorStats?.totalEarnings || 0,
+          totalCollections: collector.collectorStats?.totalCollections || 0,
+          assignedCollections: assignedCollections,
+          completedCollections: completedCollections,
+          pendingCollections: pendingCollections,
+          completionRate: completionRate,
+          rating: collector.collectorStats?.averageRating || 0,
+          joinedDate: collector.createdAt
+        };
+      })
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        collectors: collectorsWithStats,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching collectors:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch collectors',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get real factories data for admin dashboard
+ */
+const getAllFactories = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { page = 1, limit = 50 } = req.query;
+    
+    const factories = await User.find({ role: 'factory' })
+      .select('personalInfo companyInfo accountStatus createdAt')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+    
+    const total = await User.countDocuments({ role: 'factory' });
+    
+    // Get factory statistics (you might need to create a product/order model later)
+    const factoriesWithStats = await Promise.all(
+      factories.map(async (factory) => {
+        // For now, using collection statistics as proxy for materials processed
+        const materialsProcessed = await GarbageCollection.aggregate([
+          { $match: { factoryId: factory._id, status: { $in: ['delivered', 'verified', 'completed'] } } },
+          { $group: { _id: null, totalWeight: { $sum: '$collectionDetails.weight' } } }
+        ]);
+        
+        const totalProcessed = materialsProcessed[0]?.totalWeight || 0;
+        
+        return {
+          _id: factory._id,
+          name: factory.companyInfo?.name || factory.personalInfo.name,
+          email: factory.personalInfo.email,
+          phone: factory.personalInfo.phone,
+          role: factory.role,
+          accountStatus: factory.accountStatus,
+          materialsProcessed: Math.round(totalProcessed),
+          productsListed: 0, // Will be updated when product system is implemented
+          joinedDate: factory.createdAt
+        };
+      })
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        factories: factoriesWithStats,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching factories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch factories',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getCollectionsForPayment,
   processCollectorPayment,
-  getAdminStats
+  getAdminStats,
+  getAllUsers,
+  getAllCollectors,
+  getAllFactories
 };

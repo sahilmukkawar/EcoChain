@@ -43,6 +43,49 @@ export interface AdminStats {
   totalEcoTokensIssued: number;
 }
 
+export interface UserData {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  accountStatus: string;
+  ecoTokens: number;
+  totalEarned: number;
+  totalCollections: number;
+  completedCollections: number;
+  joinedDate: string;
+}
+
+export interface CollectorData {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  accountStatus: string;
+  totalEarnings: number;
+  totalCollections: number;
+  assignedCollections: number;
+  completedCollections: number;
+  pendingCollections: number;
+  completionRate: number;
+  rating: number;
+  joinedDate: string;
+}
+
+export interface FactoryData {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  accountStatus: string;
+  materialsProcessed: number;
+  productsListed: number;
+  joinedDate: string;
+}
+
 class AdminService {
   private baseURL = '/admin';
 
@@ -90,6 +133,39 @@ class AdminService {
     } catch (error: any) {
       console.error('Error fetching admin stats:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch admin statistics');
+    }
+  }
+
+  // Get real users data
+  async getAllUsers(page: number = 1, limit: number = 50) {
+    try {
+      const response = await api.get(`${this.baseURL}/users?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch users');
+    }
+  }
+
+  // Get real collectors data
+  async getAllCollectors(page: number = 1, limit: number = 50) {
+    try {
+      const response = await api.get(`${this.baseURL}/collectors?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching collectors:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch collectors');
+    }
+  }
+
+  // Get real factories data
+  async getAllFactories(page: number = 1, limit: number = 50) {
+    try {
+      const response = await api.get(`${this.baseURL}/factories?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching factories:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch factories');
     }
   }
 }
