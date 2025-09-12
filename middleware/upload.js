@@ -1,11 +1,29 @@
 // middleware/upload.js
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
-// Configure storage
+// Ensure directories exist
+const ensureDirectoryExists = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
+
+// Configure storage for different types of uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'public/uploads/waste-submissions/');
+    // Check if it's a product image upload
+    if (req.originalUrl && req.originalUrl.includes('/marketplace')) {
+      const uploadPath = 'public/uploads/product-images/';
+      ensureDirectoryExists(uploadPath);
+      cb(null, uploadPath);
+    } else {
+      // Default to waste submissions
+      const uploadPath = 'public/uploads/waste-submissions/';
+      ensureDirectoryExists(uploadPath);
+      cb(null, uploadPath);
+    }
   },
   filename: function (req, file, cb) {
     // Create unique filename

@@ -7,24 +7,23 @@ const { authenticate } = require('../middleware/auth');
 // Create new order
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { orderItems, shippingAddress, paymentMethod, ecoTokensToUse = 0 } = req.body;
+    const { items, shipping, payment, notes } = req.body;
     
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Validate eco tokens
-    if (ecoTokensToUse > user.ecoWallet.currentBalance) {
-      return res.status(400).json({ success: false, message: 'Insufficient EcoTokens' });
-    }
-
     // Calculate order details
     let subtotal = 0;
+    let totalTokens = 0;
     const processedItems = [];
 
-    for (const item of orderItems) {
+    for (const item of items) {
+      // Use the correct Product model from database/models
+      const { Product } = require('../database/models');
       const product = await Product.findById(item.productId);
+      
       if (!product || !product.isInStock()) {
         return res.status(400).json({ 
           success: false, 
@@ -32,76 +31,70 @@ router.post('/', authenticate, async (req, res) => {
         });
       }
 
-      const itemTotal = product.finalPrice * item.quantity;
+      // Check if requested quantity is available
+      if (item.quantity > product.inventory.currentStock) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Insufficient stock for ${product.productInfo.name}. Only ${product.inventory.currentStock} available.` 
+        });
+      }
+
+      const itemTotal = product.pricing.sellingPrice * item.quantity;
+      const itemTokenTotal = product.pricing.costPrice * item.quantity;
       subtotal += itemTotal;
+      totalTokens += itemTokenTotal;
 
       processedItems.push({
         productId: product._id,
         quantity: item.quantity,
-        unitPrice: product.finalPrice,
-        totalPrice: itemTotal,
-        ecoTokensUsed: 0 // Will be calculated proportionally
+        price: product.pricing.sellingPrice,
+        tokenPrice: product.pricing.costPrice,
+        totalPrice: itemTotal
       });
     }
-
-    // Calculate token usage (max 30% of order value)
-    const maxTokenUsage = Math.floor(subtotal * 0.3 / 0.1); // Assuming 1 token = 0.1 rupees
-    const tokensToUse = Math.min(ecoTokensToUse, maxTokenUsage);
-    const tokenValue = tokensToUse * 0.1;
 
     // Calculate final amounts
     const taxes = subtotal * 0.18; // 18% GST
     const shippingCharges = subtotal > 500 ? 0 : 50;
-    const finalAmount = subtotal + taxes + shippingCharges - tokenValue;
+    const finalAmount = subtotal + taxes + shippingCharges;
 
     const order = new Order({
       userId: req.user.id,
       orderItems: processedItems,
       billing: {
         subtotal,
-        ecoTokensApplied: tokensToUse,
-        ecoTokenValue: tokenValue,
         taxes,
         shippingCharges,
         discount: 0,
         finalAmount
       },
       payment: {
-        method: paymentMethod,
+        method: payment.method,
         status: 'pending'
       },
       shipping: {
-        address: shippingAddress,
+        address: {
+          name: shipping.fullName || user.personalInfo.name,
+          phone: shipping.phone || user.personalInfo.phone,
+          street: shipping.address,
+          city: shipping.city,
+          state: shipping.state,
+          zipCode: shipping.zipCode,
+          country: shipping.country || 'India'
+        },
         estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
       }
     });
 
     await order.save();
 
-    // Deduct tokens if used
-    if (tokensToUse > 0) {
-      await user.spendTokens(tokensToUse, `Order payment - ${order.orderId}`);
-      
-      // Create token transaction record
-      await EcoTokenTransaction.createTransaction({
-        userId: req.user.id,
-        transactionType: 'spent',
-        details: {
-          amount: tokensToUse,
-          monetaryValue: tokenValue,
-          description: `Payment for order ${order.orderId}`,
-          referenceId: order.orderId
-        },
-        metadata: {
-          source: 'purchase',
-          relatedEntity: order._id,
-          entityType: 'Order'
-        },
-        walletBalance: {
-          beforeTransaction: user.ecoWallet.currentBalance + tokensToUse,
-          afterTransaction: user.ecoWallet.currentBalance
-        }
-      });
+    // Update product inventory
+    for (const item of processedItems) {
+      const { Product } = require('../database/models');
+      const product = await Product.findById(item.productId);
+      if (product) {
+        await product.updateStock(item.quantity, 'subtract');
+      }
     }
 
     res.status(201).json({
@@ -161,8 +154,28 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 });
 
+// Get order by tracking number (public endpoint)
+router.get('/tracking/:trackingNumber', async (req, res) => {
+  try {
+    const order = await Order.findOne({ 'shipping.trackingNumber': req.params.trackingNumber })
+      .populate('orderItems.productId', 'productInfo.name productInfo.images')
+      .populate('userId', 'personalInfo.name personalInfo.email');
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    res.json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Update order status (Admin/Factory only)
-router.patch('/:id/status', authenticate, async (req, res) => {
+router.put('/:id/status', authenticate, async (req, res) => {
   try {
     if (!['admin', 'factory'].includes(req.user.role)) {
       return res.status(403).json({ success: false, message: 'Access denied' });
@@ -211,32 +224,6 @@ router.patch('/:id/cancel', authenticate, async (req, res) => {
     }
 
     await order.updateStatus('cancelled');
-
-    // Refund tokens if used
-    if (order.billing.ecoTokensApplied > 0) {
-      const user = await User.findById(req.user.id);
-      await user.addTokens(order.billing.ecoTokensApplied, `Refund for cancelled order ${order.orderId}`);
-      
-      await EcoTokenTransaction.createTransaction({
-        userId: req.user.id,
-        transactionType: 'refund',
-        details: {
-          amount: order.billing.ecoTokensApplied,
-          monetaryValue: order.billing.ecoTokenValue,
-          description: `Refund for cancelled order ${order.orderId}`,
-          referenceId: order.orderId
-        },
-        metadata: {
-          source: 'refund',
-          relatedEntity: order._id,
-          entityType: 'Order'
-        },
-        walletBalance: {
-          beforeTransaction: user.ecoWallet.currentBalance - order.billing.ecoTokensApplied,
-          afterTransaction: user.ecoWallet.currentBalance
-        }
-      });
-    }
 
     res.json({
       success: true,

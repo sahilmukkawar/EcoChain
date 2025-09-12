@@ -16,19 +16,23 @@ interface Product {
   imageUrl?: string;
   sustainabilityScore?: number;
   status?: 'available' | 'sold_out';
+  factoryName?: string;
+  stock: number;
 }
 
 // Function to convert API product to our Product interface
 const mapApiProductToProduct = (apiProduct: MarketplaceItem): Product => ({
   id: apiProduct._id,
-  name: apiProduct.name,
-  description: apiProduct.description,
-  price: apiProduct.price.fiatAmount || 0,
-  tokenPrice: apiProduct.price.tokenAmount || 0,
-  category: apiProduct.category,
-  imageUrl: apiProduct.images?.[0] || 'https://via.placeholder.com/150',
-  sustainabilityScore: apiProduct.sustainabilityScore || 85,
-  status: apiProduct.status === 'sold_out' ? 'sold_out' : 'available'
+  name: apiProduct.productInfo.name,
+  description: apiProduct.productInfo.description,
+  price: apiProduct.pricing.costPrice || 0,
+  tokenPrice: apiProduct.pricing.sellingPrice || 0,
+  category: apiProduct.productInfo.category,
+  imageUrl: apiProduct.productInfo.images?.[0] || '/uploads/default-product.svg',
+  sustainabilityScore: apiProduct.sustainability.recycledMaterialPercentage || 85,
+  status: apiProduct.inventory.currentStock > 0 && apiProduct.availability.isActive ? 'available' : 'sold_out',
+  factoryName: apiProduct.factoryId?.companyInfo?.name,
+  stock: apiProduct.inventory.currentStock
 });
 
 const Marketplace: React.FC = () => {
@@ -42,7 +46,7 @@ const Marketplace: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'popular'|'price_low'|'price_high'>('popular');
+  const [sortBy, setSortBy] = useState<'popular'|'price_low'|'price_high'|'rating'>('popular');
   const [page, setPage] = useState(1);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const pageSize = 12;
@@ -52,9 +56,9 @@ const Marketplace: React.FC = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const apiProducts = await marketplaceService.getAllItems();
+        const response = await marketplaceService.getProducts();
         // Map API products to our Product interface
-        const mappedProducts = apiProducts.map(mapApiProductToProduct);
+        const mappedProducts = response.map(mapApiProductToProduct);
         setProducts(mappedProducts);
         setError(null);
       } catch (e) {
@@ -77,11 +81,13 @@ const Marketplace: React.FC = () => {
       const t = searchTerm.toLowerCase();
       result = result.filter(p =>
         (p.name || '').toLowerCase().includes(t) ||
-        (p.description || '').toLowerCase().includes(t)
+        (p.description || '').toLowerCase().includes(t) ||
+        (p.factoryName || '').toLowerCase().includes(t)
       );
     }
     if (sortBy === 'price_low') result.sort((a,b) => a.price - b.price);
     if (sortBy === 'price_high') result.sort((a,b) => b.price - a.price);
+    if (sortBy === 'rating') result.sort((a,b) => (b.sustainabilityScore || 0) - (a.sustainabilityScore || 0));
     // popular keeps seed order
     const total = result.length;
     const start = (page-1)*pageSize;
@@ -139,7 +145,7 @@ const Marketplace: React.FC = () => {
         <div className="search-bar">
           <input 
             type="text" 
-            placeholder="Search products..." 
+            placeholder="Search products or factories..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -172,8 +178,21 @@ const Marketplace: React.FC = () => {
             filteredProducts.map(p => (
               <div className="product-card" key={p.id}>
                 <div className="product-image">
-                  <img src={p.imageUrl || '/logo192.png'} alt={p.name} />
+                  <img 
+                    src={p.imageUrl || '/uploads/default-product.svg'} 
+                    alt={p.name} 
+                    onError={(e) => {
+                      // Fallback to default image if the image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/uploads/default-product.svg';
+                    }}
+                  />
                   {p.status === 'sold_out' && <span className="out-of-stock">Sold Out</span>}
+                  {p.factoryName && (
+                    <div className="factory-tag">
+                      By {p.factoryName}
+                    </div>
+                  )}
                 </div>
                 <div className="product-info">
                   <h3>{p.name}</h3>
@@ -181,15 +200,29 @@ const Marketplace: React.FC = () => {
                   <div className="product-meta">
                     <span className="product-price">₹{p.price} + {p.tokenPrice} EcoTokens</span>
                     {typeof p.sustainabilityScore === 'number' && (
-                      <span className="product-score">♻ {p.sustainabilityScore}</span>
+                      <span className="product-score">♻ {p.sustainabilityScore}%</span>
                     )}
+                    <span className="product-stock">
+                      {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
+                    </span>
                   </div>
                   <button 
                     className="add-to-cart-button" 
-                    disabled={p.status === 'sold_out'}
-                    onClick={() => p.status !== 'sold_out' && addToCart(p)}
+                    disabled={p.status === 'sold_out' || p.stock <= 0}
+                    onClick={() => p.status !== 'sold_out' && p.stock > 0 && addToCart({
+                      id: p.id,
+                      name: p.name,
+                      description: p.description,
+                      price: p.price,
+                      tokenPrice: p.tokenPrice,
+                      category: p.category,
+                      imageUrl: p.imageUrl,
+                      sustainabilityScore: p.sustainabilityScore,
+                      status: p.status,
+                      stock: p.stock
+                    })}
                   >
-                    {p.status === 'sold_out' ? 'Sold Out' : 'Add to Cart'}
+                    {p.status === 'sold_out' || p.stock <= 0 ? 'Sold Out' : 'Add to Cart'}
                   </button>
                 </div>
               </div>
@@ -227,7 +260,12 @@ const Marketplace: React.FC = () => {
                     <div className="quantity-controls">
                       <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>-</button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>+</button>
+                      <button 
+                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                        disabled={item.quantity >= (item.product.stock || 0)}
+                      >
+                        +
+                      </button>
                     </div>
                     <button className="remove-button" onClick={() => removeFromCart(item.product.id)}>Remove</button>
                   </div>
@@ -248,7 +286,7 @@ const Marketplace: React.FC = () => {
                 <span>Total:</span>
                 <span>₹{cartTotal - (maxTokensUsable * 5)}</span>
               </div>
-              <button className="checkout-button">Proceed to Checkout</button>
+              <Link to="/checkout" className="checkout-button">Proceed to Checkout</Link>
             </div>
           </div>
         )}

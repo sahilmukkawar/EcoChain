@@ -12,6 +12,7 @@ import WasteSubmission from './pages/WasteSubmission.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import AdminDashboard from './pages/AdminDashboard.tsx';
 import FactoryDashboard from './pages/FactoryDashboard.tsx';
+import FactoryProductManagement from './pages/FactoryProductManagement.tsx';
 import CollectorDashboard from './pages/CollectorDashboard.tsx';
 import Checkout from './pages/Checkout.tsx';
 import OrderConfirmation from './pages/OrderConfirmation.tsx';
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['user']} />} />
                 <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
                 <Route path="/factory-dashboard" element={<ProtectedRoute element={<FactoryDashboard />} allowedRoles={['factory']} />} />
+                <Route path="/factory-product-management" element={<ProtectedRoute element={<FactoryProductManagement />} allowedRoles={['factory']} />} />
                 <Route path="/collector-dashboard" element={<ProtectedRoute element={<CollectorDashboard />} allowedRoles={['collector']} />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />

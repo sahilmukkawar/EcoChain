@@ -194,6 +194,7 @@ router.get('/products', auth, async (req, res) => {
 
     const { page = 1, limit = 10 } = req.query;
 
+    const { Product } = require('../database/models');
     const products = await Product.find({ factoryId: factory._id })
       .limit(limit * 1)
       .skip((page - 1) * limit)

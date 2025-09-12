@@ -59,6 +59,8 @@ app.get('/', (req, res) => {
 const apiRoutes = require('./routes');
 // Serve static assets under API for dev proxy compatibility
 app.use('/api/assets', express.static('public'));
+// Serve product images specifically (this should come before general uploads)
+app.use('/uploads/product-images', express.static('public/uploads/product-images'));
 // Serve uploaded files
 app.use('/uploads', express.static('public/uploads'));
 app.use('/api', apiRoutes);

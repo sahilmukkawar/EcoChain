@@ -4,6 +4,30 @@ const router = express.Router();
 const { Product, Factory, ProductReview } = require('../database/models');
 const { authenticate } = require('../middleware/auth');
 
+// Get factory's products (must be before :id route)
+router.get('/my-products', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'factory') {
+      return res.status(403).json({ success: false, message: 'Only factories can access this endpoint' });
+    }
+
+    // Find factory profile
+    const factory = await Factory.findOne({ userId: req.user.id });
+    if (!factory) {
+      return res.status(404).json({ success: false, message: 'Factory profile not found' });
+    }
+
+    const products = await Product.find({ factoryId: factory._id });
+    
+    res.json({
+      success: true,
+      data: products
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Get all products with filters and pagination
 router.get('/', async (req, res) => {
   try {

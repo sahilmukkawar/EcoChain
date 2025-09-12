@@ -1,7 +1,0 @@
-echo "After you mark the collections as collected, run this command to verify:"
-echo ""
-echo "cd \"c:\Users\soham\OneDrive\Desktop\EcoChain\"; node debug-payments.js"
-echo ""
-echo "You should then see:"
-echo "- 🚨 COLLECTIONS WAITING FOR COLLECTOR ACTION (0)"  
-echo "- 💰 COLLECTIONS READY FOR ADMIN PAYMENT (5)"

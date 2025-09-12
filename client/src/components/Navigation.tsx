@@ -43,6 +43,7 @@ const Navigation: React.FC = () => {
         return [
           ...commonItems,
           { to: '/factory-dashboard', label: 'Factory Dashboard', icon: '🏭' },
+          { to: '/factory-product-management', label: 'Product Management', icon: '📦' },
           { to: '/materials', label: 'Materials', icon: '📦' },
           { to: '/production', label: 'Production', icon: '⚡' },
           { to: '/orders', label: 'Orders', icon: '📋' }

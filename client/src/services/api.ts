@@ -182,8 +182,8 @@ interface ShippingData {
   city: string;
   state: string;
   zipCode: string;
-  coordinates?: [number, number];
-  method: string;
+  country: string;
+  phone: string;
 }
 
 interface OrderData {
@@ -195,30 +195,62 @@ interface OrderData {
   notes?: string;
 }
 
+// Updated interface for order response
+interface OrderItem {
+  productId: string;
+  quantity: number;
+  price: number;
+  tokenPrice: number;
+  product: {
+    name: string;
+    description: string;
+    images: string[];
+  };
+}
+
+interface Order {
+  _id: string;
+  orderId: string;
+  userId: string;
+  orderItems: OrderItem[];
+  totalAmount: number;
+  totalTokens: number;
+  status: string;
+  shippingAddress: ShippingData;
+  paymentMethod: string;
+  createdAt: string;
+  estimatedDelivery?: string;
+}
+
 const marketplaceAPI = {
   // Get all products
   getProducts: (filters?: { category?: string; subCategory?: string; tags?: string[]; }) => {
-    return api.get('/marketplace/products', { params: filters });
+    return api.get('/marketplace', { params: filters });
   },
   
   // Get product by ID
   getProductById: (productId: string) => {
-    return api.get(`/marketplace/products/${productId}`);
+    return api.get(`/marketplace/${productId}`);
+  },
+  
+  // Get factory's products
+  getFactoryProducts: () => {
+    return api.get('/marketplace/my-products');
   },
   
   // Create new product (for factories)
   createProduct: (productData: ProductData) => {
-    return api.post('/marketplace/products', productData);
+    return api.post('/marketplace', productData);
   },
   
   // Update product (for factories)
   updateProduct: (productId: string, productData: Partial<ProductData>) => {
-    return api.put(`/marketplace/products/${productId}`, productData);
+    return api.put(`/marketplace/${productId}`, productData);
   },
   
   // Delete product (for factories)
   deleteProduct: (productId: string) => {
-    return api.delete(`/marketplace/products/${productId}`);
+    return api.delete(`/marketplace/${productId}`);
   },
   
   // Create order

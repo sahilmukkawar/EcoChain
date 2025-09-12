@@ -18,8 +18,8 @@ router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
 router.use('/users', userRoutes);
 router.use('/collections', garbageCollectionRoutes);
+// Use marketplace routes for marketplace functionality
 router.use('/marketplace', marketplaceRoutes);
-router.use('/marketplace/products', productRoutes);
 router.use('/orders', orderRoutes);
 router.use('/transactions', transactionRoutes);
 router.use('/', ecoTokenRoutes);
