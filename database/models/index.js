@@ -8,6 +8,7 @@ const ProductReview = require('./ProductReview');
 const SystemConfiguration = require('./SystemConfiguration');
 const Transaction = require('./Transaction');
 const Analytics = require('./Analytics');
+const AdminPayment = require('./AdminPayment');
 
 module.exports = {
   User,
@@ -19,7 +20,8 @@ module.exports = {
   ProductReview,
   SystemConfiguration,
   Transaction,
-  Analytics
+  Analytics,
+  AdminPayment
 };
 
 

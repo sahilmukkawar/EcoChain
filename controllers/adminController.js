@@ -1,6 +1,7 @@
 // controllers/adminController.js
 const GarbageCollection = require('../database/models/GarbageCollection');
 const User = require('../database/models/User');
+const AdminPayment = require('../database/models/AdminPayment');
 const { calculateCollectorPayment } = require('../utils/paymentRates');
 const logger = require('../utils/logger');
 
@@ -104,6 +105,37 @@ const processCollectorPayment = async (req, res) => {
       // Admin rejected the collection
       await collection.updateStatus('rejected', adminNotes || 'Collection rejected by admin');
       
+      // Save rejection record in AdminPayment collection
+      await AdminPayment.createPaymentRecord({
+        collectionId: collection._id,
+        collectionDisplayId: collection.collectionId,
+        adminId: req.user.id,
+        collectorId: collection.collectorId,
+        userId: collection.userId,
+        action: 'rejected',
+        collectionDetails: {
+          wasteType: collection.collectionDetails.type,
+          weight: collection.collectionDetails.weight,
+          quality: collection.collectionDetails.quality,
+          pickupDate: collection.scheduling.actualPickupDate || collection.createdAt,
+          location: {
+            pickupAddress: collection.location.pickupAddress
+          }
+        },
+        rejectionReason: adminNotes || 'No reason provided',
+        adminNotes: adminNotes,
+        metadata: {
+          browserInfo: {
+            userAgent: req.get('User-Agent'),
+            ipAddress: req.ip || req.connection.remoteAddress
+          },
+          systemInfo: {
+            version: process.env.APP_VERSION || '1.0.0',
+            environment: process.env.NODE_ENV || 'development'
+          }
+        }
+      });
+      
       return res.json({
         success: true,
         message: 'Collection rejected',
@@ -190,6 +222,52 @@ const processCollectorPayment = async (req, res) => {
         calculation: paymentCalculation
       });
     }
+    
+    // Save payment approval record in AdminPayment collection
+    const adminPaymentRecord = await AdminPayment.createPaymentRecord({
+      collectionId: collection._id,
+      collectionDisplayId: collection.collectionId,
+      adminId: req.user.id,
+      collectorId: collection.collectorId,
+      userId: collection.userId,
+      action: 'approved',
+      paymentDetails: {
+        amount: collectorPaymentINR,
+        currency: 'INR',
+        paymentMethod: paymentMethod,
+        calculation: {
+          baseRate: paymentCalculation.breakdown.baseRate,
+          weight: collection.collectionDetails.weight,
+          qualityMultiplier: paymentCalculation.breakdown.qualityMultiplier,
+          bonuses: paymentCalculation.breakdown.bonuses || 0,
+          finalAmount: collectorPaymentINR,
+          breakdown: paymentCalculation
+        }
+      },
+      collectionDetails: {
+        wasteType: collection.collectionDetails.type,
+        weight: collection.collectionDetails.weight,
+        quality: collection.collectionDetails.quality,
+        pickupDate: collection.scheduling.actualPickupDate || collection.createdAt,
+        location: {
+          pickupAddress: collection.location.pickupAddress
+        }
+      },
+      adminNotes: adminNotes || `Payment approved and processed by admin: ${req.user.personalInfo?.name || req.user.name}`,
+      metadata: {
+        processingTime: req.startTime ? Date.now() - req.startTime : 0, // Handle case where req.startTime is not set
+        browserInfo: {
+          userAgent: req.get('User-Agent'),
+          ipAddress: req.ip || req.connection.remoteAddress
+        },
+        systemInfo: {
+          version: process.env.APP_VERSION || '1.0.0',
+          environment: process.env.NODE_ENV || 'development'
+        }
+      }
+    });
+    
+    console.log(`Payment record saved with ID: ${adminPaymentRecord.paymentId}`);
     
     res.json({
       success: true,
@@ -500,11 +578,208 @@ const getAllFactories = async (req, res) => {
   }
 };
 
+/**
+ * Get admin payment history with filtering and pagination
+ */
+const getPaymentHistory = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const {
+      page = 1,
+      limit = 20,
+      action, // 'approved' or 'rejected'
+      wasteType,
+      dateFrom,
+      dateTo,
+      collectorId,
+      minAmount,
+      maxAmount,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    // Build filters
+    const filters = {};
+    if (action) filters.action = action;
+    if (wasteType) filters.wasteType = wasteType;
+    if (dateFrom) filters.dateFrom = dateFrom;
+    if (dateTo) filters.dateTo = dateTo;
+    if (collectorId) filters.collectorId = collectorId;
+    if (minAmount) filters.minAmount = parseFloat(minAmount);
+    if (maxAmount) filters.maxAmount = parseFloat(maxAmount);
+    
+    // Build options
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder: sortOrder === 'desc' ? -1 : 1
+    };
+    
+    // Get payment history
+    const result = await AdminPayment.getPaymentHistory(filters, options);
+    
+    // Format response
+    const formattedPayments = result.payments.map(payment => ({
+      paymentId: payment.paymentId,
+      collectionId: payment.collectionDisplayId,
+      adminName: payment.adminId?.personalInfo?.name || 'Unknown Admin',
+      collectorName: payment.collectorId?.personalInfo?.name || 'Unknown Collector',
+      collectorEmail: payment.collectorId?.personalInfo?.email,
+      userName: payment.userId?.personalInfo?.name || 'Unknown User',
+      action: payment.action,
+      amount: payment.action === 'approved' ? payment.paymentDetails?.amount : null,
+      currency: payment.paymentDetails?.currency || 'INR',
+      paymentMethod: payment.paymentDetails?.paymentMethod,
+      wasteType: payment.collectionDetails.wasteType,
+      weight: payment.collectionDetails.weight,
+      quality: payment.collectionDetails.quality,
+      pickupDate: payment.collectionDetails.pickupDate,
+      adminNotes: payment.adminNotes,
+      rejectionReason: payment.rejectionReason,
+      processedAt: payment.processedAt,
+      status: payment.status,
+      location: payment.collectionDetails.location?.pickupAddress
+    }));
+    
+    res.json({
+      success: true,
+      data: {
+        payments: formattedPayments,
+        pagination: result.pagination
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching payment history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payment history',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get payment statistics for admin dashboard
+ */
+const getPaymentStatistics = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { dateFrom, dateTo, adminId } = req.query;
+    
+    const dateRange = {};
+    if (dateFrom) dateRange.from = dateFrom;
+    if (dateTo) dateRange.to = dateTo;
+    
+    const stats = await AdminPayment.getPaymentStatistics(adminId, dateRange);
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    logger.error('Error fetching payment statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch payment statistics',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Debug endpoint to check payment history status
+ */
+const debugPaymentHistory = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    // Count AdminPayment records
+    const adminPaymentCount = await AdminPayment.countDocuments();
+    
+    // Count paid collections
+    const paidCollectionsCount = await GarbageCollection.countDocuments({
+      'payment.collectorPaid': true
+    });
+    
+    // Get sample AdminPayment records
+    const samplePayments = await AdminPayment.find({})
+      .populate('adminId', 'personalInfo.name')
+      .populate('collectorId', 'personalInfo.name')
+      .limit(5)
+      .sort({ createdAt: -1 });
+    
+    // Get sample paid collections
+    const sampleCollections = await GarbageCollection.find({
+      'payment.collectorPaid': true
+    })
+    .populate('collectorId', 'personalInfo.name')
+    .limit(5)
+    .sort({ 'payment.collectorPaymentDate': -1 });
+    
+    res.json({
+      success: true,
+      data: {
+        adminPaymentRecords: {
+          count: adminPaymentCount,
+          sample: samplePayments.map(p => ({
+            paymentId: p.paymentId,
+            collectionId: p.collectionDisplayId,
+            action: p.action,
+            amount: p.paymentDetails?.amount,
+            processedAt: p.processedAt
+          }))
+        },
+        paidCollections: {
+          count: paidCollectionsCount,
+          sample: sampleCollections.map(c => ({
+            collectionId: c.collectionId,
+            collectorName: c.collectorId?.personalInfo?.name,
+            amount: c.payment?.collectorPaymentAmount,
+            paymentDate: c.payment?.collectorPaymentDate
+          }))
+        },
+        needsMigration: paidCollectionsCount > adminPaymentCount
+      }
+    });
+  } catch (error) {
+    logger.error('Error in debug payment history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to debug payment history',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getCollectionsForPayment,
   processCollectorPayment,
   getAdminStats,
   getAllUsers,
   getAllCollectors,
-  getAllFactories
+  getAllFactories,
+  getPaymentHistory,
+  getPaymentStatistics,
+  debugPaymentHistory
 };

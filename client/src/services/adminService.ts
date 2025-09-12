@@ -86,6 +86,45 @@ export interface FactoryData {
   joinedDate: string;
 }
 
+export interface PaymentHistoryItem {
+  paymentId: string;
+  collectionId: string;
+  adminName: string;
+  collectorName: string;
+  collectorEmail: string;
+  userName: string;
+  action: 'approved' | 'rejected';
+  amount: number | null;
+  currency: string;
+  paymentMethod?: string;
+  wasteType: string;
+  weight: number;
+  quality: string;
+  pickupDate: string;
+  adminNotes?: string;
+  rejectionReason?: string;
+  processedAt: string;
+  status: string;
+  location?: string;
+}
+
+export interface PaymentStatistics {
+  overview: {
+    totalPayments: number;
+    approvedPayments: number;
+    rejectedPayments: number;
+    totalAmountPaid: number;
+    avgPaymentAmount: number;
+  };
+  wasteTypeBreakdown: Array<{
+    _id: string;
+    count: number;
+    totalAmount: number;
+    avgAmount: number;
+    totalWeight: number;
+  }>;
+}
+
 class AdminService {
   private baseURL = '/admin';
 
@@ -166,6 +205,62 @@ class AdminService {
     } catch (error: any) {
       console.error('Error fetching factories:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch factories');
+    }
+  }
+
+  // Get payment history with filtering and pagination
+  async getPaymentHistory(filters: {
+    page?: number;
+    limit?: number;
+    action?: 'approved' | 'rejected';
+    wasteType?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    collectorId?: string;
+    minAmount?: number;
+    maxAmount?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  } = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add filters to query params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
+      
+      const response = await api.get(`${this.baseURL}/payments/history?${queryParams.toString()}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching payment history:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch payment history');
+    }
+  }
+
+  // Get payment statistics
+  async getPaymentStatistics(filters: {
+    dateFrom?: string;
+    dateTo?: string;
+    adminId?: string;
+  } = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add filters to query params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
+      
+      const response = await api.get(`${this.baseURL}/payments/statistics?${queryParams.toString()}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching payment statistics:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch payment statistics');
     }
   }
 }

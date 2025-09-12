@@ -22,4 +22,13 @@ router.get('/collectors', authenticate, adminController.getAllCollectors);
 // Get real factories data
 router.get('/factories', authenticate, adminController.getAllFactories);
 
+// Get payment history with filtering and pagination
+router.get('/payments/history', authenticate, adminController.getPaymentHistory);
+
+// Get payment statistics
+router.get('/payments/statistics', authenticate, adminController.getPaymentStatistics);
+
+// Debug payment history (temporary)
+router.get('/debug/payment-history', authenticate, adminController.debugPaymentHistory);
+
 module.exports = router;
