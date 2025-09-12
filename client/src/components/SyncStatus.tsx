@@ -1,7 +1,6 @@
 // client/src/components/SyncStatus.tsx
 import React from 'react';
 import { useSync } from '../contexts/SyncContext';
-import './SyncStatus.css';
 
 interface SyncStatusProps {
   showControls?: boolean;
@@ -63,16 +62,18 @@ const SyncStatus: React.FC<SyncStatusProps> = ({
 
   if (compact) {
     return (
-      <div className="sync-status-compact">
+      <div className="inline-flex items-center">
         {isSyncing ? (
-          <div className="sync-indicator">
-            <span className="sync-spinner"></span>
-            <span className="sync-text">Syncing...</span>
+          <div className="flex items-center text-sm text-blue-500">
+            <span className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full mr-2 animate-spin"></span>
+            <span className="font-medium">Syncing...</span>
           </div>
         ) : pendingUpdatesCount > 0 ? (
-          <div className="sync-indicator pending">
-            <span className="sync-badge">{pendingUpdatesCount}</span>
-            <span className="sync-text">Pending</span>
+          <div className="flex items-center text-sm text-red-500">
+            <span className="bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold mr-2">
+              {pendingUpdatesCount}
+            </span>
+            <span className="font-medium">Pending</span>
           </div>
         ) : null}
       </div>
@@ -80,59 +81,71 @@ const SyncStatus: React.FC<SyncStatusProps> = ({
   }
 
   return (
-    <div className="sync-status">
+    <div className="bg-gray-50 rounded-lg p-4 mb-5 shadow-sm relative">
       {showWebSocketStatus && (
-        <div className={`websocket-status ${isWebSocketConnected() ? 'connected' : 'disconnected'}`}>
-          <span className="websocket-indicator"></span>
-          <span className="websocket-text">
+        <div className={`flex items-center absolute top-2.5 right-2.5 text-xs px-2 py-1 rounded-full ${
+          isWebSocketConnected() 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800'
+        }`}>
+          <span className={`w-2 h-2 rounded-full mr-1.5 ${
+            isWebSocketConnected() 
+              ? 'bg-green-500 shadow-[0_0_5px_rgba(76,175,80,0.7)] animate-pulse' 
+              : 'bg-red-500'
+          }`}></span>
+          <span>
             {isWebSocketConnected() ? 'Real-time' : 'Offline'}
           </span>
         </div>
       )}
       <div className="sync-info">
-        <div className="sync-header">
-          <h4>Data Synchronization</h4>
+        <div className="flex justify-between items-center mb-3">
+          <h4 className="text-base font-semibold text-gray-800">Data Synchronization</h4>
           {pendingUpdatesCount > 0 && (
-            <span className="pending-badge">{pendingUpdatesCount}</span>
+            <span className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+              {pendingUpdatesCount}
+            </span>
           )}
         </div>
         
-        <div className="sync-details">
-          <div className="sync-item">
-            <span className="sync-label">Status:</span>
-            <span className={`sync-value ${isSyncing ? 'syncing' : ''}`}>
+        <div className="mb-4">
+          <div className="flex mb-2 text-sm">
+            <span className="w-32 text-gray-600">Status:</span>
+            <span className={`font-medium ${
+              isSyncing ? 'text-blue-500 animate-pulse' : 'text-gray-800'
+            }`}>
               {isSyncing ? 'Syncing...' : 'Idle'}
             </span>
           </div>
           
-          <div className="sync-item">
-            <span className="sync-label">Last sync:</span>
-            <span className="sync-value">{formatLastSync()}</span>
+          <div className="flex mb-2 text-sm">
+            <span className="w-32 text-gray-600">Last sync:</span>
+            <span className="font-medium text-gray-800">{formatLastSync()}</span>
           </div>
           
           {pendingUpdatesCount > 0 && (
-            <div className="sync-item">
-              <span className="sync-label">Pending updates:</span>
-              <span className="sync-value pending">{pendingUpdatesCount}</span>
+            <div className="flex text-sm">
+              <span className="w-32 text-gray-600">Pending updates:</span>
+              <span className="font-medium text-red-500">{pendingUpdatesCount}</span>
             </div>
           )}
         </div>
         
         {isSyncing && (
-          <div className="sync-progress">
+          <div className="h-2 bg-gray-200 rounded mb-4 relative overflow-hidden">
             <div 
-              className="sync-progress-bar" 
+              className="h-full bg-blue-500 rounded transition-all duration-300"
               style={{ width: `${syncProgress}%` }}
             ></div>
-            <span className="sync-progress-text">{syncProgress}%</span>
+            <span className="absolute right-2 -top-5 text-xs text-gray-600">{syncProgress}%</span>
           </div>
         )}
         
         {syncError && (
-          <div className="sync-error">
-            <p>{syncError}</p>
+          <div className="bg-red-50 border-l-4 border-red-500 p-3 mb-4 rounded flex justify-between items-center">
+            <p className="text-red-700 text-sm">{syncError}</p>
             <button 
-              className="sync-error-dismiss" 
+              className="text-gray-600 text-xs underline hover:text-gray-800"
               onClick={clearSyncError}
             >
               Dismiss
@@ -142,9 +155,13 @@ const SyncStatus: React.FC<SyncStatusProps> = ({
       </div>
       
       {showControls && (
-        <div className="sync-controls">
+        <div className="flex justify-end mt-4">
           <button 
-            className="sync-button" 
+            className={`px-4 py-2 text-sm rounded transition-colors ${
+              isSyncing 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
             onClick={handleSyncClick}
             disabled={isSyncing}
           >

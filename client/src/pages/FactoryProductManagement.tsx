@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProductForm from '../components/ProductForm.tsx';
 import marketplaceService, { MarketplaceItem, CreateMarketplaceItemData } from '../services/marketplaceService.ts';
-import './FactoryProductManagement.css';
 
 const FactoryProductManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -87,19 +86,19 @@ const FactoryProductManagement: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading products...</div>;
+    return <div className="text-center py-5 text-lg">Loading products...</div>;
   }
 
   if (error) {
-    return <div className="error">{error}</div>;
+    return <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">{error}</div>;
   }
 
   return (
-    <div className="factory-product-management">
-      <div className="page-header">
-        <h1>Product Management</h1>
+    <div className="max-w-6xl mx-auto px-5 py-5">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Product Management</h1>
         <button 
-          className="btn btn-primary" 
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
           onClick={() => setShowForm(!showForm)}
         >
           {showForm ? 'Cancel' : 'Add New Product'}
@@ -107,7 +106,7 @@ const FactoryProductManagement: React.FC = () => {
       </div>
 
       {showForm && (
-        <div className="product-form-container">
+        <div className="bg-gray-100 p-5 rounded-lg shadow-md mb-8">
           <ProductForm 
             product={editingProduct ? {
               productInfo: {
@@ -137,61 +136,74 @@ const FactoryProductManagement: React.FC = () => {
         </div>
       )}
 
-      <div className="products-list">
-        <h2>Your Products</h2>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Your Products</h2>
         {products.length === 0 ? (
-          <div className="no-products-message">
-            <p>You haven't added any products yet.</p>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+          <div className="text-center p-10 bg-gray-100 rounded-lg">
+            <p className="text-gray-600 text-lg mb-5">You haven't added any products yet.</p>
+            <button 
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              onClick={() => setShowForm(true)}
+            >
               Add Your First Product
             </button>
           </div>
         ) : (
-          <div className="products-grid">
-            {products.map((product) => (
-              <div key={product._id} className="product-card">
-                <div className="product-image">
-                  <img 
-                    src={(product.productInfo.images && product.productInfo.images[0]) || '/uploads/default-product.svg'} 
-                    alt={product.productInfo.name} 
-                  />
-                </div>
-                <div className="product-info">
-                  <h3 className="product-name">{product.productInfo.name}</h3>
-                  <p className="product-description">{product.productInfo.description}</p>
-                  <div className="product-details">
-                    <div className="product-price">
+          <div className="overflow-x-auto bg-white rounded-lg shadow-md">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-blue-500 text-white">
+                  <th className="text-left p-4 font-bold">Product</th>
+                  <th className="text-left p-4 font-bold">Price</th>
+                  <th className="text-left p-4 font-bold">Stock</th>
+                  <th className="text-left p-4 font-bold">Sustainability</th>
+                  <th className="text-left p-4 font-bold">Status</th>
+                  <th className="text-left p-4 font-bold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product._id} className="border-b border-gray-200 hover:bg-gray-50">
+                    <td className="p-4">
+                      <div className="font-bold mb-1">{product.productInfo.name}</div>
+                      <div className="text-sm text-gray-600">{product.productInfo.description}</div>
+                    </td>
+                    <td className="p-4">
                       ₹{product.pricing.costPrice} + {product.pricing.sellingPrice} Tokens
-                    </div>
-                    <div className="product-stock">
-                      Stock: {product.inventory.currentStock}
-                    </div>
-                    <div className="product-sustainability">
+                    </td>
+                    <td className="p-4">{product.inventory.currentStock}</td>
+                    <td className="p-4">
                       ♻ {product.sustainability.recycledMaterialPercentage}%
-                    </div>
-                    <div className="product-status">
-                      <span className={`status ${product.availability.isActive ? 'active' : 'inactive'}`}>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        product.availability.isActive 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-red-500 text-white'
+                      }`}>
                         {product.availability.isActive ? 'Active' : 'Inactive'}
                       </span>
-                    </div>
-                  </div>
-                  <div className="product-actions">
-                    <button 
-                      className="btn btn-small btn-secondary" 
-                      onClick={() => handleEdit(product)}
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      className="btn btn-small btn-danger" 
-                      onClick={() => handleDelete(product._id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-2">
+                        <button 
+                          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded text-sm transition-colors"
+                          onClick={() => handleEdit(product)}
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm transition-colors"
+                          onClick={() => handleDelete(product._id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

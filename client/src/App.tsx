@@ -1,10 +1,10 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import './App.css';
 import { AuthProvider } from './context/AuthContext.tsx';
 import { CartProvider } from './contexts/CartContext.tsx';
 import { EcoChainProvider } from './contexts/EcoChainContext.tsx';
 import Navigation from './components/Navigation.tsx';
+import Footer from './components/Footer.tsx';
 import ProtectedRoute from './components/ProtectedRoute.tsx';
 import Home from './pages/Home.tsx';
 import Marketplace from './pages/Marketplace.tsx';
@@ -27,9 +27,9 @@ function App() {
     <AuthProvider>
       <EcoChainProvider>
         <CartProvider>
-          <div className="App">
+          <div className="App flex flex-col min-h-screen">
             <Navigation />
-            <main className="App-content">
+            <main className="flex-grow">
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
@@ -48,9 +48,7 @@ function App() {
                 <Route path="/help" element={<CustomerHelpCenter />} />
               </Routes>
             </main>
-            <footer className="App-footer">
-              <p>&copy; {new Date().getFullYear()} EcoChain. All rights reserved.</p>
-            </footer>
+            <Footer />
           </div>
         </CartProvider>
       </EcoChainProvider>

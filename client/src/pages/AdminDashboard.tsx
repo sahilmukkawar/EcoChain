@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import '../App.css';
 import { useAuth } from '../context/AuthContext.tsx';
 import adminService, { 
   CollectionForPayment, 
@@ -46,6 +45,7 @@ const AdminDashboard: React.FC = () => {
       document.head.removeChild(style);
     };
   }, []);
+  
   const [paymentFilters, setPaymentFilters] = useState<{
     action: '' | 'approved' | 'rejected';
     wasteType: string;
@@ -395,6 +395,7 @@ const AdminDashboard: React.FC = () => {
       }
     };
 
+    // Check user role and load data accordingly
     if (user && user.role === 'admin') {
       fetchAdminData();
     } else {
@@ -471,7 +472,7 @@ const AdminDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div className="flex justify-center items-center h-screen mt-8">
         <div>Loading admin dashboard...</div>
       </div>
     );
@@ -479,8 +480,8 @@ const AdminDashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div style={{ margin: '32px' }}>
-        <div style={{ color: 'red', padding: '10px', backgroundColor: '#ffebee', borderRadius: '4px' }}>
+      <div className="m-8">
+        <div className="text-red-700 p-3 bg-red-100 rounded">
           Error: {error}
         </div>
       </div>
@@ -488,27 +489,17 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <h1>Admin Portal</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 12px',
-            borderRadius: '20px',
-            backgroundColor: isWebSocketConnected ? '#d4edda' : '#f8d7da',
-            border: `1px solid ${isWebSocketConnected ? '#c3e6cb' : '#f5c6cb'}`,
-            fontSize: '0.875rem'
-          }}>
-            <div style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: isWebSocketConnected ? '#28a745' : '#dc3545'
-            }}></div>
-            <span style={{ color: isWebSocketConnected ? '#155724' : '#721c24', fontWeight: 'bold' }}>
+    <div className="dashboard-container max-w-7xl mx-auto px-4 py-6">
+      <div className="dashboard-header flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Admin Portal</h1>
+        <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+            isWebSocketConnected ? 'bg-green-200 border border-green-300 text-green-800' : 'bg-red-200 border border-red-300 text-red-800'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${
+              isWebSocketConnected ? 'bg-green-500 shadow-[0_0_5px_rgba(76,175,80,0.7)] animate-pulse' : 'bg-red-500'
+            }`}></div>
+            <span>
               {isWebSocketConnected ? 'Live Updates ON' : 'Live Updates OFF'}
             </span>
           </div>
@@ -517,35 +508,16 @@ const AdminDashboard: React.FC = () => {
       
       {/* Real-time Notifications */}
       {notifications.length > 0 && (
-        <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000 }}>
+        <div className="fixed top-5 right-5 z-50">
           {notifications.map((notification, index) => (
             <div
               key={index}
-              style={{
-                backgroundColor: '#d4edda',
-                border: '1px solid #c3e6cb',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                marginBottom: '8px',
-                maxWidth: '350px',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                color: '#155724',
-                fontWeight: 'bold',
-                animation: 'slideInRight 0.3s ease-out'
-              }}
+              className="bg-green-200 border border-green-300 rounded-lg p-4 mb-2 max-w-sm shadow-lg text-green-800 font-bold animate-slideInRight"
             >
               {notification}
               <button
                 onClick={() => setNotifications(prev => prev.filter((_, i) => i !== index))}
-                style={{
-                  float: 'right',
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  color: '#155724',
-                  marginLeft: '8px'
-                }}
+                className="float-right bg-none border-none text-lg cursor-pointer text-green-800 ml-2"
               >
                 ×
               </button>
@@ -555,21 +527,14 @@ const AdminDashboard: React.FC = () => {
       )}
       
       {/* Navigation Tabs */}
-      <div style={{ marginBottom: '20px', borderBottom: '1px solid #ddd' }}>
-        <div style={{ display: 'flex', gap: '0' }}>
+      <div className="mb-5 border-b border-gray-300">
+        <div className="flex gap-0">
           <button
-            style={{
-              padding: '12px 24px',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              backgroundColor: activeTab === 'overview' ? '#2196F3' : '#f8f9fa',
-              color: activeTab === 'overview' ? 'white' : '#495057',
-              border: '1px solid #ddd',
-              borderBottom: activeTab === 'overview' ? '2px solid #2196F3' : '1px solid #ddd',
-              borderRadius: '8px 8px 0 0',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+            className={`px-6 py-3 text-base font-bold border border-gray-300 rounded-t-lg transition-all ${
+              activeTab === 'overview' 
+                ? 'bg-blue-500 text-white border-b-2 border-b-blue-500' 
+                : 'bg-gray-100 text-gray-700'
+            }`}
             onClick={() => {
               setActiveTab('overview');
               // Refresh data when switching to overview
@@ -579,18 +544,11 @@ const AdminDashboard: React.FC = () => {
             📊 Overview
           </button>
           <button
-            style={{
-              padding: '12px 24px',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              backgroundColor: activeTab === 'payments' ? '#2196F3' : '#f8f9fa',
-              color: activeTab === 'payments' ? 'white' : '#495057',
-              border: '1px solid #ddd',
-              borderBottom: activeTab === 'payments' ? '2px solid #2196F3' : '1px solid #ddd',
-              borderRadius: '8px 8px 0 0',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+            className={`px-6 py-3 text-base font-bold border border-gray-300 rounded-t-lg transition-all relative ${
+              activeTab === 'payments' 
+                ? 'bg-blue-500 text-white border-b-2 border-b-blue-500' 
+                : 'bg-gray-100 text-gray-700'
+            }`}
             onClick={() => {
               console.log('💰 Switching to Pending Payments tab');
               setActiveTab('payments');
@@ -598,21 +556,19 @@ const AdminDashboard: React.FC = () => {
               setTimeout(refreshAdminData, 100);
             }}
           >
-            💰 Pending Payments {collectionsForPayment.length > 0 && <span style={{backgroundColor: '#ffc107', color: '#000', padding: '2px 6px', borderRadius: '10px', fontSize: '0.75rem', marginLeft: '4px'}}>{collectionsForPayment.length}</span>}
+            💰 Pending Payments 
+            {collectionsForPayment.length > 0 && (
+              <span className="bg-yellow-500 text-black px-1.5 py-0.5 rounded-full text-xs ml-1 absolute -top-2 -right-2">
+                {collectionsForPayment.length}
+              </span>
+            )}
           </button>
           <button
-            style={{
-              padding: '12px 24px',
-              fontSize: '1rem',
-              fontWeight: 'bold',
-              backgroundColor: activeTab === 'history' ? '#2196F3' : '#f8f9fa',
-              color: activeTab === 'history' ? 'white' : '#495057',
-              border: '1px solid #ddd',
-              borderBottom: activeTab === 'history' ? '2px solid #2196F3' : '1px solid #ddd',
-              borderRadius: '8px 8px 0 0',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
+            className={`px-6 py-3 text-base font-bold border border-gray-300 rounded-t-lg transition-all ${
+              activeTab === 'history' 
+                ? 'bg-blue-500 text-white border-b-2 border-b-blue-500' 
+                : 'bg-gray-100 text-gray-700'
+            }`}
             onClick={() => {
               console.log('📋 Switching to Payment History tab');
               setActiveTab('history');
@@ -632,69 +588,87 @@ const AdminDashboard: React.FC = () => {
       {activeTab === 'overview' && (
         <>
           {/* Refresh Button */}
-          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="mb-4 flex justify-end">
             <button
               onClick={refreshAdminData}
               disabled={loading}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: loading ? '#6c757d' : '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className={`px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 ${
+                loading ? 'bg-gray-500 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'
+              }`}
             >
               {loading ? '🔄 Refreshing...' : '🔄 Refresh Data'}
             </button>
           </div>
           
           {/* System Overview */}
-          <section className="stats-section" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px,1fr))', gap:'16px'}}>
-            <div className="stat-card"><h3>Users</h3><p>{systemStats.totalUsers || 0}</p></div>
-            <div className="stat-card"><h3>Collectors</h3><p>{systemStats.totalCollectors || 0}</p></div>
-            <div className="stat-card"><h3>Factories</h3><p>{systemStats.totalFactories || 0}</p></div>
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow border border-gray-100">
+              <h3 className="text-gray-600 mb-2">Users</h3>
+              <p className="text-2xl font-bold">{systemStats.totalUsers || 0}</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow border border-gray-100">
+              <h3 className="text-gray-600 mb-2">Collectors</h3>
+              <p className="text-2xl font-bold">{systemStats.totalCollectors || 0}</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow border border-gray-100">
+              <h3 className="text-gray-600 mb-2">Factories</h3>
+              <p className="text-2xl font-bold">{systemStats.totalFactories || 0}</p>
+            </div>
           </section>
           
           {/* Secondary Stats */}
-          <section className="stats-section" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px,1fr))', gap:'16px', marginTop: '16px'}}>
-            <div className="stat-card"><h3>Waste Collections</h3><p>{systemStats.totalCollections || 0}</p></div>
-            <div className="stat-card" style={{backgroundColor: systemStats.pendingPayments > 0 ? '#fff3cd' : '#f8f9fa', border: systemStats.pendingPayments > 0 ? '2px solid #ffc107' : '1px solid #dee2e6'}}>
-              <h3 style={{color: systemStats.pendingPayments > 0 ? '#856404' : '#495057'}}>Pending Payments</h3>
-              <p style={{color: systemStats.pendingPayments > 0 ? '#856404' : '#495057', fontSize: '2rem', fontWeight: 'bold'}}>{systemStats.pendingPayments || 0}</p>
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            <div className="bg-white rounded-lg p-4 shadow border border-gray-100">
+              <h3 className="text-gray-600 mb-2">Waste Collections</h3>
+              <p className="text-2xl font-bold">{systemStats.totalCollections || 0}</p>
+            </div>
+            <div className={`rounded-lg p-4 shadow ${
+              systemStats.pendingPayments > 0 
+                ? 'bg-yellow-50 border-2 border-yellow-400' 
+                : 'bg-white border border-gray-200'
+            }`}>
+              <h3 className={`${
+                systemStats.pendingPayments > 0 ? 'text-yellow-800' : 'text-gray-600'
+              } mb-2`}>
+                Pending Payments
+              </h3>
+              <p className={`text-2xl font-bold ${
+                systemStats.pendingPayments > 0 ? 'text-yellow-800' : 'text-gray-600'
+              }`}>
+                {systemStats.pendingPayments || 0}
+              </p>
               {systemStats.pendingPayments > 0 && (
-                <p style={{fontSize: '0.875rem', color: '#856404', margin: '4px 0 0 0'}}>⚠️ Requires attention</p>
+                <p className="text-sm text-yellow-800 mt-1">⚠️ Requires attention</p>
               )}
             </div>
-            <div className="stat-card"><h3>EcoTokens</h3><p>{(systemStats.totalEcoTokensIssued || 0).toLocaleString()}</p></div>
+            <div className="bg-white rounded-lg p-4 shadow border border-gray-100">
+              <h3 className="text-gray-600 mb-2">EcoTokens</h3>
+              <p className="text-2xl font-bold">{(systemStats?.totalEcoTokensIssued ?? 0).toLocaleString()}</p>
+            </div>
           </section>
       
       {/* Collector Payment Management - Prominent Section */}
       {collectionsForPayment.length > 0 && (
-        <section id="payments" style={{marginTop: '24px', backgroundColor: '#fff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '2px solid #ffc107'}}>
-          <div style={{display: 'flex', alignItems: 'center', marginBottom: '20px'}}>
-            <div style={{backgroundColor: '#ffc107', color: '#000', padding: '8px', borderRadius: '50%', marginRight: '12px', fontSize: '1.5rem'}}>💰</div>
+        <section id="payments" className="mt-6 bg-white p-6 rounded-xl shadow border-2 border-yellow-500">
+          <div className="flex items-center mb-5">
+            <div className="bg-yellow-500 text-black p-2 rounded-full mr-3 text-xl">💰</div>
             <div>
-              <h2 style={{margin: 0, color: '#856404'}}>Collector Payments Required</h2>
-              <p style={{margin: '4px 0 0 0', color: '#666'}}>{collectionsForPayment.length} collection{collectionsForPayment.length !== 1 ? 's' : ''} waiting for payment approval</p>
+              <h2 className="m-0 text-yellow-800">Collector Payments Required</h2>
+              <p className="m-1 mt-0 text-gray-600">{collectionsForPayment.length} collection{collectionsForPayment.length !== 1 ? 's' : ''} waiting for payment approval</p>
             </div>
           </div>
           
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ backgroundColor: '#f8f9fa' }}>
+          <div className="bg-white rounded-lg overflow-hidden border border-gray-300">
+            <table className="w-full border-collapse">
+              <thead className="bg-gray-100">
                 <tr>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Collection ID</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Collector</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>User</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Waste Type</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Weight</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Calculated Payment (₹)</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Actions</th>
+                  <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Collection ID</th>
+                  <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Collector</th>
+                  <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">User</th>
+                  <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Waste Type</th>
+                  <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Weight</th>
+                  <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Calculated Payment (₹)</th>
+                  <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -727,69 +701,43 @@ const AdminDashboard: React.FC = () => {
                   const calculatedPayment = Math.round(baseRate * weight * qualityMultiplier);
                   
                   return (
-                    <tr key={collection._id} style={{backgroundColor: '#fefefe'}}>
-                      <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#0066cc' }}>{collection.collectionId}</td>
-                      <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
+                    <tr key={collection._id} className="bg-gray-50 hover:bg-gray-100">
+                      <td className="px-3 py-4 border-b border-gray-200 font-bold text-blue-600">{collection.collectionId}</td>
+                      <td className="px-3 py-4 border-b border-gray-200">
                         <div>
-                          <div style={{ fontWeight: 'bold' }}>{collection.collectorId?.personalInfo?.name || 'Unknown'}</div>
-                          <div style={{ fontSize: '0.875rem', color: '#666' }}>{collection.collectorId?.personalInfo?.email || ''}</div>
+                          <div className="font-bold">{collection.collectorId?.personalInfo?.name || 'Unknown'}</div>
+                          <div className="text-xs text-gray-600">{collection.collectorId?.personalInfo?.email || ''}</div>
                         </div>
                       </td>
-                      <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
+                      <td className="px-3 py-4 border-b border-gray-200">
                         {collection.userId?.personalInfo?.name || 'Unknown'}
                       </td>
-                      <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', textTransform: 'capitalize' }}>
+                      <td className="px-3 py-4 border-b border-gray-200 capitalize">
                         <div>
-                          <div style={{ fontWeight: 'bold' }}>{collection.collectionDetails?.type || 'N/A'}</div>
-                          <div style={{ fontSize: '0.875rem', color: '#666' }}>Quality: {collection.collectionDetails?.quality || 'fair'}</div>
+                          <div className="font-bold">{collection.collectionDetails?.type || 'N/A'}</div>
+                          <div className="text-xs text-gray-600">Quality: {collection.collectionDetails?.quality || 'fair'}</div>
                         </div>
                       </td>
-                      <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
+                      <td className="px-3 py-4 border-b border-gray-200 font-bold">
                         {collection.collectionDetails?.weight || 0} kg
                       </td>
-                      <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#28a745' }}>
+                      <td className="px-3 py-4 border-b border-gray-200 font-bold text-green-600">
                         <div>
-                          <div style={{ fontSize: '1.1rem' }}>₹{calculatedPayment}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#666' }}>@₹{baseRate}/kg × {qualityMultiplier}</div>
+                          <div className="text-lg">₹{calculatedPayment}</div>
+                          <div className="text-xs text-gray-600">@₹{baseRate}/kg × {qualityMultiplier}</div>
                         </div>
                       </td>
-                      <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                      <td className="px-3 py-4 border-b border-gray-200">
+                        <div className="flex gap-2">
                           <button 
-                            style={{ 
-                              padding: '10px 16px', 
-                              fontSize: '0.875rem', 
-                              backgroundColor: '#28a745', 
-                              color: 'white', 
-                              border: 'none', 
-                              borderRadius: '6px', 
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              boxShadow: '0 2px 4px rgba(40, 167, 69, 0.3)',
-                              transition: 'all 0.2s'
-                            }}
+                            className="px-4 py-2.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold shadow-md transition-all"
                             onClick={() => handleProcessPayment(collection._id)}
-                            onMouseOver={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#218838'}
-                            onMouseOut={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#28a745'}
                           >
                             ✅ Approve & Pay
                           </button>
                           <button 
-                            style={{ 
-                              padding: '10px 16px', 
-                              fontSize: '0.875rem', 
-                              backgroundColor: '#dc3545', 
-                              color: 'white', 
-                              border: 'none', 
-                              borderRadius: '6px', 
-                              cursor: 'pointer',
-                              fontWeight: 'bold',
-                              boxShadow: '0 2px 4px rgba(220, 53, 69, 0.3)',
-                              transition: 'all 0.2s'
-                            }}
+                            className="px-4 py-2.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold shadow-md transition-all"
                             onClick={() => handleRejectCollection(collection._id)}
-                            onMouseOver={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#c82333'}
-                            onMouseOut={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#dc3545'}
                           >
                             ❌ Reject
                           </button>
@@ -806,76 +754,55 @@ const AdminDashboard: React.FC = () => {
       
       {/* No Pending Payments Message */}
       {collectionsForPayment.length === 0 && (
-        <section style={{marginTop: '24px', backgroundColor: '#d4edda', padding: '20px', borderRadius: '8px', border: '1px solid #c3e6cb'}}>
-          <div style={{display: 'flex', alignItems: 'center'}}>
-            <div style={{backgroundColor: '#28a745', color: '#fff', padding: '8px', borderRadius: '50%', marginRight: '12px', fontSize: '1.2rem'}}>✅</div>
+        <section className="mt-6 bg-green-200 p-5 rounded-lg border border-green-300">
+          <div className="flex items-center">
+            <div className="bg-green-500 text-white p-2 rounded-full mr-3 text-lg">✅</div>
             <div>
-              <h3 style={{margin: 0, color: '#155724'}}>All Payments Up to Date</h3>
-              <p style={{margin: '4px 0 0 0', color: '#155724'}}>No collector payments are pending at this time.</p>
+              <h3 className="m-0 text-green-800">All Payments Up to Date</h3>
+              <p className="m-1 mt-0 text-green-800">No collector payments are pending at this time.</p>
             </div>
           </div>
         </section>
       )}
       
-      <div className="features-grid" style={{marginTop:16}}>
-        <div className="feature-card">
-          <h3>User Management</h3>
-          <p>Oversee users and roles</p>
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginTop: '16px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ backgroundColor: '#f5f5f5' }}>
+      <div className="features-grid mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="feature-card bg-white p-5 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-2">User Management</h3>
+          <p className="text-gray-600 mb-4">Oversee users and roles</p>
+          <div className="bg-white rounded-lg overflow-hidden shadow border border-gray-200 mt-4">
+            <table className="w-full border-collapse">
+              <thead className="bg-gray-100">
                 <tr>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>ID</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Name</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Email</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Role</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">ID</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Name</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Email</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Role</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.length > 0 ? users.map((user) => (
-                  <tr key={user._id}>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', color: '#0066cc', fontWeight: 'bold' }}>{user._id.slice(-6)}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>{user.name}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{user.email}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', textTransform: 'capitalize' }}>
-                      <span style={{ 
-                        backgroundColor: user.role === 'admin' ? '#ff9800' : '#4caf50', 
-                        color: 'white', 
-                        padding: '4px 8px', 
-                        borderRadius: '12px', 
-                        fontSize: '0.75rem',
-                        fontWeight: 'bold'
-                      }}>
+                  <tr key={user._id} className="hover:bg-gray-50">
+                    <td className="px-3 py-3 border-b border-gray-200 text-blue-600 font-bold">{user._id.slice(-6)}</td>
+                    <td className="px-3 py-3 border-b border-gray-200 font-bold">{user.name}</td>
+                    <td className="px-3 py-3 border-b border-gray-200">{user.email}</td>
+                    <td className="px-3 py-3 border-b border-gray-200 capitalize">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                        user.role === 'admin' ? 'bg-yellow-500 text-white' : 'bg-green-500 text-white'
+                      }`}>
                         {user.role}
                       </span>
                     </td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.875rem', 
-                          backgroundColor: '#1976d2', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer' 
-                        }}>View</button>
-                        <button style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.875rem', 
-                          backgroundColor: '#ff9800', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer' 
-                        }}>Edit</button>
+                    <td className="px-3 py-3 border-b border-gray-200">
+                      <div className="flex gap-2">
+                        <button className="px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">View</button>
+                        <button className="px-3 py-1.5 text-xs bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors">Edit</button>
                       </div>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
+                    <td colSpan={5} className="px-5 py-5 text-center italic text-gray-600">
                       {loading ? 'Loading users...' : 'No users found'}
                     </td>
                   </tr>
@@ -885,59 +812,43 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
         
-        <div className="feature-card">
-          <h3>Factory Management</h3>
-          <p>Manage recycling facilities</p>
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginTop: '16px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="feature-card bg-white p-5 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-2">Factory Management</h3>
+          <p className="text-gray-600 mb-4">Manage recycling facilities</p>
+          <div className="bg-white rounded-lg overflow-hidden shadow border border-gray-200 mt-4">
+            <table className="w-full border-collapse">
+              <thead className="bg-gray-100">
                 <tr>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>ID</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Name</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Materials Processed</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">ID</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Name</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Materials Processed</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {factories.length > 0 ? factories.map((factory) => (
-                  <tr key={factory._id}>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', color: '#0066cc', fontWeight: 'bold' }}>{factory._id.slice(-6)}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                  <tr key={factory._id} className="hover:bg-gray-50">
+                    <td className="px-3 py-3 border-b border-gray-200 text-blue-600 font-bold">{factory._id.slice(-6)}</td>
+                    <td className="px-3 py-3 border-b border-gray-200">
                       <div>
-                        <div style={{ fontWeight: 'bold' }}>{factory.name}</div>
-                        <div style={{ fontSize: '0.875rem', color: '#666' }}>{factory.email}</div>
+                        <div className="font-bold">{factory.name}</div>
+                        <div className="text-xs text-gray-600">{factory.email}</div>
                       </div>
                     </td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <div style={{ fontWeight: 'bold', color: '#2e7d32' }}>{factory.materialsProcessed} kg</div>
-                      <div style={{ fontSize: '0.875rem', color: '#666' }}>{factory.productsListed} products listed</div>
+                    <td className="px-3 py-3 border-b border-gray-200">
+                      <div className="font-bold text-green-700">{factory.materialsProcessed} kg</div>
+                      <div className="text-xs text-gray-600">{factory.productsListed} products listed</div>
                     </td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.875rem', 
-                          backgroundColor: '#1976d2', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer' 
-                        }}>View</button>
-                        <button style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.875rem', 
-                          backgroundColor: '#ff9800', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer' 
-                        }}>Edit</button>
+                    <td className="px-3 py-3 border-b border-gray-200">
+                      <div className="flex gap-2">
+                        <button className="px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">View</button>
+                        <button className="px-3 py-1.5 text-xs bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors">Edit</button>
                       </div>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={4} style={{ padding: '20px', textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
+                    <td colSpan={4} className="px-5 py-5 text-center italic text-gray-600">
                       {loading ? 'Loading factories...' : 'No factories found'}
                     </td>
                   </tr>
@@ -947,67 +858,51 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
         
-        <div className="feature-card">
-          <h3>Collector Management</h3>
-          <p>Manage waste collectors</p>
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginTop: '16px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="feature-card bg-white p-5 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-2">Collector Management</h3>
+          <p className="text-gray-600 mb-4">Manage waste collectors</p>
+          <div className="bg-white rounded-lg overflow-hidden shadow border border-gray-200 mt-4">
+            <table className="w-full border-collapse">
+              <thead className="bg-gray-100">
                 <tr>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>ID</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Name</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Collections</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Rating</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">ID</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Name</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Collections</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Rating</th>
+                  <th className="px-3 py-3 text-left border-b border-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {collectors.length > 0 ? collectors.map((collector) => (
-                  <tr key={collector._id}>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee', color: '#0066cc', fontWeight: 'bold' }}>{collector._id.slice(-6)}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+                  <tr key={collector._id} className="hover:bg-gray-50">
+                    <td className="px-3 py-3 border-b border-gray-200 text-blue-600 font-bold">{collector._id.slice(-6)}</td>
+                    <td className="px-3 py-3 border-b border-gray-200">
                       <div>
-                        <div style={{ fontWeight: 'bold' }}>{collector.name}</div>
-                        <div style={{ fontSize: '0.875rem', color: '#666' }}>{collector.email}</div>
+                        <div className="font-bold">{collector.name}</div>
+                        <div className="text-xs text-gray-600">{collector.email}</div>
                       </div>
                     </td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <div style={{ fontWeight: 'bold', color: '#2e7d32' }}>{collector.completedCollections}</div>
-                      <div style={{ fontSize: '0.875rem', color: '#666' }}>{collector.pendingCollections} pending</div>
+                    <td className="px-3 py-3 border-b border-gray-200">
+                      <div className="font-bold text-green-700">{collector.completedCollections}</div>
+                      <div className="text-xs text-gray-600">{collector.pendingCollections} pending</div>
                     </td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontSize: '1.2rem' }}>⭐</span>
-                        <span style={{ fontWeight: 'bold' }}>{collector.rating.toFixed(1)}</span>
-                        <span style={{ fontSize: '0.875rem', color: '#666' }}>({collector.completionRate}%)</span>
+                    <td className="px-3 py-3 border-b border-gray-200">
+                      <div className="flex items-center gap-1">
+                        <span className="text-lg">⭐</span>
+                        <span className="font-bold">{collector.rating.toFixed(1)}</span>
+                        <span className="text-xs text-gray-600">({collector.completionRate}%)</span>
                       </div>
                     </td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.875rem', 
-                          backgroundColor: '#1976d2', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer' 
-                        }}>View</button>
-                        <button style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.875rem', 
-                          backgroundColor: '#ff9800', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer' 
-                        }}>Edit</button>
+                    <td className="px-3 py-3 border-b border-gray-200">
+                      <div className="flex gap-2">
+                        <button className="px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">View</button>
+                        <button className="px-3 py-1.5 text-xs bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors">Edit</button>
                       </div>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan={5} style={{ padding: '20px', textAlign: 'center', fontStyle: 'italic', color: '#666' }}>
+                    <td colSpan={5} className="px-5 py-5 text-center italic text-gray-600">
                       {loading ? 'Loading collectors...' : 'No collectors found'}
                     </td>
                   </tr>
@@ -1017,8 +912,14 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
         
-        <div className="feature-card"><h3>Analytics</h3><p>Business intelligence</p></div>
-        <div className="feature-card"><h3>Configuration</h3><p>System and rules</p></div>
+        <div className="feature-card bg-white p-5 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-2">Analytics</h3>
+          <p className="text-gray-600">Business intelligence</p>
+        </div>
+        <div className="feature-card bg-white p-5 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-2">Configuration</h3>
+          <p className="text-gray-600">System and rules</p>
+        </div>
       </div>
         </>
       )}
@@ -1027,22 +928,13 @@ const AdminDashboard: React.FC = () => {
       {activeTab === 'payments' && (
         <>
           {/* Refresh Button */}
-          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="mb-4 flex justify-end">
             <button
               onClick={refreshAdminData}
               disabled={loading}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: loading ? '#6c757d' : '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className={`px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 ${
+                loading ? 'bg-gray-500 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'
+              }`}
             >
               {loading ? '🔄 Refreshing...' : '🔄 Refresh Payments'}
             </button>
@@ -1050,20 +942,11 @@ const AdminDashboard: React.FC = () => {
           
           {/* Alert for Pending Payments */}
           {collectionsForPayment.length > 0 && (
-            <div style={{
-              backgroundColor: '#fff3cd',
-              border: '1px solid #ffeaa7',
-              borderRadius: '8px',
-              padding: '16px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              boxShadow: '0 2px 4px rgba(255, 193, 7, 0.3)'
-            }}>
-              <div style={{ fontSize: '1.5rem', marginRight: '12px' }}>⚠️</div>
+            <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-5 flex items-center shadow-md">
+              <div className="text-xl mr-3">⚠️</div>
               <div>
-                <strong style={{ color: '#856404' }}>Action Required: </strong>
-                <span style={{ color: '#856404' }}>
+                <strong className="text-yellow-800">Action Required: </strong>
+                <span className="text-yellow-800">
                   {collectionsForPayment.length} collector payment{collectionsForPayment.length !== 1 ? 's' : ''} waiting for approval.
                 </span>
               </div>
@@ -1072,26 +955,26 @@ const AdminDashboard: React.FC = () => {
           
           {/* Collector Payment Management - Prominent Section */}
           {collectionsForPayment.length > 0 && (
-            <section style={{backgroundColor: '#fff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', border: '2px solid #ffc107'}}>
-              <div style={{display: 'flex', alignItems: 'center', marginBottom: '20px'}}>
-                <div style={{backgroundColor: '#ffc107', color: '#000', padding: '8px', borderRadius: '50%', marginRight: '12px', fontSize: '1.5rem'}}>💰</div>
+            <section className="bg-white p-6 rounded-xl shadow border-2 border-yellow-500">
+              <div className="flex items-center mb-5">
+                <div className="bg-yellow-500 text-black p-2 rounded-full mr-3 text-xl">💰</div>
                 <div>
-                  <h2 style={{margin: 0, color: '#856404'}}>Collector Payments Required</h2>
-                  <p style={{margin: '4px 0 0 0', color: '#666'}}>{collectionsForPayment.length} collection{collectionsForPayment.length !== 1 ? 's' : ''} waiting for payment approval</p>
+                  <h2 className="m-0 text-yellow-800">Collector Payments Required</h2>
+                  <p className="m-1 mt-0 text-gray-600">{collectionsForPayment.length} collection{collectionsForPayment.length !== 1 ? 's' : ''} waiting for payment approval</p>
                 </div>
               </div>
               
-              <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead style={{ backgroundColor: '#f8f9fa' }}>
+              <div className="bg-white rounded-lg overflow-hidden border border-gray-300">
+                <table className="w-full border-collapse">
+                  <thead className="bg-gray-100">
                     <tr>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Collection ID</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Collector</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>User</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Waste Type</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Weight</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Calculated Payment (₹)</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Actions</th>
+                      <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Collection ID</th>
+                      <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Collector</th>
+                      <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">User</th>
+                      <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Waste Type</th>
+                      <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Weight</th>
+                      <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Calculated Payment (₹)</th>
+                      <th className="px-3 py-4 text-left border-b-2 border-gray-300 font-bold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1124,69 +1007,43 @@ const AdminDashboard: React.FC = () => {
                       const calculatedPayment = Math.round(baseRate * weight * qualityMultiplier);
                       
                       return (
-                        <tr key={collection._id} style={{backgroundColor: '#fefefe'}}>
-                          <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#0066cc' }}>{collection.collectionId}</td>
-                          <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
+                        <tr key={collection._id} className="bg-gray-50 hover:bg-gray-100">
+                          <td className="px-3 py-4 border-b border-gray-200 font-bold text-blue-600">{collection.collectionId}</td>
+                          <td className="px-3 py-4 border-b border-gray-200">
                             <div>
-                              <div style={{ fontWeight: 'bold' }}>{collection.collectorId?.personalInfo?.name || 'Unknown'}</div>
-                              <div style={{ fontSize: '0.875rem', color: '#666' }}>{collection.collectorId?.personalInfo?.email || ''}</div>
+                              <div className="font-bold">{collection.collectorId?.personalInfo?.name || 'Unknown'}</div>
+                              <div className="text-xs text-gray-600">{collection.collectorId?.personalInfo?.email || ''}</div>
                             </div>
                           </td>
-                          <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
+                          <td className="px-3 py-4 border-b border-gray-200">
                             {collection.userId?.personalInfo?.name || 'Unknown'}
                           </td>
-                          <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', textTransform: 'capitalize' }}>
+                          <td className="px-3 py-4 border-b border-gray-200 capitalize">
                             <div>
-                              <div style={{ fontWeight: 'bold' }}>{collection.collectionDetails?.type || 'N/A'}</div>
-                              <div style={{ fontSize: '0.875rem', color: '#666' }}>Quality: {collection.collectionDetails?.quality || 'fair'}</div>
+                              <div className="font-bold">{collection.collectionDetails?.type || 'N/A'}</div>
+                              <div className="text-xs text-gray-600">Quality: {collection.collectionDetails?.quality || 'fair'}</div>
                             </div>
                           </td>
-                          <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
+                          <td className="px-3 py-4 border-b border-gray-200 font-bold">
                             {collection.collectionDetails?.weight || 0} kg
                           </td>
-                          <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#28a745' }}>
+                          <td className="px-3 py-4 border-b border-gray-200 font-bold text-green-600">
                             <div>
-                              <div style={{ fontSize: '1.1rem' }}>₹{calculatedPayment}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#666' }}>@₹{baseRate}/kg × {qualityMultiplier}</div>
+                              <div className="text-lg">₹{calculatedPayment}</div>
+                              <div className="text-xs text-gray-600">@₹{baseRate}/kg × {qualityMultiplier}</div>
                             </div>
                           </td>
-                          <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                          <td className="px-3 py-4 border-b border-gray-200">
+                            <div className="flex gap-2">
                               <button 
-                                style={{ 
-                                  padding: '10px 16px', 
-                                  fontSize: '0.875rem', 
-                                  backgroundColor: '#28a745', 
-                                  color: 'white', 
-                                  border: 'none', 
-                                  borderRadius: '6px', 
-                                  cursor: 'pointer',
-                                  fontWeight: 'bold',
-                                  boxShadow: '0 2px 4px rgba(40, 167, 69, 0.3)',
-                                  transition: 'all 0.2s'
-                                }}
+                                className="px-4 py-2.5 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold shadow-md transition-all"
                                 onClick={() => handleProcessPayment(collection._id)}
-                                onMouseOver={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#218838'}
-                                onMouseOut={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#28a745'}
                               >
                                 ✅ Approve & Pay
                               </button>
                               <button 
-                                style={{ 
-                                  padding: '10px 16px', 
-                                  fontSize: '0.875rem', 
-                                  backgroundColor: '#dc3545', 
-                                  color: 'white', 
-                                  border: 'none', 
-                                  borderRadius: '6px', 
-                                  cursor: 'pointer',
-                                  fontWeight: 'bold',
-                                  boxShadow: '0 2px 4px rgba(220, 53, 69, 0.3)',
-                                  transition: 'all 0.2s'
-                                }}
+                                className="px-4 py-2.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold shadow-md transition-all"
                                 onClick={() => handleRejectCollection(collection._id)}
-                                onMouseOver={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#c82333'}
-                                onMouseOut={(e) => (e.target as HTMLButtonElement).style.backgroundColor = '#dc3545'}
                               >
                                 ❌ Reject
                               </button>
@@ -1203,12 +1060,12 @@ const AdminDashboard: React.FC = () => {
           
           {/* No Pending Payments Message */}
           {collectionsForPayment.length === 0 && (
-            <section style={{backgroundColor: '#d4edda', padding: '20px', borderRadius: '8px', border: '1px solid #c3e6cb'}}>
-              <div style={{display: 'flex', alignItems: 'center'}}>
-                <div style={{backgroundColor: '#28a745', color: '#fff', padding: '8px', borderRadius: '50%', marginRight: '12px', fontSize: '1.2rem'}}>✅</div>
+            <section className="bg-green-200 p-5 rounded-lg border border-green-300">
+              <div className="flex items-center">
+                <div className="bg-green-500 text-white p-2 rounded-full mr-3 text-lg">✅</div>
                 <div>
-                  <h3 style={{margin: 0, color: '#155724'}}>All Payments Up to Date</h3>
-                  <p style={{margin: '4px 0 0 0', color: '#155724'}}>No collector payments are pending at this time.</p>
+                  <h3 className="m-0 text-green-800">All Payments Up to Date</h3>
+                  <p className="m-1 mt-0 text-green-800">No collector payments are pending at this time.</p>
                 </div>
               </div>
             </section>
@@ -1219,53 +1076,29 @@ const AdminDashboard: React.FC = () => {
       {/* Payment History Tab */}
       {activeTab === 'history' && (
         <>
-          {/* Payment Statistics */}
-          {paymentStats && (
-            <section style={{marginBottom: '24px'}}>
-              <h2 style={{marginBottom: '16px', color: '#495057'}}>📊 Payment Statistics</h2>
-              <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px,1fr))', gap:'16px', marginBottom: '20px'}}>
-                <div className="stat-card">
-                  <h3>Total Payments</h3>
-                  <p style={{fontSize: '2rem', fontWeight: 'bold', color: '#2196F3'}}>{paymentStats.overview.totalPayments}</p>
-                </div>
-                <div className="stat-card" style={{backgroundColor: '#e8f5e8'}}>
-                  <h3>Approved</h3>
-                  <p style={{fontSize: '2rem', fontWeight: 'bold', color: '#28a745'}}>{paymentStats.overview.approvedPayments}</p>
-                </div>
-                <div className="stat-card" style={{backgroundColor: '#ffeaa7'}}>
-                  <h3>Rejected</h3>
-                  <p style={{fontSize: '2rem', fontWeight: 'bold', color: '#dc3545'}}>{paymentStats.overview.rejectedPayments}</p>
-                </div>
-                <div className="stat-card" style={{backgroundColor: '#e3f2fd'}}>
-                  <h3>Total Amount Paid</h3>
-                  <p style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#1976d2'}}>₹{paymentStats.overview.totalAmountPaid.toLocaleString()}</p>
-                </div>
-              </div>
-            </section>
-          )}
-          
-          {/* Filters */}
-          <section style={{backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px'}}>
-            <h3 style={{margin: '0 0 16px 0', color: '#495057'}}>🔍 Filter Payment History</h3>
-            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px'}}>
+          {/* Payment History Filters */}
+          <div className="bg-white rounded-lg p-5 shadow border border-gray-200 mb-5">
+            <h3 className="text-lg font-semibold mb-4">Filter Payment History</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label style={{display: 'block', marginBottom: '4px', fontWeight: 'bold', color: '#495057'}}>Action</label>
-                <select 
-                  value={paymentFilters.action} 
-                  onChange={(e) => setPaymentFilters(prev => ({...prev, action: e.target.value as '' | 'approved' | 'rejected'}))}
-                  style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd'}}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
+                <select
+                  value={paymentFilters.action}
+                  onChange={(e) => setPaymentFilters({...paymentFilters, action: e.target.value as any})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">All Actions</option>
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
               </div>
+              
               <div>
-                <label style={{display: 'block', marginBottom: '4px', fontWeight: 'bold', color: '#495057'}}>Waste Type</label>
-                <select 
-                  value={paymentFilters.wasteType} 
-                  onChange={(e) => setPaymentFilters(prev => ({...prev, wasteType: e.target.value}))}
-                  style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd'}}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Waste Type</label>
+                <select
+                  value={paymentFilters.wasteType}
+                  onChange={(e) => setPaymentFilters({...paymentFilters, wasteType: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">All Types</option>
                   <option value="plastic">Plastic</option>
@@ -1274,159 +1107,142 @@ const AdminDashboard: React.FC = () => {
                   <option value="glass">Glass</option>
                   <option value="electronic">Electronic</option>
                   <option value="organic">Organic</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
+              
               <div>
-                <label style={{display: 'block', marginBottom: '4px', fontWeight: 'bold', color: '#495057'}}>Date From</label>
-                <input 
-                  type="date" 
-                  value={paymentFilters.dateFrom} 
-                  onChange={(e) => setPaymentFilters(prev => ({...prev, dateFrom: e.target.value}))}
-                  style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd'}}
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                <input
+                  type="date"
+                  value={paymentFilters.dateFrom}
+                  onChange={(e) => setPaymentFilters({...paymentFilters, dateFrom: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
+              
               <div>
-                <label style={{display: 'block', marginBottom: '4px', fontWeight: 'bold', color: '#495057'}}>Date To</label>
-                <input 
-                  type="date" 
-                  value={paymentFilters.dateTo} 
-                  onChange={(e) => setPaymentFilters(prev => ({...prev, dateTo: e.target.value}))}
-                  style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd'}}
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                <input
+                  type="date"
+                  value={paymentFilters.dateTo}
+                  onChange={(e) => setPaymentFilters({...paymentFilters, dateTo: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
             </div>
-            <div style={{marginTop: '16px', display: 'flex', gap: '8px'}}>
-              <button 
+            
+            <div className="flex justify-end mt-4">
+              <button
                 onClick={fetchPaymentHistory}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
+                disabled={loading}
+                className={`px-4 py-2 rounded-md font-medium ${
+                  loading ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
               >
-                🔍 Apply Filters
-              </button>
-              <button 
-                onClick={() => {
-                  setPaymentFilters({ action: '', wasteType: '', dateFrom: '', dateTo: '' } as {
-                    action: '' | 'approved' | 'rejected';
-                    wasteType: string;
-                    dateFrom: string;
-                    dateTo: string;
-                  });
-                  fetchPaymentHistory();
-                }}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold'
-                }}
-              >
-                🔄 Clear Filters
+                Apply Filters
               </button>
             </div>
-          </section>
+          </div>
+          
+          {/* Payment Statistics */}
+          {paymentStats && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+              <div className="bg-white rounded-lg p-4 shadow border border-gray-200">
+                <h3 className="text-gray-600 mb-2">Total Payments</h3>
+                <p className="text-2xl font-bold">{paymentStats.totalPayments}</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow border border-gray-200">
+                <h3 className="text-gray-600 mb-2">Total Amount</h3>
+                <p className="text-2xl font-bold">₹{(paymentStats?.totalAmount ?? 0).toLocaleString()}</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow border border-gray-200">
+                <h3 className="text-gray-600 mb-2">Approved Payments</h3>
+                <p className="text-2xl font-bold text-green-600">{paymentStats.approvedPayments}</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow border border-gray-200">
+                <h3 className="text-gray-600 mb-2">Rejected Payments</h3>
+                <p className="text-2xl font-bold text-red-600">{paymentStats.rejectedPayments}</p>
+              </div>
+            </div>
+          )}
           
           {/* Payment History Table */}
-          <section style={{backgroundColor: '#fff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
-            <h2 style={{margin: '0 0 20px 0', color: '#495057'}}>📋 Payment History</h2>
-            
-            {paymentHistory.length > 0 ? (
-              <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead style={{ backgroundColor: '#f8f9fa' }}>
-                    <tr>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Payment ID</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Collection</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Collector</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Action</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Amount</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Waste Details</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Processed Date</th>
-                      <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 'bold' }}>Notes</th>
+          <div className="bg-white rounded-lg overflow-hidden shadow border border-gray-200">
+            <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-lg font-semibold">Payment History</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">Date</th>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">Collection ID</th>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">Collector</th>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">User</th>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">Waste Type</th>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">Weight</th>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">Amount (₹)</th>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">Status</th>
+                    <th className="px-3 py-3 text-left border-b border-gray-300 font-bold">Admin Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paymentHistory.length > 0 ? paymentHistory.map((payment) => (
+                    <tr key={payment._id} className="hover:bg-gray-50">
+                      <td className="px-3 py-3 border-b border-gray-200">
+                        {payment.timestamp ? new Date(payment.timestamp).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="px-3 py-3 border-b border-gray-200 font-bold text-blue-600">
+                        {payment.collectionId}
+                      </td>
+                      <td className="px-3 py-3 border-b border-gray-200">
+                        <div>
+                          <div className="font-bold">{payment.collectorName || 'N/A'}</div>
+                          <div className="text-xs text-gray-600">{payment.collectorEmail || 'N/A'}</div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 border-b border-gray-200">
+                        <div>
+                          <div className="font-bold">{payment.userName || 'N/A'}</div>
+                          <div className="text-xs text-gray-600">{payment.userEmail || 'N/A'}</div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 border-b border-gray-200 capitalize">
+                        {payment.wasteType || 'N/A'}
+                      </td>
+                      <td className="px-3 py-3 border-b border-gray-200 font-bold">
+                        {(payment.weight || 0)} kg
+                      </td>
+                      <td className="px-3 py-3 border-b border-gray-200 font-bold text-green-600">
+                        ₹{(payment?.amount ?? 0).toLocaleString()}
+                      </td>
+                      <td className="px-3 py-3 border-b border-gray-200">
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          payment.status === 'approved' 
+                            ? 'bg-green-200 text-green-800' 
+                            : payment.status === 'rejected' 
+                              ? 'bg-red-200 text-red-800' 
+                              : 'bg-gray-200 text-gray-800'
+                        }`}>
+                          {payment.status || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 border-b border-gray-200 text-sm">
+                        {payment.adminNotes || 'No notes'}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {paymentHistory.map((payment) => (
-                      <tr key={payment.paymentId} style={{backgroundColor: '#fefefe'}}>
-                        <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', fontWeight: 'bold', color: '#0066cc', fontSize: '0.875rem' }}>
-                          {payment.paymentId}
-                        </td>
-                        <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
-                          <div>
-                            <div style={{ fontWeight: 'bold', color: '#0066cc' }}>{payment.collectionId}</div>
-                            <div style={{ fontSize: '0.875rem', color: '#666' }}>{payment.userName}</div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
-                          <div>
-                            <div style={{ fontWeight: 'bold' }}>{payment.collectorName}</div>
-                            <div style={{ fontSize: '0.875rem', color: '#666' }}>{payment.collectorEmail}</div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
-                          <span style={{
-                            backgroundColor: payment.action === 'approved' ? '#28a745' : '#dc3545',
-                            color: 'white',
-                            padding: '4px 8px',
-                            borderRadius: '12px',
-                            fontSize: '0.75rem',
-                            fontWeight: 'bold',
-                            textTransform: 'uppercase'
-                          }}>
-                            {payment.action === 'approved' ? '✅ Approved' : '❌ Rejected'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
-                          {payment.action === 'approved' && payment.amount ? (
-                            <div>
-                              <div style={{ fontWeight: 'bold', color: '#28a745', fontSize: '1.1rem' }}>₹{payment.amount}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#666' }}>{payment.paymentMethod || 'Digital Transfer'}</div>
-                            </div>
-                          ) : (
-                            <span style={{ color: '#666', fontStyle: 'italic' }}>N/A</span>
-                          )}
-                        </td>
-                        <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
-                          <div>
-                            <div style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>{payment.wasteType}</div>
-                            <div style={{ fontSize: '0.875rem', color: '#666' }}>{payment.weight}kg - {payment.quality} quality</div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee' }}>
-                          <div style={{ fontSize: '0.875rem' }}>
-                            {new Date(payment.processedAt).toLocaleDateString('en-IN')}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#666' }}>
-                            {new Date(payment.processedAt).toLocaleTimeString('en-IN')}
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px 12px', borderBottom: '1px solid #eee', maxWidth: '200px' }}>
-                          <div style={{ fontSize: '0.875rem', color: '#666', wordWrap: 'break-word' }}>
-                            {payment.action === 'approved' ? payment.adminNotes : payment.rejectionReason}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>📄</div>
-                <h3 style={{ color: '#666' }}>No Payment History Found</h3>
-                <p>No payment records match your current filters.</p>
-              </div>
-            )}
-          </section>
+                  )) : (
+                    <tr>
+                      <td colSpan={9} className="px-5 py-5 text-center italic text-gray-600">
+                        {loading ? 'Loading payment history...' : 'No payment history found'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </>
       )}
     </div>
@@ -1434,4 +1250,3 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
-

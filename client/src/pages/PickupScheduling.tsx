@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useEcoChain } from '../contexts/EcoChainContext.tsx';
 import { collectionsAPI } from '../services/api.ts';
-import './PickupScheduling.css';
 
 interface TimeSlot {
   id: string;
@@ -147,50 +146,54 @@ const PickupScheduling: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return <div className="flex justify-center items-center min-h-[400px] text-gray-500 text-lg">Loading...</div>;
   }
 
   if (error && !collection) {
-    return <div className="error-message">{error}</div>;
+    return <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">{error}</div>;
   }
 
   if (success) {
     return (
-      <div className="pickup-scheduling-container">
-        <div className="success-message">
-          <h2>Pickup Scheduled Successfully!</h2>
-          <p>Your waste collection pickup has been scheduled.</p>
-          <p>You will be redirected to the dashboard shortly...</p>
+      <div className="max-w-4xl mx-auto px-5 py-5">
+        <div className="text-center p-12 bg-green-50 border-2 border-green-500 rounded-xl">
+          <h2 className="text-2xl font-bold text-green-800 mb-2">Pickup Scheduled Successfully!</h2>
+          <p className="text-green-700 mb-1">Your waste collection pickup has been scheduled.</p>
+          <p className="text-green-700">You will be redirected to the dashboard shortly...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="pickup-scheduling-container">
-      <div className="pickup-scheduling-card">
-        <h1>Schedule Waste Collection Pickup</h1>
+    <div className="max-w-4xl mx-auto px-5 py-5">
+      <div className="bg-white p-8 rounded-xl shadow-lg">
+        <h1 className="text-3xl font-bold text-green-800 text-center mb-8">Schedule Waste Collection Pickup</h1>
         
         {collection && (
-          <div className="collection-details">
-            <h2>Collection Details</h2>
-            <div className="detail-row">
-              <span className="detail-label">Waste Type:</span>
-              <span className="detail-value">{collection.wasteType}</span>
+          <div className="bg-gray-50 p-6 rounded-lg mb-8">
+            <h2 className="text-2xl font-bold text-green-800 mb-4">Collection Details</h2>
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <span className="font-bold text-gray-700">Waste Type:</span>
+              <span className="text-gray-600">{collection.wasteType}</span>
             </div>
-            <div className="detail-row">
-              <span className="detail-label">Weight:</span>
-              <span className="detail-value">{collection.weight} kg</span>
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <span className="font-bold text-gray-700">Weight:</span>
+              <span className="text-gray-600">{collection.weight} kg</span>
             </div>
-            <div className="detail-row">
-              <span className="detail-label">Status:</span>
-              <span className={`status-badge ${collection.status.toLowerCase()}`}>
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <span className="font-bold text-gray-700">Status:</span>
+              <span className={`px-2 py-1 rounded text-xs font-bold ${
+                collection.status === 'scheduled' 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-yellow-500 text-white'
+              }`}>
                 {collection.status}
               </span>
             </div>
-            <div className="detail-row">
-              <span className="detail-label">Submission Date:</span>
-              <span className="detail-value">
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <span className="font-bold text-gray-700">Submission Date:</span>
+              <span className="text-gray-600">
                 {new Date(collection.submissionDate).toLocaleDateString()}
               </span>
             </div>
@@ -199,7 +202,7 @@ const PickupScheduling: React.FC = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="form-section">
-            <h2>Select Pickup Date</h2>
+            <h2 className="text-xl font-bold text-green-800 mb-4">Select Pickup Date</h2>
             <div className="date-selection">
               {availableDates.map(dateObj => (
                 <button
@@ -220,7 +223,7 @@ const PickupScheduling: React.FC = () => {
           
           {selectedDate && (
             <div className="form-section">
-              <h2>Select Time Slot</h2>
+              <h2 className="text-xl font-bold text-green-800 mb-4">Select Time Slot</h2>
               <div className="time-slot-selection">
                 {availableDates
                   .find(d => d.date === selectedDate)?.slots

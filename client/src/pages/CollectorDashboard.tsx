@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import '../App.css';
 import { useAuth } from '../context/AuthContext.tsx';
 import wasteService, { WasteSubmission } from '../services/wasteService.ts';
 

@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import '../App.css';
-import './Marketplace.css';
 import { useCart } from '../contexts/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import marketplaceService, { MarketplaceItem } from '../services/marketplaceService.ts';
@@ -113,57 +111,56 @@ const Marketplace: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="loading">Loading products...</div>;
+    return <div className="flex justify-center items-center h-32 bg-gray-100 rounded-lg">Loading products...</div>;
   }
 
   if (error) {
-    return <div className="error">{error}</div>;
+    return <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">Error: {error}</div>;
   }
 
   return (
-    <div className="marketplace-container">
-      <div className="marketplace-header">
-        <h1>EcoChain Marketplace</h1>
-        <p>Browse eco-friendly products made from recycled materials</p>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">EcoChain Marketplace</h1>
+        <p className="text-gray-600 mb-6">Browse eco-friendly products made from recycled materials</p>
         
-        <div className="marketplace-header-actions">
-          <div className="token-balance-display">
-            <span className="token-icon">🌱</span>
-            <span className="token-amount">{totalEcoTokens || 0}</span>
-            <span className="token-label">EcoTokens Available</span>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
+            <span className="text-2xl">🌱</span>
+            <div>
+              <div className="font-bold text-green-800">{totalEcoTokens || 0}</div>
+              <div className="text-xs text-green-600">EcoTokens Available</div>
+            </div>
           </div>
           
           {cart.length > 0 && (
-            <Link to="/checkout" className="view-cart-button">
+            <Link 
+              to="/checkout" 
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-lg shadow hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all"
+            >
               View Cart ({cart.length}) - ₹{cartTotal} + {tokenTotal} Tokens
             </Link>
           )}
         </div>
       </div>
 
-      <div className="marketplace-filters">
-        <div className="search-bar">
+      <div className="mb-8 flex flex-col md:flex-row gap-4">
+        <div className="flex-1">
           <input 
             type="text" 
             placeholder="Search products or factories..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
           />
         </div>
         
-        <div className="category-filters">
-          {categories.map(category => (
-            <button 
-              key={category} 
-              className={`category-button ${activeCategory === category ? 'active' : ''}`}
-              onClick={() => setActiveCategory(category)}
-            >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </button>
-          ))}
-        </div>
-        <div className="sort-controls">
-          <select value={sortBy} onChange={e=>{setSortBy(e.target.value as any); setPage(1);}}>
+        <div className="flex gap-2">
+          <select 
+            value={sortBy} 
+            onChange={e=>{setSortBy(e.target.value as any); setPage(1);}}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+          >
             <option value="popular">Most Popular</option>
             <option value="price_low">Price: Low to High</option>
             <option value="price_high">Price: High to Low</option>
@@ -172,125 +169,117 @@ const Marketplace: React.FC = () => {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        {categories.map(category => (
+          <button 
+            key={category} 
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeCategory === category 
+                ? 'bg-green-500 text-white' 
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+            }`}
+            onClick={() => setActiveCategory(category)}
+          >
+            {category.charAt(0).toUpperCase() + category.slice(1)}
+          </button>
+        ))}
+      </div>
+
       <div className="marketplace-content">
-        <div className="products-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.length > 0 ? (
             filteredProducts.map(p => (
-              <div className="product-card" key={p.id}>
-                <div className="product-image">
+              <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-xl transition-shadow" key={p.id}>
+                <div className="relative h-48 overflow-hidden">
                   <img 
                     src={p.imageUrl || '/uploads/default-product.svg'} 
                     alt={p.name} 
+                    className="w-full h-full object-cover"
                     onError={(e) => {
                       // Fallback to default image if the image fails to load
                       const target = e.target as HTMLImageElement;
                       target.src = '/uploads/default-product.svg';
                     }}
                   />
-                  {p.status === 'sold_out' && <span className="out-of-stock">Sold Out</span>}
+                  {p.status === 'sold_out' && (
+                    <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                      Sold Out
+                    </span>
+                  )}
                   {p.factoryName && (
-                    <div className="factory-tag">
+                    <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                       By {p.factoryName}
                     </div>
                   )}
                 </div>
-                <div className="product-info">
-                  <h3>{p.name}</h3>
-                  <p className="product-desc">{p.description}</p>
-                  <div className="product-meta">
-                    <span className="product-price">₹{p.price} + {p.tokenPrice} EcoTokens</span>
-                    {typeof p.sustainabilityScore === 'number' && (
-                      <span className="product-score">♻ {p.sustainabilityScore}%</span>
-                    )}
-                    <span className="product-stock">
-                      {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
-                    </span>
+                <div className="p-4">
+                  <h3 className="font-bold text-lg mb-2">{p.name}</h3>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{p.description}</p>
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <div className="font-bold text-green-600">₹{p.price}</div>
+                      <div className="text-sm text-gray-500">{p.tokenPrice} tokens</div>
+                    </div>
+                    <div className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">
+                      {p.sustainabilityScore}% eco
+                    </div>
                   </div>
-                  <button 
-                    className="add-to-cart-button" 
-                    disabled={p.status === 'sold_out' || p.stock <= 0}
-                    onClick={() => p.status !== 'sold_out' && p.stock > 0 && addToCart({
-                      id: p.id,
-                      name: p.name,
-                      description: p.description,
-                      price: p.price,
-                      tokenPrice: p.tokenPrice,
-                      category: p.category,
-                      imageUrl: p.imageUrl,
-                      sustainabilityScore: p.sustainabilityScore,
-                      status: p.status,
-                      stock: p.stock
-                    })}
-                  >
-                    {p.status === 'sold_out' || p.stock <= 0 ? 'Sold Out' : 'Add to Cart'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => addToCart(p)}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-2 px-4 rounded-lg hover:from-green-600 hover:to-green-700 transition-all"
+                    >
+                      Add to Cart
+                    </button>
+                    <button 
+                      onClick={() => removeFromCart(p.id)}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold w-10 h-10 rounded-lg transition-colors"
+                    >
+                      -
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="no-products">
-              <p>No products found. Try different filters.</p>
-              <button onClick={() => { setActiveCategory('all'); setSearchTerm(''); }}>Clear Filters</button>
+            <div className="col-span-full text-center py-12">
+              <div className="text-gray-500 mb-4">No products found matching your criteria</div>
+              <button 
+                onClick={() => {
+                  setSearchTerm('');
+                  setActiveCategory('all');
+                  setSortBy('popular');
+                }}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                Clear Filters
+              </button>
             </div>
           )}
         </div>
-
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))}>Prev</button>
-            <span>Page {page} of {totalPages}</span>
-            <button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))}>Next</button>
-          </div>
-        )}
-
-        {cart.length > 0 && (
-          <div className="cart-sidebar">
-            <h2>Your Cart</h2>
-            <div className="cart-items">
-              {cart.map(item => (
-                <div key={item.product.id} className="cart-item">
-                  <div className="cart-item-info">
-                    <h4>{item.product.name}</h4>
-                    <div className="cart-item-price">
-                      <span>₹{item.product.price}</span>
-                      <span>+ {item.product.tokenPrice} Tokens</span>
-                    </div>
-                  </div>
-                  <div className="cart-item-actions">
-                    <div className="quantity-controls">
-                      <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)}>-</button>
-                      <span>{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                        disabled={item.quantity >= (item.product.stock || 0)}
-                      >
-                        +
-                      </button>
-                    </div>
-                    <button className="remove-button" onClick={() => removeFromCart(item.product.id)}>Remove</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="cart-summary">
-              <div className="cart-total">
-                <span>Subtotal:</span>
-                <span>₹{cartTotal}</span>
-              </div>
-              <div className="token-usage">
-                <span>EcoTokens Applied:</span>
-                <span>{maxTokensUsable} tokens</span>
-              </div>
-              <div className="final-total">
-                <span>Total:</span>
-                <span>₹{cartTotal - (maxTokensUsable * 5)}</span>
-              </div>
-              <Link to="/checkout" className="checkout-button">Proceed to Checkout</Link>
-            </div>
-          </div>
-        )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-8 flex justify-center gap-2">
+          <button 
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-lg transition-colors"
+          >
+            Previous
+          </button>
+          <span className="px-4 py-2">
+            Page {page} of {totalPages}
+          </span>
+          <button 
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-lg transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

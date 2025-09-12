@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { marketplaceAPI } from '../services/api.ts';
-import './Checkout.css';
 
 interface ShippingInfo {
   fullName: string;
@@ -113,11 +112,14 @@ const Checkout: React.FC = () => {
 
   if (cart.length === 0) {
     return (
-      <div className="checkout-container">
-        <div className="empty-cart-message">
-          <h2>Your cart is empty</h2>
-          <p>Add some products to your cart before checking out.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/marketplace')}>
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
+          <p className="text-gray-600 mb-6">Add some products to your cart before checking out.</p>
+          <button 
+            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            onClick={() => navigate('/marketplace')}
+          >
             Browse Products
           </button>
         </div>
@@ -126,53 +128,58 @@ const Checkout: React.FC = () => {
   }
 
   return (
-    <div className="checkout-container">
-      <div className="checkout-header">
-        <h1>Checkout</h1>
-        <div className="checkout-progress">
-          <div className={`progress-step ${step >= 1 ? 'active' : ''}`}>
-            <span className="step-number">1</span>
-            <span className="step-label">Shipping</span>
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-6">Checkout</h1>
+        <div className="flex justify-between mb-8">
+          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 1 ? 'border-green-500 text-green-600' : 'border-gray-300 text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 1 ? 'bg-green-500 text-white' : 'bg-gray-300'}`}>
+              1
+            </div>
+            <span className="font-medium">Shipping</span>
           </div>
-          <div className={`progress-step ${step >= 2 ? 'active' : ''}`}>
-            <span className="step-number">2</span>
-            <span className="step-label">Review</span>
+          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 2 ? 'border-green-500 text-green-600' : 'border-gray-300 text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 2 ? 'bg-green-500 text-white' : 'bg-gray-300'}`}>
+              2
+            </div>
+            <span className="font-medium">Review</span>
           </div>
-          <div className={`progress-step ${step >= 3 ? 'active' : ''}`}>
-            <span className="step-number">3</span>
-            <span className="step-label">Confirmation</span>
+          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 3 ? 'border-green-500 text-green-600' : 'border-gray-300 text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 3 ? 'bg-green-500 text-white' : 'bg-gray-300'}`}>
+              3
+            </div>
+            <span className="font-medium">Confirmation</span>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="error-message">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           {error}
         </div>
       )}
 
-      <div className="checkout-content">
-        <div className="checkout-form">
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="lg:w-2/3">
           {step === 1 && (
-            <form onSubmit={handleSubmit}>
-              <div className="form-section">
-                <h2>Shipping Information</h2>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="fullName">Full Name *</label>
-                    <input
-                      type="text"
-                      id="fullName"
-                      name="fullName"
-                      value={shippingInfo.fullName}
-                      onChange={handleShippingChange}
-                      required
-                    />
-                  </div>
+            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
+              <div className="mb-8">
+                <h2 className="text-xl font-bold mb-6">Shipping Information</h2>
+                <div className="mb-4">
+                  <label htmlFor="fullName" className="block text-gray-700 font-medium mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={shippingInfo.fullName}
+                    onChange={handleShippingChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
                 </div>
                 
-                <div className="form-group">
-                  <label htmlFor="address">Address *</label>
+                <div className="mb-4">
+                  <label htmlFor="address" className="block text-gray-700 font-medium mb-2">Address *</label>
                   <textarea
                     id="address"
                     name="address"
@@ -180,12 +187,13 @@ const Checkout: React.FC = () => {
                     onChange={handleShippingChange}
                     required
                     rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
                 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="city">City *</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label htmlFor="city" className="block text-gray-700 font-medium mb-2">City *</label>
                     <input
                       type="text"
                       id="city"
@@ -193,11 +201,12 @@ const Checkout: React.FC = () => {
                       value={shippingInfo.city}
                       onChange={handleShippingChange}
                       required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
                   
-                  <div className="form-group">
-                    <label htmlFor="state">State *</label>
+                  <div>
+                    <label htmlFor="state" className="block text-gray-700 font-medium mb-2">State *</label>
                     <input
                       type="text"
                       id="state"
@@ -205,13 +214,14 @@ const Checkout: React.FC = () => {
                       value={shippingInfo.state}
                       onChange={handleShippingChange}
                       required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
                 </div>
                 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="zipCode">ZIP Code *</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label htmlFor="zipCode" className="block text-gray-700 font-medium mb-2">ZIP Code *</label>
                     <input
                       type="text"
                       id="zipCode"
@@ -219,17 +229,19 @@ const Checkout: React.FC = () => {
                       value={shippingInfo.zipCode}
                       onChange={handleShippingChange}
                       required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
                   
-                  <div className="form-group">
-                    <label htmlFor="country">Country *</label>
+                  <div>
+                    <label htmlFor="country" className="block text-gray-700 font-medium mb-2">Country *</label>
                     <select
                       id="country"
                       name="country"
                       value={shippingInfo.country}
                       onChange={handleShippingChange}
                       required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
                       <option value="India">India</option>
                       <option value="USA">USA</option>
@@ -240,8 +252,8 @@ const Checkout: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="form-group">
-                  <label htmlFor="phone">Phone Number *</label>
+                <div className="mb-4">
+                  <label htmlFor="phone" className="block text-gray-700 font-medium mb-2">Phone Number *</label>
                   <input
                     type="tel"
                     id="phone"
@@ -249,15 +261,23 @@ const Checkout: React.FC = () => {
                     value={shippingInfo.phone}
                     onChange={handleShippingChange}
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
               </div>
               
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => navigate('/marketplace')}>
+              <div className="flex justify-between">
+                <button 
+                  type="button" 
+                  className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  onClick={() => navigate('/marketplace')}
+                >
                   Continue Shopping
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button 
+                  type="submit" 
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
                   Continue to Review
                 </button>
               </div>
@@ -265,21 +285,25 @@ const Checkout: React.FC = () => {
           )}
           
           {step === 2 && (
-            <div className="review-step">
-              <h2>Order Review</h2>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-6">Order Review</h2>
               
-              <div className="order-summary">
-                <h3>Items in Your Order</h3>
-                <div className="order-items">
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold mb-4">Items in Your Order</h3>
+                <div className="space-y-4">
                   {cart.map(item => (
-                    <div key={item.product.id} className="order-item">
-                      <div className="item-image">
-                        <img src={item.product.imageUrl || '/logo192.png'} alt={item.product.name} />
+                    <div key={item.product.id} className="flex border-b border-gray-200 pb-4">
+                      <div className="w-20 h-20 rounded-md overflow-hidden mr-4">
+                        <img 
+                          src={item.product.imageUrl || '/logo192.png'} 
+                          alt={item.product.name} 
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <div className="item-details">
-                        <h4>{item.product.name}</h4>
-                        <p>{item.product.description}</p>
-                        <div className="item-price">
+                      <div className="flex-1">
+                        <h4 className="font-bold">{item.product.name}</h4>
+                        <p className="text-gray-600 text-sm mb-2">{item.product.description}</p>
+                        <div className="flex justify-between">
                           <span>₹{item.product.price} + {item.product.tokenPrice} Tokens</span>
                           <span>Qty: {item.quantity}</span>
                         </div>
@@ -289,10 +313,10 @@ const Checkout: React.FC = () => {
                 </div>
               </div>
               
-              <div className="shipping-summary">
-                <h3>Shipping Information</h3>
-                <div className="shipping-details">
-                  <p><strong>{shippingInfo.fullName}</strong></p>
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold mb-4">Shipping Information</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="font-bold">{shippingInfo.fullName}</p>
                   <p>{shippingInfo.address}</p>
                   <p>{shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}</p>
                   <p>{shippingInfo.country}</p>
@@ -300,65 +324,72 @@ const Checkout: React.FC = () => {
                 </div>
               </div>
               
-              <div className="payment-section">
-                <h3>Payment Method</h3>
-                <div className="payment-options">
-                  <label className="payment-option">
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold mb-4">Payment Method</h3>
+                <div className="space-y-2">
+                  <label className="flex items-center">
                     <input
                       type="radio"
                       name="paymentMethod"
                       value="token"
                       checked={paymentMethod === 'token'}
                       onChange={() => setPaymentMethod('token')}
+                      className="mr-2"
                     />
                     EcoTokens ({totalEcoTokens} available)
                   </label>
-                  <label className="payment-option">
+                  <label className="flex items-center">
                     <input
                       type="radio"
                       name="paymentMethod"
                       value="cash"
                       checked={paymentMethod === 'cash'}
                       onChange={() => setPaymentMethod('cash')}
+                      className="mr-2"
                     />
                     Cash on Delivery
                   </label>
                 </div>
               </div>
               
-              <div className="order-notes">
-                <label htmlFor="orderNotes">Order Notes (Optional)</label>
+              <div className="mb-8">
+                <label htmlFor="orderNotes" className="block text-gray-700 font-medium mb-2">Order Notes (Optional)</label>
                 <textarea
                   id="orderNotes"
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
                   rows={3}
                   placeholder="Any special instructions for your order?"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
               
-              <div className="order-totals">
-                <div className="total-row">
+              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                <div className="flex justify-between mb-2">
                   <span>Subtotal:</span>
                   <span>₹{cartTotal}</span>
                 </div>
-                <div className="total-row">
+                <div className="flex justify-between mb-2">
                   <span>EcoTokens Applied:</span>
                   <span>{maxTokensUsable} tokens</span>
                 </div>
-                <div className="total-row final-total">
+                <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2">
                   <span>Total:</span>
                   <span>₹{finalTotal}</span>
                 </div>
               </div>
               
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={goBack}>
+              <div className="flex justify-between">
+                <button 
+                  type="button" 
+                  className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  onClick={goBack}
+                >
                   Back to Shipping
                 </button>
                 <button 
                   type="button" 
-                  className="btn btn-primary" 
+                  className={`bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={handleSubmit}
                   disabled={isLoading}
                 >
@@ -369,29 +400,31 @@ const Checkout: React.FC = () => {
           )}
         </div>
         
-        <div className="order-summary-sidebar">
-          <h3>Order Summary</h3>
-          <div className="summary-items">
-            {cart.map(item => (
-              <div key={item.product.id} className="summary-item">
-                <span>{item.product.name} x {item.quantity}</span>
-                <span>₹{item.product.price * item.quantity} + {item.product.tokenPrice * item.quantity} Tokens</span>
+        <div className="lg:w-1/3">
+          <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
+            <h3 className="text-lg font-bold mb-4">Order Summary</h3>
+            <div className="space-y-3 mb-4">
+              {cart.map(item => (
+                <div key={item.product.id} className="flex justify-between text-sm">
+                  <span>{item.product.name} x {item.quantity}</span>
+                  <span>₹{item.product.price * item.quantity} + {item.product.tokenPrice * item.quantity} Tokens</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex justify-between mb-2">
+                <span>Subtotal:</span>
+                <span>₹{cartTotal}</span>
               </div>
-            ))}
-          </div>
-          
-          <div className="summary-totals">
-            <div className="total-row">
-              <span>Subtotal:</span>
-              <span>₹{cartTotal}</span>
-            </div>
-            <div className="total-row">
-              <span>EcoTokens:</span>
-              <span>-{maxTokensUsable} tokens</span>
-            </div>
-            <div className="total-row final-total">
-              <span>Total:</span>
-              <span>₹{finalTotal}</span>
+              <div className="flex justify-between mb-2">
+                <span>EcoTokens:</span>
+                <span>-{maxTokensUsable} tokens</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-300">
+                <span>Total:</span>
+                <span>₹{finalTotal}</span>
+              </div>
             </div>
           </div>
         </div>

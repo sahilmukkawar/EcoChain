@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import '../App.css';
 import { useAuth } from '../context/AuthContext.tsx';
 import ProductForm from '../components/ProductForm.tsx';
 import marketplaceService, { MarketplaceItem } from '../services/marketplaceService.ts';
@@ -49,11 +48,10 @@ const ProductManagement: React.FC = () => {
   };
 
   const getStatusStyle = (isActive: boolean) => {
-    const baseStyle = { padding: '4px 8px', borderRadius: '4px', fontSize: '0.875rem', fontWeight: 'bold' };
     if (isActive) {
-      return { ...baseStyle, backgroundColor: '#e8f5e8', color: '#2e7d32' };
+      return 'px-2 py-1 rounded text-sm font-bold bg-green-100 text-green-800';
     } else {
-      return { ...baseStyle, backgroundColor: '#ffebee', color: '#d32f2f' };
+      return 'px-2 py-1 rounded text-sm font-bold bg-red-100 text-red-800';
     }
   };
 
@@ -114,18 +112,18 @@ const ProductManagement: React.FC = () => {
   };
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div className="flex justify-center items-center h-screen">
       <div>Loading products...</div>
     </div>
   );
   
   if (error) return (
-    <div style={{ margin: '20px' }}>
-      <div style={{ color: 'red', padding: '10px', backgroundColor: '#ffebee', borderRadius: '4px' }}>
+    <div className="m-5">
+      <div className="text-red-700 p-3 bg-red-100 rounded flex items-center">
         Error: {error}
         <button 
           onClick={loadProducts}
-          style={{ marginLeft: '10px', padding: '5px 10px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          className="ml-3 px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
         >
           Retry
         </button>
@@ -134,22 +132,22 @@ const ProductManagement: React.FC = () => {
   );
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1>Product Management {user && `- ${user.name}`}</h1>
+    <div className="max-w-7xl mx-auto px-6 py-6">
+      <h1 className="text-2xl font-bold mb-6">Product Management {user && `- ${user.name}`}</h1>
       
       {/* Products Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 style={{ margin: 0 }}>Your Products</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold m-0">Your Products</h2>
         <button 
           onClick={handleAddProduct}
-          style={{ padding: '8px 16px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
         >
           Add New Product
         </button>
       </div>
       
       {showProductForm ? (
-        <div style={{ marginBottom: '32px' }}>
+        <div className="mb-8">
           <ProductForm 
             product={editingProduct ? {
               ...editingProduct,
@@ -174,51 +172,51 @@ const ProductManagement: React.FC = () => {
       ) : null}
       
       {products.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
-          <h3>No products found</h3>
-          <p>You haven't added any products yet.</p>
+        <div className="text-center p-10 bg-gray-100 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">No products found</h3>
+          <p className="text-gray-600 mb-4">You haven't added any products yet.</p>
           <button 
             onClick={handleAddProduct}
-            style={{ padding: '10px 20px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            className="px-5 py-2.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
           >
             Add Your First Product
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
           {products.map((p) => (
-            <div key={p._id} style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ height: '200px', overflow: 'hidden', marginBottom: '16px', borderRadius: '4px' }}>
+            <div key={p._id} className="p-4 bg-white rounded-lg shadow flex flex-col">
+              <div className="h-48 overflow-hidden mb-4 rounded">
                 <img 
                   src={(p.productInfo.images && p.productInfo.images[0]) || '/logo192.png'} 
                   alt={p.productInfo.name} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  className="w-full h-full object-cover" 
                 />
               </div>
-              <h3 style={{ margin: '0 0 8px 0' }}>{p.productInfo.name}</h3>
-              <p style={{ margin: '0 0 16px 0', color: '#666', fontSize: '0.875rem', flexGrow: 1 }}>
+              <h3 className="text-lg font-semibold mb-2">{p.productInfo.name}</h3>
+              <p className="text-gray-600 text-sm mb-4 flex-grow">
                 {p.productInfo.description}
               </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <strong>{p.pricing.sellingPrice} EcoTokens</strong>
-                <span style={getStatusStyle(p.availability.isActive)}>
+              <div className="flex justify-between items-center mb-3">
+                <strong className="text-lg">{p.pricing.sellingPrice} EcoTokens</strong>
+                <span className={getStatusStyle(p.availability.isActive)}>
                   {getProductStatus(p)}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ fontSize: '0.875rem' }}>Stock: {p.inventory.currentStock}</span>
-                <span style={{ fontSize: '0.875rem' }}>♻ {p.sustainability.recycledMaterialPercentage}%</span>
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm">Stock: {p.inventory.currentStock}</span>
+                <span className="text-sm">♻ {p.sustainability.recycledMaterialPercentage}%</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="flex justify-between items-center">
                 <button 
                   onClick={() => handleEditProduct(p)}
-                  style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '8px' }}
+                  className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors mr-2"
                 >
                   Edit
                 </button>
                 <button 
                   onClick={() => handleDeleteProduct(p._id)}
-                  style={{ padding: '6px 12px', fontSize: '0.875rem', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  className="px-3 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                 >
                   Delete
                 </button>

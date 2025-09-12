@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useNavigate } from 'react-router-dom';
 import wasteService, { CreateWasteSubmissionData } from '../services/wasteService.ts';
-import '../App.css';
-import './WasteSubmission.css';
 
 interface WasteSubmissionForm {
   wasteType: 'plastic' | 'paper' | 'metal' | 'glass' | 'electronic' | 'organic' | 'other' | '';
@@ -136,11 +134,11 @@ const WasteSubmission: React.FC = () => {
   
   if (success) {
     return (
-      <div className="success-container">
-        <div className="success-message">
-          <h2>Waste Submission Successful!</h2>
-          <p>Your request has been submitted successfully.</p>
-          <p>Estimated EcoTokens: <strong>{calculateEstimatedTokens()}</strong></p>
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+          <h2 className="text-2xl font-bold mb-2">Waste Submission Successful!</h2>
+          <p className="mb-2">Your request has been submitted successfully.</p>
+          <p className="mb-2">Estimated EcoTokens: <strong>{calculateEstimatedTokens()}</strong></p>
           <p>You will be redirected to your dashboard...</p>
         </div>
       </div>
@@ -148,23 +146,26 @@ const WasteSubmission: React.FC = () => {
   }
   
   return (
-    <div className="waste-submission-container">
-      <h1>Submit Waste for Collection</h1>
-      <p className="submission-intro">
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-2">Submit Waste for Collection</h1>
+      <p className="text-gray-600 mb-6">
         Submit your recyclable waste for collection and earn EcoTokens that you can use in our marketplace.
       </p>
       
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
       
-      <form onSubmit={handleSubmit} className="waste-submission-form">
-        <div className="form-group">
-          <label htmlFor="wasteType">Waste Type</label>
+      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <div className="mb-4">
+          <label htmlFor="wasteType" className="block text-gray-700 text-sm font-bold mb-2">
+            Waste Type
+          </label>
           <select 
             id="wasteType" 
             name="wasteType" 
             value={formData.wasteType} 
             onChange={handleInputChange}
             required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
             <option value="">Select waste type</option>
             {wasteTypes.map(type => (
@@ -173,8 +174,10 @@ const WasteSubmission: React.FC = () => {
           </select>
         </div>
         
-        <div className="form-group">
-          <label htmlFor="quantity">Quantity (kg)</label>
+        <div className="mb-4">
+          <label htmlFor="quantity" className="block text-gray-700 text-sm font-bold mb-2">
+            Quantity (kg)
+          </label>
           <input 
             type="number" 
             id="quantity" 
@@ -184,27 +187,35 @@ const WasteSubmission: React.FC = () => {
             value={formData.quantity} 
             onChange={handleInputChange}
             required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
         
-        <div className="form-group">
-          <label htmlFor="quality">Waste Quality</label>
+        <div className="mb-4">
+          <label htmlFor="quality" className="block text-gray-700 text-sm font-bold mb-2">
+            Waste Quality
+          </label>
           <select 
             id="quality" 
             name="quality" 
             value={formData.quality} 
             onChange={handleInputChange}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
             <option value="poor">Poor</option>
             <option value="fair">Fair</option>
             <option value="good">Good</option>
             <option value="excellent">Excellent</option>
           </select>
-          <p className="form-help">Quality affects the token multiplier (Poor: 0.7x, Fair: 1.0x, Good: 1.2x, Excellent: 1.5x)</p>
+          <p className="text-gray-600 text-xs italic mt-1">
+            Quality affects the token multiplier (Poor: 0.7x, Fair: 1.0x, Good: 1.2x, Excellent: 1.5x)
+          </p>
         </div>
         
-        <div className="form-group">
-          <label htmlFor="description">Description</label>
+        <div className="mb-4">
+          <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">
+            Description
+          </label>
           <textarea 
             id="description" 
             name="description" 
@@ -212,11 +223,14 @@ const WasteSubmission: React.FC = () => {
             onChange={handleInputChange}
             placeholder="Provide details about your waste (condition, packaging, etc.)"
             rows={4}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
         
-        <div className="form-group">
-          <label htmlFor="pickupAddress">Pickup Address</label>
+        <div className="mb-4">
+          <label htmlFor="pickupAddress" className="block text-gray-700 text-sm font-bold mb-2">
+            Pickup Address
+          </label>
           <input 
             type="text" 
             id="pickupAddress" 
@@ -224,12 +238,15 @@ const WasteSubmission: React.FC = () => {
             value={formData.pickupAddress} 
             onChange={handleInputChange}
             required
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
         </div>
         
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="pickupDate">Pickup Date</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label htmlFor="pickupDate" className="block text-gray-700 text-sm font-bold mb-2">
+              Pickup Date
+            </label>
             <input 
               type="date" 
               id="pickupDate" 
@@ -238,17 +255,21 @@ const WasteSubmission: React.FC = () => {
               onChange={handleInputChange}
               min={new Date().toISOString().split('T')[0]}
               required
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
           
-          <div className="form-group">
-            <label htmlFor="pickupTimeSlot">Preferred Time Slot</label>
+          <div>
+            <label htmlFor="pickupTimeSlot" className="block text-gray-700 text-sm font-bold mb-2">
+              Preferred Time Slot
+            </label>
             <select 
               id="pickupTimeSlot" 
               name="pickupTimeSlot" 
               value={formData.pickupTimeSlot} 
               onChange={handleInputChange}
               required
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             >
               <option value="">Select time slot</option>
               {timeSlots.map(slot => (
@@ -258,8 +279,10 @@ const WasteSubmission: React.FC = () => {
           </div>
         </div>
         
-        <div className="form-group">
-          <label htmlFor="images">Upload Images</label>
+        <div className="mb-6">
+          <label htmlFor="images" className="block text-gray-700 text-sm font-bold mb-2">
+            Upload Images
+          </label>
           <input 
             type="file" 
             id="images" 
@@ -267,39 +290,57 @@ const WasteSubmission: React.FC = () => {
             onChange={handleImageChange}
             accept="image/*"
             multiple
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           />
-          <p className="form-help">Upload clear images of your waste to help us verify the type and quantity.</p>
+          <p className="text-gray-600 text-xs italic mt-1">
+            Upload clear images of your waste to help us verify the type and quantity.
+          </p>
         </div>
         
         {previewUrls.length > 0 && (
-          <div className="image-previews">
-            {previewUrls.map((url, index) => (
-              <div key={index} className="image-preview-container">
-                <img src={url} alt={`Waste preview ${index + 1}`} className="image-preview" />
-                <button 
-                  type="button" 
-                  className="remove-image-btn" 
-                  onClick={() => removeImage(index)}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Image Previews</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {previewUrls.map((url, index) => (
+                <div key={index} className="relative">
+                  <img 
+                    src={url} 
+                    alt={`Waste preview ${index + 1}`} 
+                    className="w-full h-32 object-cover rounded border"
+                  />
+                  <button 
+                    type="button" 
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                    onClick={() => removeImage(index)}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         
-        <div className="token-estimate">
-          <p>Estimated EcoTokens: <strong>{calculateEstimatedTokens()}</strong></p>
-          <p className="token-info">Final token amount may vary based on verification by our collectors.</p>
+        <div className="bg-gray-100 p-4 rounded-lg mb-6">
+          <p className="text-lg">
+            Estimated EcoTokens: <strong className="text-green-600">{calculateEstimatedTokens()}</strong>
+          </p>
+          <p className="text-gray-600 text-sm mt-1">
+            Final token amount may vary based on verification by our collectors.
+          </p>
         </div>
         
-        <button 
-          type="submit" 
-          className="submit-button" 
-          disabled={loading}
-        >
-          {loading ? 'Submitting...' : 'Submit Waste Request'}
-        </button>
+        <div className="flex items-center justify-between">
+          <button 
+            type="submit" 
+            disabled={loading}
+            className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {loading ? 'Submitting...' : 'Submit Waste Request'}
+          </button>
+        </div>
       </form>
     </div>
   );
