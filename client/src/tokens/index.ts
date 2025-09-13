@@ -1,20 +1,16 @@
 export const tokens = {
   color: {
     background: {
-      primary: "#22875b",          // Deep green for main section background
-      secondary: "#f4f7fa",        // Very light gray / white paper background
-      Pink: "#f8d1cd66",
-      Green: "#EDF9EB",
+      primary: "#ffffff",          // Clean white for main background
+      secondary: "#f9fafb",        // Very light gray for secondary background
+      tertiary: "#f5f5dc",         // Light beige background
       gradient: {
-        start: "#D4A99D",
-        end: "#1E5C5D",
+        start: "#16a34a",          // Green gradient start
+        end: "#22c55e",           // Green gradient end
       },
       accent: {
-        gold: "#faa43c",           // Vibrant orange accent
+        gold: "#facc15",           // Yellow accent
       },
-      tertiary: "#fae7e0",
-      quaternary: "#F9F9F9",
-      quinary: "#F0F0F0",
     },
     feedback: {
       success: "#22C55E",
@@ -27,23 +23,25 @@ export const tokens = {
       infoBg: "#EFF6FF",
     },
     primary: {
-      base: "#22875b",
-      dark: "#1b6b49",
-      light: "#4a9c6f",
-      subtle: "#d6eaea",
+      base: "#16a34a",             // Main eco-green
+      dark: "#15803d",             // Darker eco-green for hover states
+      light: "#22c55e",            // Lighter eco-green for accents
+      subtle: "#dcfce7",           // Very light green for backgrounds
     },
     secondary: {
-      base: "#b58473",
-      light: "#d4a99d",
+      base: "#facc15",             // Yellow accent color
+      light: "#fde047",            // Lighter yellow
+      dark: "#eab308",             // Darker yellow for hover states
     },
     accent: {
-      gold: "#faa43c",
+      gold: "#facc15",             // Yellow accent
+      yellow: "#facc15",           // Same as gold for consistency
     },
     text: {
-      primary: "#2f3e3f",
-      secondary: "#6c8182",
-      light: "#fbf7f0",
-      onPrimary: "#fbf7f0",
+      primary: "#111827",          // Near black for primary text
+      secondary: "#4b5563",        // Dark gray for secondary text
+      light: "#ffffff",            // White text for dark backgrounds
+      onPrimary: "#ffffff",        // White text on primary color
     },
     border: {
       base: "#c6adad",

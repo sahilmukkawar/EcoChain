@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
   };
 
   if (loading) return <div className="flex justify-center items-center h-32 bg-gray-100 rounded-lg">Loading...</div>;
-  if (error) return <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">Error: {error}</div>;
+  if (error) return <div className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded">Error: {error}</div>;
 
   const handleRefresh = async () => {
     try {
@@ -151,7 +151,7 @@ const Dashboard: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Your Dashboard</h1>
         <button 
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+          className="bg-eco-green hover:bg-eco-green-dark text-white px-4 py-2 rounded-lg transition-colors shadow-md"
           onClick={handleRefresh}
         >
           Refresh Data
@@ -159,11 +159,11 @@ const Dashboard: React.FC = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1 bg-gray-100 p-6 rounded-xl shadow">
+        <div className="lg:col-span-1 bg-eco-beige/20 p-6 rounded-xl shadow-md border border-eco-beige/30">
           <div className="flex flex-col gap-6">
             <div>
               <h3 className="text-lg font-semibold mb-3">Your EcoTokens</h3>
-              <div className="flex items-center gap-2 text-2xl font-bold text-green-600">
+              <div className="flex items-center gap-2 text-2xl font-bold text-eco-green">
                 <span className="text-3xl">🌱</span>
                 <span className="token-amount">{currentTokenBalance}</span>
               </div>
@@ -178,14 +178,14 @@ const Dashboard: React.FC = () => {
                     console.log('Manual token balance refresh clicked');
                     fetchLatestUserData();
                   }}
-                  className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-2 px-4 rounded-lg font-medium shadow hover:from-green-600 hover:to-green-700 transition-all"
+                  className="w-full bg-gradient-to-r from-eco-green to-eco-green-dark text-white py-2 px-4 rounded-lg font-medium shadow hover:from-eco-green-dark hover:to-eco-green transition-all"
                 >
                   🔄 Refresh Balance
                 </button>
               </div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-green-800 mb-2">Your Environmental Impact</h4>
+            <div className="bg-eco-green-light/10 p-4 rounded-lg border border-eco-green-light/20">
+              <h4 className="font-semibold text-eco-green-dark mb-2">Your Environmental Impact</h4>
               <ul className="space-y-1 text-sm">
                 <li className="flex justify-between">
                   <span>CO2 Saved:</span>
@@ -237,7 +237,7 @@ const Dashboard: React.FC = () => {
                 Loading your requests...
               </div>
             ) : wasteError ? (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <div className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded">
                 {wasteError}
               </div>
             ) : wasteRequests.length === 0 ? (
@@ -245,7 +245,7 @@ const Dashboard: React.FC = () => {
                 <p className="mb-4">No waste collection requests found.</p>
                 <Link 
                   to="/waste-submission" 
-                  className="inline-block bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  className="inline-block bg-eco-green hover:bg-eco-green-dark text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   Submit Your First Waste Request
                 </Link>
@@ -269,12 +269,12 @@ const Dashboard: React.FC = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {wasteRequests.map(request => {
                       const statusClass = `inline-block px-2 py-1 text-xs font-medium rounded capitalize ${
-                        request.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        request.status === 'requested' ? 'bg-yellow-100 text-yellow-800' :
-                        request.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                        request.status === 'in_progress' ? 'bg-purple-100 text-purple-800' :
-                        request.status === 'collected' ? 'bg-indigo-100 text-indigo-800' :
-                        request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        request.status === 'completed' ? 'bg-eco-green/10 text-eco-green-dark' :
+                        request.status === 'requested' ? 'bg-eco-yellow/10 text-eco-yellow-dark' :
+                        request.status === 'scheduled' ? 'bg-eco-blue/10 text-eco-blue-dark' :
+                        request.status === 'in_progress' ? 'bg-eco-purple/10 text-eco-purple-dark' :
+                        request.status === 'collected' ? 'bg-eco-indigo/10 text-eco-indigo-dark' :
+                        request.status === 'rejected' ? 'bg-eco-red/10 text-eco-red-dark' :
                         'bg-gray-100 text-gray-800'
                       }`;
                       const estimatedTokens = request.tokenCalculation?.totalTokensIssued || 0;
@@ -310,19 +310,19 @@ const Dashboard: React.FC = () => {
                               <span className="text-gray-500">Waiting for collector</span>
                             )}
                             {request.status === 'scheduled' && (
-                              <span className="text-blue-600">Collector assigned</span>
+                              <span className="text-eco-blue">Collector assigned</span>
                             )}
                             {request.status === 'in_progress' && (
-                              <span className="text-purple-600">Collection in progress</span>
+                              <span className="text-eco-purple">Collection in progress</span>
                             )}
                             {request.status === 'collected' && (
-                              <span className="text-indigo-600">Collected, processing...</span>
+                              <span className="text-eco-indigo">Collected, processing...</span>
                             )}
                             {request.status === 'completed' && (
-                              <span className="text-green-600 font-medium">✅ Tokens earned!</span>
+                              <span className="text-eco-green font-medium">✅ Tokens earned!</span>
                             )}
                             {request.status === 'rejected' && (
-                              <span className="text-red-600 font-medium">❌ Rejected</span>
+                              <span className="text-eco-red font-medium">❌ Rejected</span>
                             )}
                           </td>
                         </tr>
@@ -341,7 +341,7 @@ const Dashboard: React.FC = () => {
                 Loading your orders...
               </div>
             ) : ordersError ? (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <div className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded">
                 {ordersError}
               </div>
             ) : orders.length === 0 ? (
@@ -372,12 +372,12 @@ const Dashboard: React.FC = () => {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`inline-block px-2 py-1 text-xs font-medium rounded capitalize ${
-                            order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                            order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                            order.status === 'delivered' ? 'bg-indigo-100 text-indigo-800' :
-                            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            order.status === 'completed' ? 'bg-eco-green/10 text-eco-green-dark' :
+                            order.status === 'pending' ? 'bg-eco-yellow/10 text-eco-yellow-dark' :
+                            order.status === 'processing' ? 'bg-eco-blue/10 text-eco-blue-dark' :
+                            order.status === 'shipped' ? 'bg-eco-purple/10 text-eco-purple-dark' :
+                            order.status === 'delivered' ? 'bg-eco-indigo/10 text-eco-indigo-dark' :
+                            order.status === 'cancelled' ? 'bg-eco-red/10 text-eco-red-dark' :
                             'bg-gray-100 text-gray-800'
                           }`}>
                             {order.status}
@@ -393,14 +393,14 @@ const Dashboard: React.FC = () => {
                           <div className="flex gap-2">
                             <Link 
                               to={`/order-confirmation/${order._id}`} 
-                              className="inline-block bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded text-xs font-medium transition-colors"
+                              className="inline-block bg-eco-blue/10 hover:bg-eco-blue/20 text-eco-blue-dark px-3 py-1 rounded text-xs font-medium transition-colors"
                             >
                               View
                             </Link>
                             {order.trackingNumber && (
                               <Link 
                                 to={`/order-tracking/${order.trackingNumber}`} 
-                                className="inline-block bg-green-100 hover:bg-green-200 text-green-800 px-3 py-1 rounded text-xs font-medium transition-colors"
+                                className="inline-block bg-eco-green/10 hover:bg-eco-green/20 text-eco-green-dark px-3 py-1 rounded text-xs font-medium transition-colors"
                               >
                                 Track
                               </Link>

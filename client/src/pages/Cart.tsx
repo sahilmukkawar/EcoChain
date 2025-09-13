@@ -38,7 +38,7 @@ const Cart: React.FC = () => {
           <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
           <p className="text-gray-600 mb-6">Add some eco-friendly products to your cart and pay with money or EcoTokens!</p>
           <button 
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            className="bg-eco-green hover:bg-eco-green-dark text-white font-bold py-2 px-4 rounded-lg transition-colors"
             onClick={() => navigate('/marketplace')}
           >
             Browse Products
@@ -56,7 +56,7 @@ const Cart: React.FC = () => {
           <button
             onClick={handleClearCart}
             disabled={isClearing}
-            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+            className="bg-eco-red hover:bg-eco-red-dark text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
           >
             {isClearing ? 'Clearing...' : 'Clear All'}
           </button>
@@ -93,8 +93,8 @@ const Cart: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-4 px-4 text-center">
-                      <div className="font-semibold text-green-600">₹{item.product.price}</div>
-                      <div className="text-sm text-blue-600 font-medium">{item.product.tokenPrice} tokens</div>
+                      <div className="font-semibold text-eco-green">₹{item.product.price}</div>
+                      <div className="text-sm text-eco-green-dark font-medium">{item.product.tokenPrice} tokens</div>
                       <div className="text-xs text-gray-500 mt-1">or mix both</div>
                     </td>
                     <td className="py-4 px-4 text-center">
@@ -121,12 +121,12 @@ const Cart: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <div className="font-semibold text-green-600">₹{Math.round((item.product.price * item.quantity) * 100) / 100}</div>
-                      <div className="text-sm text-blue-600 font-medium">{Math.round(item.product.tokenPrice * item.quantity)} tokens</div>
+                      <div className="font-semibold text-eco-green">₹{Math.round((item.product.price * item.quantity) * 100) / 100}</div>
+                      <div className="text-sm text-eco-green-dark font-medium">{Math.round(item.product.tokenPrice * item.quantity)} tokens</div>
                     </td>
                     <td className="py-4 px-4 text-center">
                       <button 
-                        className="text-red-500 hover:text-red-700"
+                        className="text-eco-red hover:text-eco-red-dark"
                         onClick={() => removeFromCart(item.product.id)}
                       >
                         Remove
@@ -145,17 +145,17 @@ const Cart: React.FC = () => {
             <div className="space-y-3 mb-4">
               <div className="flex justify-between">
                 <span>Money Total:</span>
-                <span className="font-semibold text-green-600">₹{finalCartTotal}</span>
+                <span className="font-semibold text-eco-green">₹{finalCartTotal}</span>
               </div>
               <div className="flex justify-between">
                 <span>Token Total:</span>
-                <span className="font-semibold text-blue-600">{finalTokenTotal} tokens</span>
+                <span className="font-semibold text-eco-green-dark">{finalTokenTotal} tokens</span>
               </div>
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Items in Cart:</span>
                 <span>{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
               </div>
-              <div className="bg-blue-50 p-3 rounded-lg mt-3">
+              <div className="bg-eco-green-light/10 p-3 rounded-lg mt-3">
                 <div className="flex justify-between text-sm">
                   <span>Your EcoTokens:</span>
                   <span className="font-medium">{totalEcoTokens} tokens</span>
@@ -179,7 +179,7 @@ const Cart: React.FC = () => {
                 </div>
               </div>
               <button 
-                className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                className="bg-eco-green hover:bg-eco-green-dark text-white font-bold py-3 px-4 rounded-lg transition-colors"
                 onClick={() => navigate('/checkout')}
               >
                 Proceed to Checkout
