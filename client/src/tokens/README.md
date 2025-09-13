@@ -1,16 +1,16 @@
 # Design Tokens
 
-This folder contains the design tokens for the EcoChain application. These tokens define the visual design language including colors, typography, spacing, and other design values.
+This folder contains the design tokens for the EcoChain application. These tokens define the visual design language including colors, typography, spacing, and other design values. The tokens are integrated with Tailwind CSS for a consistent design system.
 
 ## Structure
 
-- [index.js](file:///c%3A/Users/soham/OneDrive/Desktop/EcoChain/client/src/tokens/index.js) - JavaScript object containing all design tokens
-- [tokens.css](file:///c%3A/Users/soham/OneDrive/Desktop/EcoChain/client/src/tokens/tokens.css) - CSS custom properties version of the tokens
-- [tokens.utils.ts](file:///c%3A/Users/soham/OneDrive/Desktop/EcoChain/client/src/tokens/tokens.utils.ts) - Utility functions for accessing tokens in JavaScript/TypeScript
+- [index.ts](file:///d%3A/EcoChain/client/src/tokens/index.ts) - TypeScript object containing all design tokens
+- [tokens.utils.ts](file:///d%3A/EcoChain/client/src/tokens/tokens.utils.ts) - Utility functions for accessing tokens in JavaScript/TypeScript
+- [tokens.d.ts](file:///d%3A/EcoChain/client/src/tokens/tokens.d.ts) - TypeScript type definitions for tokens
 
 ## Usage
 
-### In CSS/Tailwind Classes
+### In Tailwind Classes
 
 Tokens are integrated into Tailwind CSS and can be used directly as classes:
 
@@ -26,20 +26,13 @@ Tokens are integrated into Tailwind CSS and can be used directly as classes:
 <!-- Typography -->
 <h1 class="font-heading text-h1">Heading 1</h1>
 <p class="font-base text-base">Body text</p>
-```
 
-### As CSS Custom Properties
+<!-- Spacing -->
+<div class="p-4">Small padding</div>
+<div class="m-8">Medium margin</div>
 
-Tokens are also available as CSS custom properties:
-
-```css
-.my-component {
-  background-color: var(--color-background-primary);
-  color: var(--color-text-primary);
-  font-family: var(--font-family-base);
-  padding: var(--space-16);
-  border-radius: var(--radius-md);
-}
+<!-- Border radius -->
+<div class="rounded-md">Medium rounded corners</div>
 ```
 
 ### In JavaScript/TypeScript
@@ -47,10 +40,14 @@ Tokens are also available as CSS custom properties:
 Use the utility functions to access tokens programmatically:
 
 ```typescript
-import { getColor, getFontFamily } from './tokens.utils';
+import { getColor, getFontFamily, getTailwindClass } from './tokens.utils';
 
+// Get token values directly
 const primaryColor = getColor('primary-base');
 const headingFont = getFontFamily('heading');
+
+// Get Tailwind class names
+const bgClass = getTailwindClass('color', 'primary-base'); // Returns 'bg-primary-base'
 ```
 
 ## Available Tokens

@@ -2,7 +2,7 @@
 const path = require("path");
 const defaultTheme = require("tailwindcss/defaultTheme");
 const twColors = require("tailwindcss/colors");
-const tokens = require(path.resolve(__dirname, "src/tokens/index.js"));
+const tokens = require(path.resolve(__dirname, "src/tokens/index.ts"));
 
 module.exports = {
   content: [
