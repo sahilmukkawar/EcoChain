@@ -189,9 +189,9 @@ const OrderConfirmation: React.FC = () => {
                     Quantity: {item.quantity}
                   </div>
                   <div className="font-bold text-gray-800">
-                    ₹{item.unitPrice} each • Total: ₹{item.totalPrice}
+                    ₹{Math.round((item.unitPrice || 0) * 100) / 100} each • Total: ₹{Math.round((item.totalPrice || 0) * 100) / 100}
                     {item.ecoTokensUsed && item.ecoTokensUsed > 0 && (
-                      <span className="text-green-600 ml-2">+ {item.ecoTokensUsed} tokens used</span>
+                      <span className="text-green-600 ml-2">+ {Math.round(item.ecoTokensUsed)} tokens used</span>
                     )}
                   </div>
                 </div>
@@ -205,34 +205,43 @@ const OrderConfirmation: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-white p-5 rounded-lg shadow-md mb-8">
-        <div className="flex justify-between py-2 border-b border-gray-200">
-          <span>Subtotal:</span>
-          <span>₹{order.billing.subtotal}</span>
-        </div>
-        <div className="flex justify-between py-2 border-b border-gray-200">
-          <span>EcoTokens Used:</span>
-          <span>{order.billing.ecoTokensApplied} tokens (₹{order.billing.ecoTokenValue})</span>
-        </div>
-        <div className="flex justify-between py-2 border-b border-gray-200">
-          <span>Taxes:</span>
-          <span>₹{order.billing.taxes}</span>
-        </div>
-        <div className="flex justify-between py-2 border-b border-gray-200">
-          <span>Shipping:</span>
-          <span>₹{order.billing.shippingCharges}</span>
-        </div>
-        {order.billing.discount > 0 && (
-          <div className="flex justify-between py-2 border-b border-gray-200 text-green-600">
-            <span>Discount:</span>
-            <span>-₹{order.billing.discount}</span>
+        <div className="bg-white p-5 rounded-lg shadow-md mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Order Summary</h2>
+          <div className="flex justify-between py-2 border-b border-gray-200">
+            <span>Subtotal:</span>
+            <span>₹{Math.round((order.billing.subtotal || 0) * 100) / 100}</span>
           </div>
-        )}
-        <div className="flex justify-between py-2 border-b border-gray-200 font-bold text-lg text-gray-800">
-          <span>Total Paid:</span>
-          <span>₹{order.billing.finalAmount}</span>
+          <div className="flex justify-between py-2 border-b border-gray-200">
+            <span>EcoTokens Used:</span>
+            <span>{Math.round(order.billing.ecoTokensApplied || 0)} tokens (₹{Math.round((order.billing.ecoTokenValue || 0) * 100) / 100})</span>
+          </div>
+          <div className="flex justify-between py-2 border-b border-gray-200">
+            <span>Taxes (18% GST):</span>
+            <span>₹{Math.round((order.billing.taxes || 0) * 100) / 100}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b border-gray-200">
+            <span>Shipping:</span>
+            <span>₹{Math.round((order.billing.shippingCharges || 0) * 100) / 100}</span>
+          </div>
+          {order.billing.discount > 0 && (
+            <div className="flex justify-between py-2 border-b border-gray-200 text-green-600">
+              <span>Discount:</span>
+              <span>-₹{Math.round((order.billing.discount || 0) * 100) / 100}</span>
+            </div>
+          )}
+          <div className="flex justify-between py-2 border-b border-gray-200 font-bold text-lg text-gray-800">
+            <span>Total Paid:</span>
+            <span>₹{Math.round((order.billing.finalAmount || 0) * 100) / 100}</span>
+          </div>
+          {order.billing.ecoTokensApplied > 0 && (
+            <div className="mt-3 p-3 bg-green-50 rounded-lg">
+              <div className="text-sm text-green-800">
+                <div className="font-semibold">EcoToken Savings:</div>
+                <div>You saved ₹{Math.round((order.billing.ecoTokenValue || 0) * 100) / 100} by using {Math.round(order.billing.ecoTokensApplied || 0)} EcoTokens!</div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
 
       <div className="flex justify-center gap-5">
         <button 

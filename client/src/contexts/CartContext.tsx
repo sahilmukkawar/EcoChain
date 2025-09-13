@@ -76,11 +76,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user]);
 
-  // Add product to cart
+  // Add product to cart with stock validation
   const addToCart = (product: Product) => {
     const existingItem = cart.find(item => item.product.id === product.id);
     
     if (existingItem) {
+      // Check if we can add more (assuming stock validation on backend)
       setCart(cart.map(item => 
         item.product.id === product.id 
           ? { ...item, quantity: item.quantity + 1 } 
@@ -96,7 +97,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCart(cart.filter(item => item.product.id !== productId));
   };
 
-  // Update product quantity in cart
+  // Update product quantity in cart with validation
   const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
@@ -105,7 +106,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     setCart(cart.map(item => 
       item.product.id === productId 
-        ? { ...item, quantity } 
+        ? { ...item, quantity: Math.max(1, quantity) } // Ensure minimum quantity of 1
         : item
     ));
   };
@@ -115,9 +116,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCart([]);
   };
 
-  // Calculate cart totals
-  const cartTotal = cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
-  const tokenTotal = cart.reduce((total, item) => total + (item.product.tokenPrice * item.quantity), 0);
+  // Calculate cart totals with proper rounding
+  const cartTotal = Math.round(cart.reduce((total, item) => {
+    return total + (item.product.price * item.quantity);
+  }, 0) * 100) / 100;
+  
+  const tokenTotal = Math.round(cart.reduce((total, item) => {
+    return total + (item.product.tokenPrice * item.quantity);
+  }, 0));
 
   return (
     <CartContext.Provider

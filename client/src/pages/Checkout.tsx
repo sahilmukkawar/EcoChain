@@ -38,25 +38,25 @@ const Checkout: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<number>(1); // 1: Shipping, 2: Review, 3: Confirmation
 
-  // Calculate payment details based on payment method
+  // Calculate payment details based on payment method with proper rounding
   const maxTokensUsable = Math.min(tokenTotal, totalEcoTokens);
-  const tokenValue = tokensToUse * 0.1; // 1 token = ₹0.1
+  const tokenValue = Math.round(tokensToUse * 0.1 * 100) / 100; // 1 token = ₹0.1 with proper rounding
   
   let finalMoneyAmount = 0;
   let finalTokenAmount = 0;
   
   switch (paymentMethod) {
     case 'money':
-      finalMoneyAmount = cartTotal;
+      finalMoneyAmount = Math.round(cartTotal * 100) / 100;
       finalTokenAmount = 0;
       break;
     case 'tokens':
       finalMoneyAmount = 0;
-      finalTokenAmount = tokenTotal;
+      finalTokenAmount = Math.round(tokenTotal);
       break;
     case 'mixed':
-      finalTokenAmount = tokensToUse;
-      finalMoneyAmount = Math.max(0, cartTotal - tokenValue);
+      finalTokenAmount = Math.round(tokensToUse);
+      finalMoneyAmount = Math.max(0, Math.round((cartTotal - tokenValue) * 100) / 100);
       break;
   }
 
@@ -90,7 +90,7 @@ const Checkout: React.FC = () => {
         setIsLoading(true);
         setError(null);
         
-        // Prepare order data
+        // Prepare order data with consistent structure
         const orderData = {
           items: cart.map(item => ({
             productId: item.product.id,
@@ -101,7 +101,15 @@ const Checkout: React.FC = () => {
                    paymentMethod === 'tokens' ? 'token' as const : 'cash' as const, // mixed uses cash with tokens
             tokensUsed: finalTokenAmount
           },
-          shipping: shippingInfo,
+          shipping: {
+            fullName: shippingInfo.fullName,
+            address: shippingInfo.address,
+            city: shippingInfo.city,
+            state: shippingInfo.state,
+            zipCode: shippingInfo.zipCode,
+            country: shippingInfo.country,
+            phone: shippingInfo.phone
+          },
           notes: orderNotes
         };
         
@@ -346,7 +354,7 @@ const Checkout: React.FC = () => {
                         <h4 className="font-bold">{item.product.name}</h4>
                         <p className="text-gray-600 text-sm mb-2">{item.product.description}</p>
                         <div className="flex justify-between">
-                          <span>₹{item.product.price} + {item.product.tokenPrice} Tokens</span>
+                          <span>₹{Math.round(item.product.price * 100) / 100} + {Math.round(item.product.tokenPrice)} Tokens</span>
                           <span>Qty: {item.quantity}</span>
                         </div>
                       </div>
@@ -380,7 +388,7 @@ const Checkout: React.FC = () => {
                     />
                     <div className="flex-1">
                       <div className="font-medium">Pay with Money</div>
-                      <div className="text-sm text-gray-600">Total: ₹{cartTotal}</div>
+                      <div className="text-sm text-gray-600">Total: ₹{Math.round(cartTotal * 100) / 100}</div>
                     </div>
                   </label>
                   
@@ -392,14 +400,14 @@ const Checkout: React.FC = () => {
                       checked={paymentMethod === 'tokens'}
                       onChange={() => setPaymentMethod('tokens')}
                       className="mt-1"
-                      disabled={totalEcoTokens < tokenTotal}
+                      disabled={totalEcoTokens < Math.round(tokenTotal)}
                     />
                     <div className="flex-1">
                       <div className="font-medium">Pay with EcoTokens</div>
                       <div className="text-sm text-gray-600">
-                        Total: {tokenTotal} tokens (You have: {totalEcoTokens})
+                        Total: {Math.round(tokenTotal)} tokens (You have: {totalEcoTokens})
                       </div>
-                      {totalEcoTokens < tokenTotal && (
+                      {totalEcoTokens < Math.round(tokenTotal) && (
                         <div className="text-xs text-red-500">Insufficient tokens</div>
                       )}
                     </div>
@@ -437,6 +445,7 @@ const Checkout: React.FC = () => {
                           <div className="mt-2 text-sm">
                             <div>Tokens: {tokensToUse} tokens (₹{tokenValue.toFixed(2)})</div>
                             <div>Money: ₹{finalMoneyAmount.toFixed(2)}</div>
+                            <div className="font-semibold border-t pt-1 mt-1">Total Value: ₹{(finalMoneyAmount + tokenValue).toFixed(2)}</div>
                           </div>
                         </div>
                       )}
@@ -462,17 +471,17 @@ const Checkout: React.FC = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Cart Total (Money):</span>
-                    <span>₹{cartTotal}</span>
+                    <span>₹{Math.round(cartTotal * 100) / 100}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Cart Total (Tokens):</span>
-                    <span>{tokenTotal} tokens</span>
+                    <span>{Math.round(tokenTotal)} tokens</span>
                   </div>
                   <hr className="my-2" />
                   {paymentMethod === 'money' && (
                     <div className="flex justify-between font-semibold text-green-600">
                       <span>You will pay:</span>
-                      <span>₹{finalMoneyAmount}</span>
+                      <span>₹{finalMoneyAmount.toFixed(2)}</span>
                     </div>
                   )}
                   {paymentMethod === 'tokens' && (
@@ -529,8 +538,8 @@ const Checkout: React.FC = () => {
                 <div key={item.product.id} className="flex justify-between text-sm">
                   <span>{item.product.name} x {item.quantity}</span>
                   <div className="text-right">
-                    <div className="text-green-600">₹{item.product.price * item.quantity}</div>
-                    <div className="text-blue-600 text-xs">{item.product.tokenPrice * item.quantity} tokens</div>
+                    <div className="text-green-600">₹{Math.round((item.product.price * item.quantity) * 100) / 100}</div>
+                    <div className="text-blue-600 text-xs">{Math.round(item.product.tokenPrice * item.quantity)} tokens</div>
                   </div>
                 </div>
               ))}
@@ -540,17 +549,17 @@ const Checkout: React.FC = () => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Items (Money):</span>
-                  <span>₹{cartTotal}</span>
+                  <span>₹{Math.round(cartTotal * 100) / 100}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Items (Tokens):</span>
-                  <span>{tokenTotal} tokens</span>
+                  <span>{Math.round(tokenTotal)} tokens</span>
                 </div>
                 <hr className="my-2" />
                 {paymentMethod === 'money' && (
                   <div className="flex justify-between font-bold text-green-600">
                     <span>Total to Pay:</span>
-                    <span>₹{finalMoneyAmount}</span>
+                    <span>₹{finalMoneyAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {paymentMethod === 'tokens' && (

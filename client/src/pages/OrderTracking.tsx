@@ -259,9 +259,9 @@ const OrderTracking: React.FC = () => {
                 </div>
                 <div className="mt-2">
                   <span className="text-gray-800">
-                    ₹{item.unitPrice} each • Total: ₹{item.totalPrice}
+                    ₹{Math.round((item.unitPrice || 0) * 100) / 100} each • Total: ₹{Math.round((item.totalPrice || 0) * 100) / 100}
                     {item.ecoTokensUsed && item.ecoTokensUsed > 0 && (
-                      <span className="text-green-600 ml-2">+ {item.ecoTokensUsed} tokens used</span>
+                      <span className="text-green-600 ml-2">+ {Math.round(item.ecoTokensUsed)} tokens used</span>
                     )}
                   </span>
                 </div>

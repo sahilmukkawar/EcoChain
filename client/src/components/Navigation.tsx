@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useCart } from '../contexts/CartContext.tsx';
 
 const Navigation: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { cart } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -123,8 +125,13 @@ const Navigation: React.FC = () => {
                   </span>
                 </div>
                 
-                <Link to="/checkout" className="text-white text-xl no-underline p-2 rounded-full bg-white/10 transition-all hover:bg-green-500/20 hover:scale-110" title="Shopping Cart">
+                <Link to="/cart" className="relative text-white text-xl no-underline p-2 rounded-full bg-white/10 transition-all hover:bg-green-500/20 hover:scale-110" title="Shopping Cart">
                   <span role="img" aria-label="Shopping Cart">🛒</span>
+                  {cart.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                      {cart.length > 99 ? '99+' : cart.length}
+                    </span>
+                  )}
                 </Link>
               </div>
             )}
@@ -217,8 +224,13 @@ const Navigation: React.FC = () => {
                   </div>
                   
                   <div className="flex px-3 gap-2">
-                    <Link to="/checkout" className="text-white text-lg no-underline p-2 rounded-full bg-white/10 transition-all hover:bg-green-500/20" title="Shopping Cart">
+                    <Link to="/cart" className="relative text-white text-lg no-underline p-2 rounded-full bg-white/10 transition-all hover:bg-green-500/20" title="Shopping Cart">
                       🛒
+                      {cart.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                          {cart.length > 9 ? '9+' : cart.length}
+                        </span>
+                      )}
                     </Link>
                     <button 
                       className="flex-1 bg-red-500/20 text-white border border-red-500/30 px-4 py-2 rounded-lg cursor-pointer transition-all font-medium hover:bg-red-500/30" 
