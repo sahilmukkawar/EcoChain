@@ -15,6 +15,7 @@ import FactoryDashboard from './pages/FactoryDashboard.tsx';
 import FactoryProductManagement from './pages/FactoryProductManagement.tsx';
 import CollectorDashboard from './pages/CollectorDashboard.tsx';
 import Checkout from './pages/Checkout.tsx';
+import Cart from './pages/Cart.tsx';
 import OrderConfirmation from './pages/OrderConfirmation.tsx';
 import OrderTracking from './pages/OrderTracking.tsx';
 import PickupScheduling from './pages/PickupScheduling.tsx';
@@ -35,6 +36,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/cart" element={<Cart />} />
                 <Route path="/waste-submission" element={<WasteSubmission />} />
                 <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['user']} />} />
                 <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />

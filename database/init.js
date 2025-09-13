@@ -154,132 +154,22 @@ async function initDatabase() {
       console.log('Regular user already exists');
     }
 
-    // Check if sample products exist
-    const productsExist = await Product.countDocuments();
-
-    if (productsExist === 0) {
-      console.log('Creating sample marketplace products...');
-
-      // Get factory user for product creation
-      const factory = await User.findOne({ role: 'factory' });
-
-      if (factory) {
-        // Sample products
-        const sampleProducts = [
-          {
-            productId: 'prod-' + Date.now() + '-1',
-            name: 'Recycled Plastic Tote Bag',
-            description: 'Eco-friendly tote bag made from 100% recycled plastic bottles.',
-            category: 'recycled_goods',
-            price: {
-              tokenAmount: 50,
-              fiatAmount: 15.99
-            },
-            images: ['https://example.com/images/tote-bag.jpg'],
-            sellerId: factory._id,
-            sellerType: 'factory',
-            recycledMaterial: 'plastic',
-            sustainabilityScore: 85,
-            inventory: {
-              available: 100,
-              reserved: 0,
-              sold: 0
-            },
-            specifications: {
-              dimensions: '15x12x4 inches',
-              weight: '0.3 kg',
-              color: 'Blue'
-            },
-            status: 'active'
-          },
-          {
-            productId: 'prod-' + Date.now() + '-2',
-            name: 'Recycled Paper Notebook',
-            description: 'Notebook made from 100% recycled paper with eco-friendly binding.',
-            category: 'recycled_goods',
-            price: {
-              tokenAmount: 30,
-              fiatAmount: 8.99
-            },
-            images: ['https://example.com/images/notebook.jpg'],
-            sellerId: factory._id,
-            sellerType: 'factory',
-            recycledMaterial: 'paper',
-            sustainabilityScore: 90,
-            inventory: {
-              available: 200,
-              reserved: 0,
-              sold: 0
-            },
-            specifications: {
-              pages: '120',
-              dimensions: '8.5x11 inches',
-              cover: 'Hardcover'
-            },
-            status: 'active'
-          },
-          {
-            productId: 'prod-' + Date.now() + '-3',
-            name: 'Recycled Glass Vase',
-            description: 'Beautiful vase crafted from recycled glass bottles.',
-            category: 'recycled_goods',
-            price: {
-              tokenAmount: 75,
-              fiatAmount: 24.99
-            },
-            images: ['https://example.com/images/glass-vase.jpg'],
-            sellerId: factory._id,
-            sellerType: 'factory',
-            recycledMaterial: 'glass',
-            sustainabilityScore: 80,
-            inventory: {
-              available: 50,
-              reserved: 0,
-              sold: 0
-            },
-            specifications: {
-              height: '12 inches',
-              diameter: '6 inches',
-              color: 'Clear with blue tint'
-            },
-            status: 'active'
-          },
-          {
-            productId: 'prod-' + Date.now() + '-4',
-            name: 'Tree Planting Service',
-            description: 'We will plant a tree in your name in a reforestation area.',
-            category: 'services',
-            price: {
-              tokenAmount: 100,
-              fiatAmount: 29.99
-            },
-            images: ['https://example.com/images/tree-planting.jpg'],
-            sellerId: factory._id,
-            sellerType: 'system',
-            recycledMaterial: 'none',
-            sustainabilityScore: 95,
-            inventory: {
-              available: 1000,
-              reserved: 0,
-              sold: 0
-            },
-            specifications: {
-              location: 'Various reforestation projects',
-              includes: 'Certificate of planting',
-              impact: 'Helps offset carbon footprint'
-            },
-            status: 'active'
-          }
-        ];
-
-        await Product.insertMany(sampleProducts);
-        console.log('Sample marketplace products created successfully');
-      } else {
-        console.log('Factory user not found, skipping product creation');
-      }
-    } else {
-      console.log('Sample products already exist');
+    // Note: No static products are created during initialization.
+    // Products should only be created by factories through the marketplace interface.
+    
+    // Clean up any existing static/system products that might have been seeded previously
+    const deletedProducts = await Product.deleteMany({ 
+      $or: [
+        { sellerType: 'system' },
+        { productId: { $regex: /^PRD_.*_SAMPLE$/ } },
+        { productId: { $regex: /^prod-.*-[0-9]+$/ } }
+      ]
+    });
+    if (deletedProducts.deletedCount > 0) {
+      console.log(`Removed ${deletedProducts.deletedCount} static/sample products from database`);
     }
+    
+    console.log('Database initialization completed - no static products created, marketplace ready for factory products');
 
     console.log('Database initialization completed successfully');
 

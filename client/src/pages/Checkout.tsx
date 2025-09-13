@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
+import { useEcoChain } from '../contexts/EcoChainContext.tsx';
 import { marketplaceAPI } from '../services/api.ts';
 
 interface ShippingInfo {
@@ -18,6 +19,7 @@ const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { cart, cartTotal, tokenTotal, clearCart } = useCart();
   const { user } = useAuth();
+  const { totalEcoTokens } = useEcoChain();
   
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
     fullName: user?.name || '',
@@ -26,19 +28,37 @@ const Checkout: React.FC = () => {
     state: '',
     zipCode: '',
     country: 'India',
-    phone: user?.phone || ''
+    phone: ''
   });
   
-  const [paymentMethod, setPaymentMethod] = useState<'token' | 'cash' | 'card'>('token');
+  const [paymentMethod, setPaymentMethod] = useState<'money' | 'tokens' | 'mixed'>('money');
+  const [tokensToUse, setTokensToUse] = useState<number>(0);
   const [orderNotes, setOrderNotes] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<number>(1); // 1: Shipping, 2: Review, 3: Confirmation
 
-  // Calculate totals
-  const totalEcoTokens = user?.ecoWallet?.currentBalance || 0;
+  // Calculate payment details based on payment method
   const maxTokensUsable = Math.min(tokenTotal, totalEcoTokens);
-  const finalTotal = cartTotal - (maxTokensUsable * 5); // Assuming 1 token = ₹5 value
+  const tokenValue = tokensToUse * 0.1; // 1 token = ₹0.1
+  
+  let finalMoneyAmount = 0;
+  let finalTokenAmount = 0;
+  
+  switch (paymentMethod) {
+    case 'money':
+      finalMoneyAmount = cartTotal;
+      finalTokenAmount = 0;
+      break;
+    case 'tokens':
+      finalMoneyAmount = 0;
+      finalTokenAmount = tokenTotal;
+      break;
+    case 'mixed':
+      finalTokenAmount = tokensToUse;
+      finalMoneyAmount = Math.max(0, cartTotal - tokenValue);
+      break;
+  }
 
   // Handle shipping info changes
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -77,7 +97,9 @@ const Checkout: React.FC = () => {
             quantity: item.quantity
           })),
           payment: {
-            method: paymentMethod
+            method: paymentMethod === 'money' ? 'cash' as const : 
+                   paymentMethod === 'tokens' ? 'token' as const : 'cash' as const, // mixed uses cash with tokens
+            tokensUsed: finalTokenAmount
           },
           shipping: shippingInfo,
           notes: orderNotes
@@ -94,9 +116,29 @@ const Checkout: React.FC = () => {
         } else {
           throw new Error(response.data.message || 'Failed to create order');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error creating order:', err);
-        setError('Failed to process your order. Please try again.');
+        
+        // Extract detailed error message
+        let errorMessage = 'Failed to process your order. Please try again.';
+        
+        if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        // Log additional details for debugging
+        console.error('Error details:', {
+          status: err.response?.status,
+          data: err.response?.data,
+          paymentMethod,
+          finalTokenAmount,
+          finalMoneyAmount,
+          cart: cart.length
+        });
+        
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -326,28 +368,79 @@ const Checkout: React.FC = () => {
               
               <div className="mb-8">
                 <h3 className="text-lg font-semibold mb-4">Payment Method</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center">
+                <div className="space-y-4">
+                  <label className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
                     <input
                       type="radio"
                       name="paymentMethod"
-                      value="token"
-                      checked={paymentMethod === 'token'}
-                      onChange={() => setPaymentMethod('token')}
-                      className="mr-2"
+                      value="money"
+                      checked={paymentMethod === 'money'}
+                      onChange={() => setPaymentMethod('money')}
+                      className="mt-1"
                     />
-                    EcoTokens ({totalEcoTokens} available)
+                    <div className="flex-1">
+                      <div className="font-medium">Pay with Money</div>
+                      <div className="text-sm text-gray-600">Total: ₹{cartTotal}</div>
+                    </div>
                   </label>
-                  <label className="flex items-center">
+                  
+                  <label className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
                     <input
                       type="radio"
                       name="paymentMethod"
-                      value="cash"
-                      checked={paymentMethod === 'cash'}
-                      onChange={() => setPaymentMethod('cash')}
-                      className="mr-2"
+                      value="tokens"
+                      checked={paymentMethod === 'tokens'}
+                      onChange={() => setPaymentMethod('tokens')}
+                      className="mt-1"
+                      disabled={totalEcoTokens < tokenTotal}
                     />
-                    Cash on Delivery
+                    <div className="flex-1">
+                      <div className="font-medium">Pay with EcoTokens</div>
+                      <div className="text-sm text-gray-600">
+                        Total: {tokenTotal} tokens (You have: {totalEcoTokens})
+                      </div>
+                      {totalEcoTokens < tokenTotal && (
+                        <div className="text-xs text-red-500">Insufficient tokens</div>
+                      )}
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="mixed"
+                      checked={paymentMethod === 'mixed'}
+                      onChange={() => setPaymentMethod('mixed')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">Mix Payment (Tokens + Money)</div>
+                      <div className="text-sm text-gray-600">Use both tokens and money</div>
+                      {paymentMethod === 'mixed' && (
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium mb-2">
+                            Tokens to use: {tokensToUse} (Value: ₹{tokenValue.toFixed(2)})
+                          </label>
+                          <input
+                            type="range"
+                            min="0"
+                            max={Math.min(totalEcoTokens, Math.floor(cartTotal / 0.1))}
+                            value={tokensToUse}
+                            onChange={(e) => setTokensToUse(parseInt(e.target.value))}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0 tokens</span>
+                            <span>{Math.min(totalEcoTokens, Math.floor(cartTotal / 0.1))} tokens max</span>
+                          </div>
+                          <div className="mt-2 text-sm">
+                            <div>Tokens: {tokensToUse} tokens (₹{tokenValue.toFixed(2)})</div>
+                            <div>Money: ₹{finalMoneyAmount.toFixed(2)}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </label>
                 </div>
               </div>
@@ -365,17 +458,45 @@ const Checkout: React.FC = () => {
               </div>
               
               <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                <div className="flex justify-between mb-2">
-                  <span>Subtotal:</span>
-                  <span>₹{cartTotal}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span>EcoTokens Applied:</span>
-                  <span>{maxTokensUsable} tokens</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2">
-                  <span>Total:</span>
-                  <span>₹{finalTotal}</span>
+                <h4 className="font-medium mb-3">Payment Summary</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Cart Total (Money):</span>
+                    <span>₹{cartTotal}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Cart Total (Tokens):</span>
+                    <span>{tokenTotal} tokens</span>
+                  </div>
+                  <hr className="my-2" />
+                  {paymentMethod === 'money' && (
+                    <div className="flex justify-between font-semibold text-green-600">
+                      <span>You will pay:</span>
+                      <span>₹{finalMoneyAmount}</span>
+                    </div>
+                  )}
+                  {paymentMethod === 'tokens' && (
+                    <div className="flex justify-between font-semibold text-blue-600">
+                      <span>You will pay:</span>
+                      <span>{finalTokenAmount} tokens</span>
+                    </div>
+                  )}
+                  {paymentMethod === 'mixed' && (
+                    <>
+                      <div className="flex justify-between text-blue-600">
+                        <span>Tokens:</span>
+                        <span>{finalTokenAmount} tokens</span>
+                      </div>
+                      <div className="flex justify-between text-green-600">
+                        <span>Money:</span>
+                        <span>₹{finalMoneyAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold border-t pt-2">
+                        <span>Total Value:</span>
+                        <span>₹{(finalMoneyAmount + (finalTokenAmount * 0.1)).toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -407,23 +528,49 @@ const Checkout: React.FC = () => {
               {cart.map(item => (
                 <div key={item.product.id} className="flex justify-between text-sm">
                   <span>{item.product.name} x {item.quantity}</span>
-                  <span>₹{item.product.price * item.quantity} + {item.product.tokenPrice * item.quantity} Tokens</span>
+                  <div className="text-right">
+                    <div className="text-green-600">₹{item.product.price * item.quantity}</div>
+                    <div className="text-blue-600 text-xs">{item.product.tokenPrice * item.quantity} tokens</div>
+                  </div>
                 </div>
               ))}
             </div>
             
             <div className="border-t border-gray-200 pt-4">
-              <div className="flex justify-between mb-2">
-                <span>Subtotal:</span>
-                <span>₹{cartTotal}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span>EcoTokens:</span>
-                <span>-{maxTokensUsable} tokens</span>
-              </div>
-              <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-300">
-                <span>Total:</span>
-                <span>₹{finalTotal}</span>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Items (Money):</span>
+                  <span>₹{cartTotal}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Items (Tokens):</span>
+                  <span>{tokenTotal} tokens</span>
+                </div>
+                <hr className="my-2" />
+                {paymentMethod === 'money' && (
+                  <div className="flex justify-between font-bold text-green-600">
+                    <span>Total to Pay:</span>
+                    <span>₹{finalMoneyAmount}</span>
+                  </div>
+                )}
+                {paymentMethod === 'tokens' && (
+                  <div className="flex justify-between font-bold text-blue-600">
+                    <span>Total to Pay:</span>
+                    <span>{finalTokenAmount} tokens</span>
+                  </div>
+                )}
+                {paymentMethod === 'mixed' && (
+                  <>
+                    <div className="flex justify-between text-blue-600">
+                      <span>Tokens:</span>
+                      <span>{finalTokenAmount} tokens</span>
+                    </div>
+                    <div className="flex justify-between text-green-600">
+                      <span>Money:</span>
+                      <span>₹{finalMoneyAmount.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

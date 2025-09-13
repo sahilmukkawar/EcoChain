@@ -3,15 +3,22 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { marketplaceAPI } from '../services/api.ts';
 
 interface OrderItem {
-  productId: string;
-  quantity: number;
-  price: number;
-  tokenPrice: number;
-  product: {
-    name: string;
-    description: string;
-    images: string[];
+  productId: {
+    _id: string;
+    productInfo: {
+      name: string;
+      description?: string;
+      images?: string[];
+    };
+    pricing?: {
+      sellingPrice?: number;
+      ecoTokenDiscount?: number;
+    };
   };
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  ecoTokensUsed?: number;
 }
 
 interface Order {
@@ -19,24 +26,34 @@ interface Order {
   orderId: string;
   userId: string;
   orderItems: OrderItem[];
-  totalAmount: number;
-  totalTokens: number;
+  billing: {
+    subtotal: number;
+    ecoTokensApplied: number;
+    ecoTokenValue: number;
+    taxes: number;
+    shippingCharges: number;
+    discount: number;
+    finalAmount: number;
+  };
   status: string;
-  shippingAddress: {
-    fullName: string;
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-    phone: string;
-  };
-  paymentMethod: string;
-  createdAt: string;
-  estimatedDelivery: string;
   shipping: {
+    address: {
+      name: string;
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      country: string;
+      phone: string;
+    };
     trackingNumber?: string;
+    estimatedDelivery?: string;
   };
+  payment: {
+    method: string;
+    status: string;
+  };
+  createdAt: string;
 }
 
 const OrderTracking: React.FC = () => {
@@ -50,34 +67,42 @@ const OrderTracking: React.FC = () => {
     const fetchOrder = async () => {
       try {
         setLoading(true);
-        // In a real app, you would have a specific endpoint for tracking by tracking number
-        // For now, we'll get all user orders and find the one with matching tracking number
-        const response = await marketplaceAPI.getUserOrders();
-        
-        if (response.data.success) {
-          // Find order by tracking number
-          const foundOrder = response.data.data.find((order: Order) => 
-            order.shipping?.trackingNumber === trackingNumber
-          );
-          
-          if (foundOrder) {
-            setOrder(foundOrder);
-          } else {
-            // Try to get order by ID if tracking number is actually an order ID
+        // First try to get order by tracking number
+        if (trackingNumber) {
+          try {
+            const response = await marketplaceAPI.trackOrder(trackingNumber);
+            if (response.data.success) {
+              setOrder(response.data.data);
+              return;
+            }
+          } catch (err) {
+            // If tracking by number fails, try getting user orders and find by tracking number
+            const userOrdersResponse = await marketplaceAPI.getUserOrders();
+            if (userOrdersResponse.data.success) {
+              const foundOrder = userOrdersResponse.data.data.find((order: Order) => 
+                order.shipping?.trackingNumber === trackingNumber || order._id === trackingNumber
+              );
+              
+              if (foundOrder) {
+                setOrder(foundOrder);
+                return;
+              }
+            }
+            
+            // If still not found, try to get order by ID
             try {
-              const orderResponse = await marketplaceAPI.getOrderById(trackingNumber || '');
+              const orderResponse = await marketplaceAPI.getOrderById(trackingNumber);
               if (orderResponse.data.success) {
                 setOrder(orderResponse.data.data);
-              } else {
-                throw new Error('Order not found');
+                return;
               }
-            } catch {
-              throw new Error('Order not found');
+            } catch (err) {
+              // Ignore error and let the outer catch handle it
             }
           }
-        } else {
-          throw new Error(response.data.message || 'Failed to fetch order');
         }
+        
+        throw new Error('Order not found');
       } catch (err) {
         console.error('Error fetching order:', err);
         setError('Failed to load order details. Please try again.');
@@ -198,18 +223,18 @@ const OrderTracking: React.FC = () => {
           </div>
           <div className="flex justify-between py-2 border-b border-gray-200">
             <span>Payment Method:</span>
-            <span>{order.paymentMethod === 'token' ? 'EcoTokens' : 'Cash on Delivery'}</span>
+            <span>{order.payment.method === 'token' ? 'EcoTokens' : order.payment.method === 'cash' ? 'Cash on Delivery' : 'Card Payment'}</span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Shipping Information</h2>
           <div className="mb-4">
-            <p className="font-bold">{order.shippingAddress?.fullName || 'N/A'}</p>
-            <p>{order.shippingAddress?.address || 'N/A'}</p>
-            <p>{order.shippingAddress?.city || 'N/A'}, {order.shippingAddress?.state || 'N/A'} {order.shippingAddress?.zipCode || 'N/A'}</p>
-            <p>{order.shippingAddress?.country || 'N/A'}</p>
-            <p>Phone: {order.shippingAddress?.phone || 'N/A'}</p>
+            <p className="font-bold">{order.shipping.address?.name || 'N/A'}</p>
+            <p>{order.shipping.address?.street || 'N/A'}</p>
+            <p>{order.shipping.address?.city || 'N/A'}, {order.shipping.address?.state || 'N/A'} {order.shipping.address?.zipCode || 'N/A'}</p>
+            <p>{order.shipping.address?.country || 'N/A'}</p>
+            <p>Phone: {order.shipping.address?.phone || 'N/A'}</p>
           </div>
         </div>
       </div>
@@ -220,16 +245,25 @@ const OrderTracking: React.FC = () => {
           {order.orderItems.map((item, index) => (
             <div key={index} className="bg-gray-100 p-4 rounded-lg flex items-center">
               <div className="w-24 h-24 flex-shrink-0">
-                <img src={item.product.images?.[0] || '/logo192.png'} alt={item.product.name} className="w-full h-full object-cover" />
+                <img 
+                  src={item.productId?.productInfo?.images?.[0] || '/logo192.png'} 
+                  alt={item.productId?.productInfo?.name || 'Product'} 
+                  className="w-full h-full object-cover" 
+                />
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-bold text-gray-800">{item.product.name}</h3>
-                <p className="text-gray-600">{item.product.description}</p>
+                <h3 className="text-lg font-bold text-gray-800">{item.productId?.productInfo?.name || 'Unknown Product'}</h3>
+                <p className="text-gray-600">{item.productId?.productInfo?.description || 'No description available'}</p>
                 <div className="mt-2">
                   <span className="text-gray-500">Quantity: {item.quantity}</span>
                 </div>
                 <div className="mt-2">
-                  <span className="text-gray-800">₹{item.price * item.quantity} + {item.tokenPrice * item.quantity} Tokens</span>
+                  <span className="text-gray-800">
+                    ₹{item.unitPrice} each • Total: ₹{item.totalPrice}
+                    {item.ecoTokensUsed && item.ecoTokensUsed > 0 && (
+                      <span className="text-green-600 ml-2">+ {item.ecoTokensUsed} tokens used</span>
+                    )}
+                  </span>
                 </div>
               </div>
             </div>
@@ -239,13 +273,13 @@ const OrderTracking: React.FC = () => {
 
       <div className="flex justify-between">
         <button 
-          className="btn btn-secondary" 
+          className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
           onClick={() => navigate('/dashboard')}
         >
           Back to Dashboard
         </button>
         <button 
-          className="btn btn-primary" 
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
           onClick={() => window.print()}
         >
           Print Tracking Information

@@ -168,14 +168,27 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // For new products, don't send images array, let backend handle it
-    // For existing products, send the images array
+    
+    // Ensure exact value preservation by validating numeric fields
     const formDataToSend = { ...formData };
     
-    // If this is a new product (no existing images), remove the images array
+    // Validate and ensure pricing values are exact numbers (no precision loss)
+    if (formDataToSend.pricing) {
+      // Ensure pricing values are properly formatted numbers
+      formDataToSend.pricing.costPrice = Number(formDataToSend.pricing.costPrice);
+      formDataToSend.pricing.sellingPrice = Number(formDataToSend.pricing.sellingPrice);
+      
+      // Log the exact values being submitted for debugging
+      console.log('ProductForm submitting exact values:');
+      console.log('  Fiat Price (₹):', formDataToSend.pricing.costPrice);
+      console.log('  Token Price:', formDataToSend.pricing.sellingPrice);
+    }
+    
+    // For new products, don't send images array, let backend handle it
+    // For existing products, send the images array
     if (!product && (!formData.productInfo.images || formData.productInfo.images.length === 0)) {
       const { images, ...productInfoWithoutImages } = formData.productInfo;
-      formDataToSend.productInfo = productInfoWithoutImages;
+      formDataToSend.productInfo = { ...productInfoWithoutImages, images: [] };
     }
     
     onSubmit(formDataToSend, selectedFiles);

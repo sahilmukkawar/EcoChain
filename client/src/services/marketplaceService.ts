@@ -20,7 +20,7 @@ export interface MarketplaceItem {
   pricing: {
     costPrice: number;
     sellingPrice: number;
-    ecoTokenDiscount?: number;
+    ecoTokenDiscount?: number;  // Now stores the token price from factory
     discountPercentage?: number;
   };
   inventory: {
@@ -237,8 +237,11 @@ const marketplaceService = {
   
   // Factory-specific methods
   getFactoryProducts: async (): Promise<MarketplaceItem[]> => {
-    const response = await api.get('/marketplace/my-products');
+    // Add timestamp to prevent caching issues
+    const timestamp = Date.now();
+    const response = await api.get(`/marketplace/my-products?t=${timestamp}`);
     if (response.data.success) {
+      console.log('getFactoryProducts API response:', response.data.data?.length, 'products');
       return response.data.data;
     }
     throw new Error(response.data.message || 'Failed to fetch factory products');
@@ -260,10 +263,15 @@ const marketplaceService = {
   },
   
   updateFactoryProduct: async (id: string, itemData: Partial<CreateMarketplaceItemData>, images?: File[]): Promise<MarketplaceItem> => {
+    console.log('=== updateFactoryProduct called ===');
+    console.log('Product ID:', id);
+    console.log('Item data:', itemData);
+    console.log('Images count:', images?.length || 0);
+    
     const formData = new FormData();
     
-    // Append the product data as JSON
-    formData.append('data', JSON.stringify({
+    // Prepare the payload
+    const payload = {
       name: itemData.productInfo?.name,
       description: itemData.productInfo?.description,
       category: itemData.productInfo?.category,
@@ -276,7 +284,12 @@ const marketplaceService = {
       },
       sustainabilityScore: itemData.sustainability?.recycledMaterialPercentage,
       images: itemData.productInfo?.images
-    }));
+    };
+    
+    console.log('Sending payload to backend:', JSON.stringify(payload, null, 2));
+    
+    // Append the product data as JSON
+    formData.append('data', JSON.stringify(payload));
     
     // Append image files if provided
     if (images && images.length > 0) {
@@ -291,7 +304,10 @@ const marketplaceService = {
       }
     });
     
+    console.log('Update response:', response.data);
+    
     if (response.data.success) {
+      console.log('Update successful, returning:', response.data.data);
       return response.data.data;
     }
     throw new Error(response.data.message || 'Failed to update product');

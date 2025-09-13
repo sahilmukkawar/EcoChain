@@ -144,7 +144,7 @@ const FactoryDashboard: React.FC = () => {
                       </td>
                       <td className="p-4">{product.productInfo.category}</td>
                       <td className="p-4">
-                        ₹{product.pricing.costPrice} + {product.pricing.sellingPrice} Tokens
+                        ₹{product.pricing.sellingPrice} + {product.pricing.ecoTokenDiscount} Tokens
                       </td>
                       <td className="p-4">{product.inventory.currentStock}</td>
                       <td className="p-4">

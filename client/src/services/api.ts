@@ -190,6 +190,7 @@ interface OrderData {
   items: OrderItemData[];
   payment: {
     method: 'token' | 'cash' | 'card';
+    tokensUsed?: number;
   };
   shipping: ShippingData;
   notes?: string;
@@ -266,6 +267,11 @@ const marketplaceAPI = {
   // Get order by ID
   getOrderById: (orderId: string) => {
     return api.get(`/orders/${orderId}`);
+  },
+  
+  // Track order by tracking number
+  trackOrder: (trackingNumber: string) => {
+    return api.get(`/orders/tracking/${trackingNumber}`);
   },
   
   // Update order status (for factories)

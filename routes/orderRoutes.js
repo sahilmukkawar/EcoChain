@@ -1,8 +1,58 @@
 // routes/orderRoutes.js
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const { Order, Product, User, EcoTokenTransaction } = require('../database/models');
 const { authenticate } = require('../middleware/auth');
+
+// Helper function to create EcoTokenTransaction with all required fields
+const createTokenTransaction = async (transactionData) => {
+  try {
+    console.log('Creating token transaction with data:', transactionData);
+    
+    // Generate unique transaction ID
+    const transactionId = 'TXN' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+    
+    // Prepare the complete transaction object with all required fields
+    const transactionObj = {
+      transactionId: transactionId,
+      userId: new mongoose.Types.ObjectId(transactionData.userId),
+      transactionType: transactionData.transactionType,
+      details: {
+        amount: Number(transactionData.details.amount),
+        monetaryValue: Number(transactionData.details.monetaryValue),
+        description: String(transactionData.details.description),
+        referenceId: String(transactionData.details.referenceId)
+      },
+      metadata: {
+        source: String(transactionData.metadata.source),
+        category: String(transactionData.metadata.category || 'marketplace_transaction'),
+        relatedEntity: new mongoose.Types.ObjectId(transactionData.metadata.relatedEntity),
+        entityType: String(transactionData.metadata.entityType)
+      },
+      walletBalance: {
+        beforeTransaction: Number(transactionData.walletBalance.beforeTransaction),
+        afterTransaction: Number(transactionData.walletBalance.afterTransaction)
+      },
+      status: 'completed',
+      processedAt: new Date()
+    };
+    
+    console.log('Complete transaction object:', JSON.stringify(transactionObj, null, 2));
+    
+    // Create and save the transaction
+    const transaction = new EcoTokenTransaction(transactionObj);
+    const savedTransaction = await transaction.save();
+    
+    console.log('Token transaction saved successfully:', savedTransaction.transactionId);
+    return savedTransaction;
+    
+  } catch (error) {
+    console.error('Error creating token transaction:', error);
+    console.error('Transaction data that failed:', transactionData);
+    throw new Error(`Failed to create token transaction: ${error.message}`);
+  }
+};
 
 // Create new order
 router.post('/', authenticate, async (req, res) => {
@@ -12,6 +62,16 @@ router.post('/', authenticate, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Initialize ecoWallet if it doesn't exist
+    if (!user.ecoWallet) {
+      user.ecoWallet = {
+        currentBalance: 0,
+        totalEarned: 0,
+        totalSpent: 0
+      };
+      await user.save();
     }
 
     // Calculate order details
@@ -40,15 +100,24 @@ router.post('/', authenticate, async (req, res) => {
       }
 
       const itemTotal = product.pricing.sellingPrice * item.quantity;
-      const itemTokenTotal = product.pricing.costPrice * item.quantity;
+      // Use the stored token price from the product instead of calculating it
+      // The ecoTokenDiscount field stores the actual token price set by the factory
+      const tokenPricePerUnit = product.pricing.ecoTokenDiscount || 0; // Use actual token price
+      const itemTokenTotal = tokenPricePerUnit * item.quantity;
       subtotal += itemTotal;
       totalTokens += itemTokenTotal;
+      
+      console.log(`Product: ${product.productInfo.name}`);
+      console.log(`  Fiat price per unit: ₹${product.pricing.sellingPrice}`);
+      console.log(`  Token price per unit: ${tokenPricePerUnit} tokens`);
+      console.log(`  Quantity: ${item.quantity}`);
+      console.log(`  Total fiat: ₹${itemTotal}`);
+      console.log(`  Total tokens: ${itemTokenTotal} tokens`);
 
       processedItems.push({
         productId: product._id,
         quantity: item.quantity,
-        price: product.pricing.sellingPrice,
-        tokenPrice: product.pricing.costPrice,
+        unitPrice: product.pricing.sellingPrice,
         totalPrice: itemTotal
       });
     }
@@ -58,6 +127,50 @@ router.post('/', authenticate, async (req, res) => {
     const shippingCharges = subtotal > 500 ? 0 : 50;
     const finalAmount = subtotal + taxes + shippingCharges;
 
+    // Handle EcoToken payment - improved logic
+    let ecoTokensApplied = 0;
+    let ecoTokenValue = 0;
+    
+    // Check if payment includes tokens (either 'token' method or 'tokensUsed' specified)
+    const tokensRequested = payment.tokensUsed || 0;
+    
+    console.log('\n=== TOKEN PAYMENT CALCULATION ===');
+    console.log(`Payment method: ${payment.method}`);
+    console.log(`Tokens requested: ${tokensRequested}`);
+    console.log(`Total tokens needed for full token payment: ${totalTokens}`);
+    console.log(`User token balance: ${user.ecoWallet?.currentBalance || 0}`);
+    
+    if (payment.method === 'token' || tokensRequested > 0) {
+      // For EcoTokens: 1 rupee = 10 tokens, so 1 token = ₹0.1
+      const tokenRate = 0.1; // 1 token = ₹0.1
+      const userTokenBalance = user.ecoWallet?.currentBalance || 0;
+      
+      if (payment.method === 'token') {
+        // User wants to pay entirely with tokens - use totalTokens (product token price)
+        ecoTokensApplied = Math.min(totalTokens, userTokenBalance);
+        console.log(`Token-only payment: applying ${ecoTokensApplied} tokens`);
+      } else if (tokensRequested > 0) {
+        // Mixed payment - use specified token amount
+        ecoTokensApplied = Math.min(tokensRequested, userTokenBalance);
+        console.log(`Mixed payment: applying ${ecoTokensApplied} tokens`);
+      }
+      
+      ecoTokenValue = ecoTokensApplied * tokenRate;
+      
+      // Check if user has enough tokens for token-only payment
+      if (payment.method === 'token' && ecoTokensApplied < totalTokens) {
+        console.log(`INSUFFICIENT TOKENS: Need ${totalTokens}, have ${userTokenBalance}`);
+        return res.status(400).json({ 
+          success: false, 
+          message: `Insufficient EcoTokens. You need ${totalTokens} tokens but only have ${userTokenBalance}.` 
+        });
+      }
+    }
+    
+    console.log(`Final tokens to be applied: ${ecoTokensApplied}`);
+    console.log(`Token value in rupees: ₹${ecoTokenValue}`);
+    console.log('=====================================\n');
+
     const order = new Order({
       userId: req.user.id,
       orderItems: processedItems,
@@ -66,27 +179,35 @@ router.post('/', authenticate, async (req, res) => {
         taxes,
         shippingCharges,
         discount: 0,
-        finalAmount
+        ecoTokensApplied,
+        ecoTokenValue,
+        finalAmount: finalAmount - ecoTokenValue
       },
       payment: {
         method: payment.method,
-        status: 'pending'
+        status: payment.method === 'cash' ? 'pending' : 'paid'
       },
       shipping: {
         address: {
-          name: shipping.fullName || user.personalInfo.name,
-          phone: shipping.phone || user.personalInfo.phone,
+          name: shipping.fullName || user.name,
+          phone: shipping.phone,
           street: shipping.address,
           city: shipping.city,
           state: shipping.state,
           zipCode: shipping.zipCode,
           country: shipping.country || 'India'
         },
+        trackingNumber: 'TRK' + Date.now() + Math.random().toString(36).substr(2, 4).toUpperCase(),
         estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+      },
+      status: 'placed',
+      timeline: {
+        placedAt: new Date()
       }
     });
 
     await order.save();
+    console.log('Order created successfully:', order.orderId, 'with tracking:', order.shipping.trackingNumber);
 
     // Update product inventory
     for (const item of processedItems) {
@@ -97,13 +218,71 @@ router.post('/', authenticate, async (req, res) => {
       }
     }
 
+    // Deduct EcoTokens if payment includes tokens
+    if ((payment.method === 'token' || tokensRequested > 0) && ecoTokensApplied > 0) {
+      const balanceBeforeTransaction = user.ecoWallet.currentBalance;
+      
+      user.ecoWallet.currentBalance -= ecoTokensApplied;
+      user.ecoWallet.totalSpent += ecoTokensApplied;
+      await user.save();
+      
+      // Create EcoToken transaction record with all required fields
+      console.log('Creating token transaction:', {
+        userId: req.user.id,
+        ecoTokensApplied,
+        balanceBeforeTransaction,
+        balanceAfterTransaction: user.ecoWallet.currentBalance,
+        orderId: order.orderId
+      });
+      
+      // Use helper function to create transaction
+      await createTokenTransaction({
+        userId: req.user.id,
+        transactionType: 'spent',
+        details: {
+          amount: ecoTokensApplied,
+          monetaryValue: ecoTokensApplied * 0.1, // 1 token = ₹0.1
+          description: `Used for order ${order.orderId}`,
+          referenceId: order.orderId
+        },
+        metadata: {
+          source: 'purchase',
+          category: 'marketplace_purchase',
+          relatedEntity: order._id,
+          entityType: 'Order'
+        },
+        walletBalance: {
+          beforeTransaction: balanceBeforeTransaction,
+          afterTransaction: user.ecoWallet.currentBalance
+        }
+      });
+      
+      console.log(`Token transaction created: ${ecoTokensApplied} tokens deducted for order ${order.orderId}`);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      data: order
+      data: {
+        orderId: order.orderId,
+        _id: order._id,
+        status: order.status,
+        trackingNumber: order.shipping.trackingNumber,
+        billing: order.billing,
+        tokensDeducted: ecoTokensApplied,
+        remainingTokens: user.ecoWallet.currentBalance,
+        redirectUrl: `/order-confirmation/${order._id}`,
+        trackingUrl: `/order-tracking/${order.shipping.trackingNumber}`
+      }
     });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    console.error('Order creation error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(400).json({ 
+      success: false, 
+      message: error.message || 'Failed to process order',
+      debug: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -224,6 +403,42 @@ router.patch('/:id/cancel', authenticate, async (req, res) => {
     }
 
     await order.updateStatus('cancelled');
+    
+    // Refund EcoTokens if they were used
+    if (order.billing.ecoTokensApplied > 0) {
+      const user = await User.findById(req.user.id);
+      if (user) {
+        const balanceBeforeRefund = user.ecoWallet.currentBalance;
+        
+        user.ecoWallet.currentBalance += order.billing.ecoTokensApplied;
+        user.ecoWallet.totalSpent -= order.billing.ecoTokensApplied;
+        await user.save();
+        
+        // Create refund transaction with all required fields
+        await createTokenTransaction({
+          userId: req.user.id,
+          transactionType: 'refund',
+          details: {
+            amount: order.billing.ecoTokensApplied,
+            monetaryValue: order.billing.ecoTokensApplied * 0.1, // 1 token = ₹0.1
+            description: `Refund for cancelled order ${order.orderId}`,
+            referenceId: order.orderId
+          },
+          metadata: {
+            source: 'refund',
+            category: 'marketplace_refund',
+            relatedEntity: order._id,
+            entityType: 'Order'
+          },
+          walletBalance: {
+            beforeTransaction: balanceBeforeRefund,
+            afterTransaction: user.ecoWallet.currentBalance
+          }
+        });
+        
+        console.log(`Refund transaction created: ${order.billing.ecoTokensApplied} tokens refunded for cancelled order ${order.orderId}`);
+      }
+    }
 
     res.json({
       success: true,

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
-import marketplaceService, { MarketplaceItem } from '../services/marketplaceService.ts';
+import marketplaceService, { PopulatedMarketplaceItem } from '../services/marketplaceService.ts';
 
 interface Product {
   id: string;
@@ -19,12 +19,12 @@ interface Product {
 }
 
 // Function to convert API product to our Product interface
-const mapApiProductToProduct = (apiProduct: MarketplaceItem): Product => ({
+const mapApiProductToProduct = (apiProduct: PopulatedMarketplaceItem): Product => ({
   id: apiProduct._id,
   name: apiProduct.productInfo.name,
   description: apiProduct.productInfo.description,
-  price: apiProduct.pricing.costPrice || 0,
-  tokenPrice: apiProduct.pricing.sellingPrice || 0,
+  price: apiProduct.pricing.sellingPrice || 0,
+  tokenPrice: apiProduct.pricing.ecoTokenDiscount || 0, // Use stored token price
   category: apiProduct.productInfo.category,
   imageUrl: apiProduct.productInfo.images?.[0] || '/uploads/default-product.svg',
   sustainabilityScore: apiProduct.sustainability.recycledMaterialPercentage || 85,
@@ -134,12 +134,20 @@ const Marketplace: React.FC = () => {
           </div>
           
           {cart.length > 0 && (
-            <Link 
-              to="/checkout" 
-              className="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-lg shadow hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all"
-            >
-              View Cart ({cart.length}) - ₹{cartTotal} + {tokenTotal} Tokens
-            </Link>
+            <div className="flex gap-2">
+              <Link 
+                to="/cart" 
+                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow hover:from-blue-600 hover:to-blue-700 hover:shadow-lg transition-all"
+              >
+                View Cart ({cart.length})
+              </Link>
+              <Link 
+                to="/checkout" 
+                className="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-lg shadow hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all"
+              >
+                Checkout
+              </Link>
+            </div>
           )}
         </div>
       </div>
@@ -228,8 +236,9 @@ const Marketplace: React.FC = () => {
                     <button 
                       onClick={() => addToCart(p)}
                       className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-2 px-4 rounded-lg hover:from-green-600 hover:to-green-700 transition-all"
+                      disabled={p.status === 'sold_out'}
                     >
-                      Add to Cart
+                      {p.status === 'sold_out' ? 'Sold Out' : 'Add to Cart'}
                     </button>
                     <button 
                       onClick={() => removeFromCart(p.id)}

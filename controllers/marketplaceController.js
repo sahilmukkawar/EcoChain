@@ -81,8 +81,9 @@ const createListing = async (req, res) => {
         images: productImages
       },
       pricing: {
-        costPrice: price.fiatAmount || 0,
-        sellingPrice: price.tokenAmount || 0
+        costPrice: Number(price.fiatAmount) || 0,  // Cost to produce (₹) - exact value
+        sellingPrice: Number(price.fiatAmount) || 0,  // Selling price in money (₹) - exact value
+        ecoTokenDiscount: Number(price.tokenAmount) || 0  // Token price - exact value
       },
       inventory: {
         currentStock: inventory.available || 0
@@ -94,6 +95,10 @@ const createListing = async (req, res) => {
         isActive: true
       }
     });
+
+    console.log('Creating product with exact pricing:');
+    console.log('  Fiat Price (₹):', listing.pricing.sellingPrice);
+    console.log('  Token Price:', listing.pricing.ecoTokenDiscount);
 
     await listing.save();
     res.status(201).json({ success: true, message: 'Product created successfully', data: listing });
@@ -108,7 +113,21 @@ const createListing = async (req, res) => {
  */
 const updateListing = async (req, res) => {
   try {
+    console.log('=== UPDATE PRODUCT REQUEST ===');
+    console.log('Request body data:', req.body.data);
+    console.log('Request files:', req.files?.length || 0);
+    
     const { name, description, category, price, images, inventory, sustainabilityScore, status } = JSON.parse(req.body.data || '{}');
+    
+    console.log('Parsed data:');
+    console.log('- name:', name);
+    console.log('- description:', description);
+    console.log('- category:', category);
+    console.log('- price:', price);
+    console.log('- images:', images);
+    console.log('- inventory:', inventory);
+    console.log('- sustainabilityScore:', sustainabilityScore);
+    console.log('- status:', status);
     
     // Check if user is a factory
     if (req.user.role !== 'factory') {
@@ -127,10 +146,29 @@ const updateListing = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found or not authorized' });
     }
     
+    console.log('=== BEFORE UPDATE ===');
+    console.log('Current product name:', listing.productInfo.name);
+    console.log('Current pricing:', {
+      costPrice: listing.pricing.costPrice,
+      sellingPrice: listing.pricing.sellingPrice,
+      ecoTokenDiscount: listing.pricing.ecoTokenDiscount
+    });
+    console.log('Current inventory:', listing.inventory.currentStock);
+    console.log('Current sustainability:', listing.sustainability.recycledMaterialPercentage);
+    
     // Update fields
-    if (name) listing.productInfo.name = name;
-    if (description) listing.productInfo.description = description;
-    if (category) listing.productInfo.category = category;
+    if (name) {
+      console.log('Updating name from', listing.productInfo.name, 'to', name);
+      listing.productInfo.name = name;
+    }
+    if (description) {
+      console.log('Updating description from', listing.productInfo.description, 'to', description);
+      listing.productInfo.description = description;
+    }
+    if (category) {
+      console.log('Updating category from', listing.productInfo.category, 'to', category);
+      listing.productInfo.category = category;
+    }
     
     // Process uploaded images if any
     if (req.files && req.files.length > 0) {
@@ -149,22 +187,63 @@ const updateListing = async (req, res) => {
       } else {
         listing.productInfo.images = uploadedImages;
       }
+      console.log('Updated images:', listing.productInfo.images);
     } else if (images && images.length > 0) {
       // Use provided image URLs if no new files uploaded
+      console.log('Using existing images:', images);
       listing.productInfo.images = images;
     }
     
     if (price) {
-      if (price.fiatAmount !== undefined) listing.pricing.costPrice = price.fiatAmount;
-      if (price.tokenAmount !== undefined) listing.pricing.sellingPrice = price.tokenAmount;
+      console.log('=== UPDATING PRICING ===');
+      console.log('Price data received:', price);
+      
+      if (price.fiatAmount !== undefined) {
+        // Ensure exact value preservation by using the exact input value
+        const exactFiatAmount = Number(price.fiatAmount);
+        console.log('Updating fiat amount from', listing.pricing.sellingPrice, 'to', exactFiatAmount);
+        listing.pricing.costPrice = exactFiatAmount;
+        listing.pricing.sellingPrice = exactFiatAmount;  // Use exact fiatAmount for selling price
+      }
+      if (price.tokenAmount !== undefined) {
+        // Ensure exact value preservation by using the exact input value
+        const exactTokenAmount = Number(price.tokenAmount);
+        console.log('Updating token amount from', listing.pricing.ecoTokenDiscount, 'to', exactTokenAmount);
+        listing.pricing.ecoTokenDiscount = exactTokenAmount;  // Store exact token price
+      }
     }
-    if (inventory && inventory.available !== undefined) listing.inventory.currentStock = inventory.available;
-    if (sustainabilityScore !== undefined) listing.sustainability.recycledMaterialPercentage = sustainabilityScore;
-    if (status) listing.availability.isActive = status === 'active';
     
+    if (inventory && inventory.available !== undefined) {
+      console.log('Updating inventory from', listing.inventory.currentStock, 'to', inventory.available);
+      listing.inventory.currentStock = inventory.available;
+    }
+    
+    if (sustainabilityScore !== undefined) {
+      console.log('Updating sustainability from', listing.sustainability.recycledMaterialPercentage, 'to', sustainabilityScore);
+      listing.sustainability.recycledMaterialPercentage = sustainabilityScore;
+    }
+    
+    if (status) {
+      const newActiveStatus = status === 'active';
+      console.log('Updating status from', listing.availability.isActive, 'to', newActiveStatus);
+      listing.availability.isActive = newActiveStatus;
+    }
+    
+    console.log('=== SAVING PRODUCT ===');
     await listing.save();
+    
+    console.log('=== AFTER UPDATE ===');
+    console.log('Updated pricing:', {
+      costPrice: listing.pricing.costPrice,
+      sellingPrice: listing.pricing.sellingPrice,
+      ecoTokenDiscount: listing.pricing.ecoTokenDiscount
+    });
+    console.log('Updated inventory:', listing.inventory.currentStock);
+    console.log('Updated sustainability:', listing.sustainability.recycledMaterialPercentage);
+    
     res.status(200).json({ success: true, message: 'Product updated successfully', data: listing });
   } catch (error) {
+    console.error('=== UPDATE ERROR ===', error);
     logger.error('Error updating marketplace listing:', error);
     res.status(500).json({ success: false, message: 'Failed to update product', error: error.message });
   }

@@ -13,46 +13,63 @@ const FactoryProductManagement: React.FC = () => {
   const [formLoading, setFormLoading] = useState<boolean>(false);
 
   // Fetch factory products
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const response = await marketplaceService.getFactoryProducts();
-        setProducts(response);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching products:', err);
-        setError('Failed to load products. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching factory products...');
+      const response = await marketplaceService.getFactoryProducts();
+      console.log('Fetched products:', response.length);
+      setProducts(response);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load products. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProducts();
   }, []);
 
   // Handle form submission
   const handleSubmit = async (productData: CreateMarketplaceItemData, images: File[]) => {
     setFormLoading(true);
+    setError(null); // Clear any existing errors
+    
     try {
+      console.log('Submitting product data:', productData);
+      console.log('Images:', images?.length || 0);
+      
       if (editingProduct) {
+        console.log('Updating existing product:', editingProduct._id);
         // Update existing product
         await marketplaceService.updateFactoryProduct(editingProduct._id, productData, images);
+        console.log('Product updated successfully');
       } else {
+        console.log('Creating new product');
         // Create new product
         await marketplaceService.createFactoryProduct(productData, images);
+        console.log('Product created successfully');
       }
       
       // Refresh product list
+      console.log('Refreshing product list...');
       const response = await marketplaceService.getFactoryProducts();
+      console.log('Fetched products:', response.length);
       setProducts(response);
       
       // Reset form
       setShowForm(false);
       setEditingProduct(null);
+      console.log('Form reset complete');
+      
     } catch (err) {
       console.error('Error saving product:', err);
-      setError('Failed to save product. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save product. Please try again.';
+      setError(errorMessage);
     } finally {
       setFormLoading(false);
     }
@@ -68,13 +85,23 @@ const FactoryProductManagement: React.FC = () => {
   const handleDelete = async (productId: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
+        console.log('Deleting product:', productId);
         await marketplaceService.deleteFactoryProduct(productId);
+        console.log('Product deleted successfully');
+        
         // Refresh product list
+        console.log('Refreshing product list after delete...');
         const response = await marketplaceService.getFactoryProducts();
+        console.log('Fetched products after delete:', response.length);
         setProducts(response);
+        
+        // Clear any existing errors
+        setError(null);
+        
       } catch (err) {
         console.error('Error deleting product:', err);
-        setError('Failed to delete product. Please try again.');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to delete product. Please try again.';
+        setError(errorMessage);
       }
     }
   };
@@ -90,19 +117,57 @@ const FactoryProductManagement: React.FC = () => {
   }
 
   if (error) {
-    return <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">{error}</div>;
+    return (
+      <div className="max-w-6xl mx-auto px-5 py-5">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <strong className="font-bold">Error!</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+            <button 
+              className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded text-sm transition-colors ml-4"
+              onClick={fetchProducts}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">There was an issue loading your products.</p>
+          <button 
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            onClick={() => {
+              setError(null);
+              fetchProducts();
+            }}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="max-w-6xl mx-auto px-5 py-5">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Product Management</h1>
-        <button 
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? 'Cancel' : 'Add New Product'}
-        </button>
+        <div className="flex gap-2">
+          <button 
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            onClick={fetchProducts}
+            disabled={loading}
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button 
+            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? 'Cancel' : 'Add New Product'}
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -116,8 +181,8 @@ const FactoryProductManagement: React.FC = () => {
                 images: editingProduct.productInfo.images || []
               },
               pricing: {
-                costPrice: editingProduct.pricing.costPrice,
-                sellingPrice: editingProduct.pricing.sellingPrice
+                costPrice: editingProduct.pricing.sellingPrice, // Fiat price (₹)
+                sellingPrice: editingProduct.pricing.ecoTokenDiscount || 0 // Token price
               },
               inventory: {
                 currentStock: editingProduct.inventory.currentStock
@@ -169,7 +234,7 @@ const FactoryProductManagement: React.FC = () => {
                       <div className="text-sm text-gray-600">{product.productInfo.description}</div>
                     </td>
                     <td className="p-4">
-                      ₹{product.pricing.costPrice} + {product.pricing.sellingPrice} Tokens
+                      ₹{product.pricing.sellingPrice} + {product.pricing.ecoTokenDiscount} Tokens
                     </td>
                     <td className="p-4">{product.inventory.currentStock}</td>
                     <td className="p-4">

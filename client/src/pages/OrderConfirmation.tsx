@@ -1,17 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { marketplaceAPI } from '../services/api.ts';
 
 interface OrderItem {
-  productId: string;
-  quantity: number;
-  price: number;
-  tokenPrice: number;
-  product: {
-    name: string;
-    description: string;
-    images: string[];
+  productId: {
+    _id: string;
+    productInfo: {
+      name: string;
+      description?: string;
+      images?: string[];
+    };
+    pricing?: {
+      sellingPrice?: number;
+      ecoTokenDiscount?: number;
+    };
   };
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  ecoTokensUsed?: number;
 }
 
 interface Order {
@@ -19,24 +26,34 @@ interface Order {
   orderId: string;
   userId: string;
   orderItems: OrderItem[];
-  totalAmount: number;
-  totalTokens: number;
+  billing: {
+    subtotal: number;
+    ecoTokensApplied: number;
+    ecoTokenValue: number;
+    taxes: number;
+    shippingCharges: number;
+    discount: number;
+    finalAmount: number;
+  };
   status: string;
-  shippingAddress: {
-    fullName: string;
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-    phone: string;
-  };
-  paymentMethod: string;
-  createdAt: string;
-  estimatedDelivery: string;
   shipping: {
+    address: {
+      name: string;
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      country: string;
+      phone: string;
+    };
     trackingNumber?: string;
+    estimatedDelivery?: string;
   };
+  payment: {
+    method: string;
+    status: string;
+  };
+  createdAt: string;
 }
 
 const OrderConfirmation: React.FC = () => {
@@ -127,64 +144,93 @@ const OrderConfirmation: React.FC = () => {
           </div>
           <div className="flex justify-between py-2 border-b border-gray-200">
             <span>Payment Method:</span>
-            <span>{order.paymentMethod === 'token' ? 'EcoTokens' : 'Cash on Delivery'}</span>
+            <span>{order.payment.method === 'token' ? 'EcoTokens' : order.payment.method === 'cash' ? 'Cash on Delivery' : 'Card Payment'}</span>
           </div>
+          {order.shipping?.trackingNumber && (
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <span>Tracking Number:</span>
+              <span className="font-mono">{order.shipping.trackingNumber}</span>
+            </div>
+          )}
         </div>
 
         <div className="bg-white p-5 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Shipping Information</h2>
           <div className="mb-4">
-            <p className="font-bold">{order.shippingAddress?.fullName || 'N/A'}</p>
-            <p>{order.shippingAddress?.address || 'N/A'}</p>
-            <p>{order.shippingAddress?.city || 'N/A'}, {order.shippingAddress?.state || 'N/A'} {order.shippingAddress?.zipCode || 'N/A'}</p>
-            <p>{order.shippingAddress?.country || 'N/A'}</p>
-            <p>Phone: {order.shippingAddress?.phone || 'N/A'}</p>
+            <p className="font-bold">{order.shipping.address?.name || 'N/A'}</p>
+            <p>{order.shipping.address?.street || 'N/A'}</p>
+            <p>{order.shipping.address?.city || 'N/A'}, {order.shipping.address?.state || 'N/A'} {order.shipping.address?.zipCode || 'N/A'}</p>
+            <p>{order.shipping.address?.country || 'N/A'}</p>
+            <p>Phone: {order.shipping.address?.phone || 'N/A'}</p>
           </div>
           <div className="pt-4 border-t border-gray-200 text-green-500 font-bold">
-            <p>Estimated Delivery: {order.estimatedDelivery || '3-5 business days'}</p>
+            <p>Estimated Delivery: {order.shipping.estimatedDelivery ? new Date(order.shipping.estimatedDelivery).toLocaleDateString() : '3-5 business days'}</p>
           </div>
         </div>
       </div>
 
       <div className="mb-10">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Items in Your Order</h2>
-        <div className="flex flex-col gap-5">
-          {order.orderItems.map((item, index) => (
-            <div key={index} className="flex gap-5 p-5 bg-white rounded-lg shadow-md">
-              <div className="w-24 h-24 rounded-md overflow-hidden">
-                <img 
-                  src={item.product.images?.[0] || '/logo192.png'} 
-                  alt={item.product.name} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">{item.product.name}</h3>
-                <p className="text-gray-600 mb-3">{item.product.description}</p>
-                <div className="font-bold mb-2">
-                  Quantity: {item.quantity}
+        {order.orderItems && order.orderItems.length > 0 ? (
+          <div className="flex flex-col gap-5">
+            {order.orderItems.map((item, index) => (
+              <div key={index} className="flex gap-5 p-5 bg-white rounded-lg shadow-md">
+                <div className="w-24 h-24 rounded-md overflow-hidden">
+                  <img 
+                    src={item.productId?.productInfo?.images?.[0] || '/logo192.png'} 
+                    alt={item.productId?.productInfo?.name || 'Product'} 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <div className="font-bold text-gray-800">
-                  ₹{item.price * item.quantity} + {item.tokenPrice * item.quantity} Tokens
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">{item.productId?.productInfo?.name || 'Unknown Product'}</h3>
+                  <p className="text-gray-600 mb-3">{item.productId?.productInfo?.description || 'No description available'}</p>
+                  <div className="font-bold mb-2">
+                    Quantity: {item.quantity}
+                  </div>
+                  <div className="font-bold text-gray-800">
+                    ₹{item.unitPrice} each • Total: ₹{item.totalPrice}
+                    {item.ecoTokensUsed && item.ecoTokensUsed > 0 && (
+                      <span className="text-green-600 ml-2">+ {item.ecoTokensUsed} tokens used</span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-gray-100 p-5 rounded-lg text-center">
+            <p className="text-gray-600">No items found in this order.</p>
+          </div>
+        )}
       </div>
 
       <div className="bg-white p-5 rounded-lg shadow-md mb-8">
         <div className="flex justify-between py-2 border-b border-gray-200">
           <span>Subtotal:</span>
-          <span>₹{order.totalAmount}</span>
+          <span>₹{order.billing.subtotal}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-gray-200">
           <span>EcoTokens Used:</span>
-          <span>{order.totalTokens} tokens</span>
+          <span>{order.billing.ecoTokensApplied} tokens (₹{order.billing.ecoTokenValue})</span>
         </div>
+        <div className="flex justify-between py-2 border-b border-gray-200">
+          <span>Taxes:</span>
+          <span>₹{order.billing.taxes}</span>
+        </div>
+        <div className="flex justify-between py-2 border-b border-gray-200">
+          <span>Shipping:</span>
+          <span>₹{order.billing.shippingCharges}</span>
+        </div>
+        {order.billing.discount > 0 && (
+          <div className="flex justify-between py-2 border-b border-gray-200 text-green-600">
+            <span>Discount:</span>
+            <span>-₹{order.billing.discount}</span>
+          </div>
+        )}
         <div className="flex justify-between py-2 border-b border-gray-200 font-bold text-lg text-gray-800">
           <span>Total Paid:</span>
-          <span>₹{order.totalAmount - (order.totalTokens * 5)}</span>
+          <span>₹{order.billing.finalAmount}</span>
         </div>
       </div>
 
@@ -194,6 +240,12 @@ const OrderConfirmation: React.FC = () => {
           onClick={() => navigate('/marketplace')}
         >
           Continue Shopping
+        </button>
+        <button 
+          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+          onClick={() => navigate(`/order-tracking/${order.shipping?.trackingNumber || order._id}`)}
+        >
+          Track Order
         </button>
         <button 
           className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
