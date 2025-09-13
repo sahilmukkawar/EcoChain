@@ -2,6 +2,7 @@
 const path = require("path");
 const defaultTheme = require("tailwindcss/defaultTheme");
 const twColors = require("tailwindcss/colors");
+// Using our updated tokens
 const tokens = require(path.resolve(__dirname, "src/tokens/index.ts"));
 
 module.exports = {
@@ -11,43 +12,78 @@ module.exports = {
     "./node_modules/react-tailwindcss-datepicker/dist/index.esm.js",
   ],
   theme: {
-    // ✅ Screens: start from Tailwind defaults, override with your tokens as needed
+    // Screens: start from Tailwind defaults, override with your tokens as needed
     screens: {
       ...defaultTheme.screens,
       ...(tokens?.tokens?.breakpoint || {}),
     },
-
-    // ✅ Leave root theme minimal; put customizations in extend
+    
+    // Font family configuration
+    fontFamily: {
+      sans: ['Inter', 'Poppins', ...defaultTheme.fontFamily.sans],
+      display: ['Poppins', ...defaultTheme.fontFamily.sans],
+    },
+    
+    // Leave root theme minimal; put customizations in extend
     extend: {
-      // Keep Tailwind’s built-in palette so 3rd-party components style correctly
+      // Keep Tailwind's built-in palette so 3rd-party components style correctly
       colors: {
-        // Merge in Tailwind’s colors so bg-white / text-gray-700 keep working
+        // Merge in Tailwind's colors so bg-white / text-gray-700 keep working
         ...twColors,
-
+        
+        // New eco-friendly color palette
+        'eco-green': {
+          DEFAULT: '#16a34a',
+          light: '#22c55e',
+          dark: '#15803d',
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+        },
+        'eco-beige': '#f5f5dc',
+        'eco-red': {
+          DEFAULT: '#ef4444',
+          light: '#f87171',
+          dark: '#dc2626',
+        },
+        'eco-yellow': {
+          DEFAULT: '#facc15',
+          light: '#fde047',
+          dark: '#eab308',
+        },
+        'eco-beige': {
+          DEFAULT: '#f5f5dc',
+          light: '#f8f8e8',
+          dark: '#e6e6c3',
+        },
+        
         // Your design tokens (names create classes like bg-background-primary)
         background: {
-          primary: tokens.tokens.color.background.primary,
-          secondary: tokens.tokens.color.background.secondary,
-          tertiary: tokens.tokens.color.background.tertiary,
-          quaternary: tokens.tokens.color.background.quaternary,
-          quinary: tokens.tokens.color.background.quinary,
+          primary: '#ffffff',
+          secondary: '#f9fafb',
+          tertiary: '#f5f5dc',
         },
         primary: {
-          base: tokens.tokens.color.primary.base,
-          dark: tokens.tokens.color.primary.dark,
-          light: tokens.tokens.color.primary.light,
-          subtle: tokens.tokens.color.primary.subtle,
+          base: '#16a34a',
+          dark: '#15803d',
+          light: '#22c55e',
         },
-        secondary: {
-          base: tokens.tokens.color.secondary.base,
-          light: tokens.tokens.color.secondary.light,
+        accent: { 
+          gold: '#facc15',
+          yellow: '#facc15',
         },
-        accent: { gold: tokens.tokens.color.accent.gold },
         text: {
-          primary: tokens.tokens.color.text.primary,
-          secondary: tokens.tokens.color.text.secondary,
-          light: tokens.tokens.color.text.light,
-          onPrimary: tokens.tokens.color.text.onPrimary,
+          primary: '#111827',
+          secondary: '#4b5563',
+          light: '#ffffff',
+          onPrimary: '#ffffff',
         },
         border: {
           base: tokens.tokens.color.border.base,

@@ -13,9 +13,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, allowedRoles =
   // Show loading while checking authentication
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner">🌱</div>
-        <p>Loading...</p>
+      <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
+        <div className="flex flex-col items-center p-6 rounded-xl bg-white shadow-lg border border-gray-100">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full border-4 border-green-100 flex items-center justify-center animate-pulse">
+              <span className="text-3xl">🌱</span>
+            </div>
+            <div className="absolute inset-0 rounded-full border-t-4 border-green-500 animate-spin"></div>
+          </div>
+          <p className="mt-4 text-green-800 font-medium">Loading...</p>
+        </div>
       </div>
     );
   }

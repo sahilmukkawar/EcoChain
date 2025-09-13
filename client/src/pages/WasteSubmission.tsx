@@ -135,7 +135,7 @@ const WasteSubmission: React.FC = () => {
   if (success) {
     return (
       <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+        <div className="bg-eco-green-light border border-eco-green text-eco-green-dark px-4 py-3 rounded relative">
           <h2 className="text-2xl font-bold mb-2">Waste Submission Successful!</h2>
           <p className="mb-2">Your request has been submitted successfully.</p>
           <p className="mb-2">Estimated EcoTokens: <strong>{calculateEstimatedTokens()}</strong></p>
@@ -152,7 +152,7 @@ const WasteSubmission: React.FC = () => {
         Submit your recyclable waste for collection and earn EcoTokens that you can use in our marketplace.
       </p>
       
-      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+      {error && <div className="bg-eco-red-light border border-eco-red text-eco-red-dark px-4 py-3 rounded mb-4">{error}</div>}
       
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         <div className="mb-4">
@@ -310,7 +310,7 @@ const WasteSubmission: React.FC = () => {
                   />
                   <button 
                     type="button" 
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                    className="absolute top-1 right-1 bg-eco-red text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-eco-red-dark"
                     onClick={() => removeImage(index)}
                   >
                     ×
@@ -321,9 +321,9 @@ const WasteSubmission: React.FC = () => {
           </div>
         )}
         
-        <div className="bg-gray-100 p-4 rounded-lg mb-6">
+        <div className="bg-eco-beige p-4 rounded-lg mb-6">
           <p className="text-lg">
-            Estimated EcoTokens: <strong className="text-green-600">{calculateEstimatedTokens()}</strong>
+            Estimated EcoTokens: <strong className="text-eco-green">{calculateEstimatedTokens()}</strong>
           </p>
           <p className="text-gray-600 text-sm mt-1">
             Final token amount may vary based on verification by our collectors.
@@ -334,7 +334,7 @@ const WasteSubmission: React.FC = () => {
           <button 
             type="submit" 
             disabled={loading}
-            className={`bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+            className={`bg-eco-green hover:bg-eco-green-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
               loading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >

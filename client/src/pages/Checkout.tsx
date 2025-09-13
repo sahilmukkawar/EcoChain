@@ -167,7 +167,7 @@ const Checkout: React.FC = () => {
           <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
           <p className="text-gray-600 mb-6">Add some products to your cart before checking out.</p>
           <button 
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            className="bg-eco-green hover:bg-eco-green-dark text-white font-bold py-2 px-4 rounded-lg transition-colors"
             onClick={() => navigate('/marketplace')}
           >
             Browse Products
@@ -182,20 +182,20 @@ const Checkout: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-6">Checkout</h1>
         <div className="flex justify-between mb-8">
-          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 1 ? 'border-green-500 text-green-600' : 'border-gray-300 text-gray-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 1 ? 'bg-green-500 text-white' : 'bg-gray-300'}`}>
+          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 1 ? 'border-eco-green text-eco-green' : 'border-gray-300 text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 1 ? 'bg-eco-green text-white' : 'bg-gray-300'}`}>
               1
             </div>
             <span className="font-medium">Shipping</span>
           </div>
-          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 2 ? 'border-green-500 text-green-600' : 'border-gray-300 text-gray-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 2 ? 'bg-green-500 text-white' : 'bg-gray-300'}`}>
+          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 2 ? 'border-eco-green text-eco-green' : 'border-gray-300 text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 2 ? 'bg-eco-green text-white' : 'bg-gray-300'}`}>
               2
             </div>
             <span className="font-medium">Review</span>
           </div>
-          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 3 ? 'border-green-500 text-green-600' : 'border-gray-300 text-gray-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 3 ? 'bg-green-500 text-white' : 'bg-gray-300'}`}>
+          <div className={`flex-1 text-center pb-4 border-b-2 ${step >= 3 ? 'border-eco-green text-eco-green' : 'border-gray-300 text-gray-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${step >= 3 ? 'bg-eco-green text-white' : 'bg-gray-300'}`}>
               3
             </div>
             <span className="font-medium">Confirmation</span>
@@ -204,7 +204,7 @@ const Checkout: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        <div className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded mb-6">
           {error}
         </div>
       )}
@@ -224,7 +224,7 @@ const Checkout: React.FC = () => {
                     value={shippingInfo.fullName}
                     onChange={handleShippingChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green"
                   />
                 </div>
                 
@@ -237,7 +237,7 @@ const Checkout: React.FC = () => {
                     onChange={handleShippingChange}
                     required
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green"
                   />
                 </div>
                 
@@ -251,7 +251,7 @@ const Checkout: React.FC = () => {
                       value={shippingInfo.city}
                       onChange={handleShippingChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green"
                     />
                   </div>
                   
@@ -264,7 +264,7 @@ const Checkout: React.FC = () => {
                       value={shippingInfo.state}
                       onChange={handleShippingChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green"
                     />
                   </div>
                 </div>
@@ -279,7 +279,7 @@ const Checkout: React.FC = () => {
                       value={shippingInfo.zipCode}
                       onChange={handleShippingChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green"
                     />
                   </div>
                   
@@ -291,7 +291,7 @@ const Checkout: React.FC = () => {
                       value={shippingInfo.country}
                       onChange={handleShippingChange}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green"
                     >
                       <option value="India">India</option>
                       <option value="USA">USA</option>
@@ -311,7 +311,7 @@ const Checkout: React.FC = () => {
                     value={shippingInfo.phone}
                     onChange={handleShippingChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green"
                   />
                 </div>
               </div>
@@ -326,7 +326,7 @@ const Checkout: React.FC = () => {
                 </button>
                 <button 
                   type="submit" 
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  className="bg-eco-green hover:bg-eco-green-dark text-white font-bold py-2 px-4 rounded-lg transition-colors"
                 >
                   Continue to Review
                 </button>
@@ -492,11 +492,11 @@ const Checkout: React.FC = () => {
                   )}
                   {paymentMethod === 'mixed' && (
                     <>
-                      <div className="flex justify-between text-blue-600">
+                      <div className="flex justify-between text-eco-green-dark">
                         <span>Tokens:</span>
                         <span>{finalTokenAmount} tokens</span>
                       </div>
-                      <div className="flex justify-between text-green-600">
+                      <div className="flex justify-between text-eco-green">
                         <span>Money:</span>
                         <span>₹{finalMoneyAmount.toFixed(2)}</span>
                       </div>
@@ -519,7 +519,7 @@ const Checkout: React.FC = () => {
                 </button>
                 <button 
                   type="button" 
-                  className={`bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`bg-eco-green hover:bg-eco-green-dark text-white font-bold py-2 px-4 rounded-lg transition-colors ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={handleSubmit}
                   disabled={isLoading}
                 >
@@ -538,8 +538,8 @@ const Checkout: React.FC = () => {
                 <div key={item.product.id} className="flex justify-between text-sm">
                   <span>{item.product.name} x {item.quantity}</span>
                   <div className="text-right">
-                    <div className="text-green-600">₹{Math.round((item.product.price * item.quantity) * 100) / 100}</div>
-                    <div className="text-blue-600 text-xs">{Math.round(item.product.tokenPrice * item.quantity)} tokens</div>
+                    <div className="text-eco-green">₹{Math.round((item.product.price * item.quantity) * 100) / 100}</div>
+                    <div className="text-eco-green-dark text-xs">{Math.round(item.product.tokenPrice * item.quantity)} tokens</div>
                   </div>
                 </div>
               ))}
@@ -557,13 +557,13 @@ const Checkout: React.FC = () => {
                 </div>
                 <hr className="my-2" />
                 {paymentMethod === 'money' && (
-                  <div className="flex justify-between font-bold text-green-600">
+                  <div className="flex justify-between font-bold text-eco-green">
                     <span>Total to Pay:</span>
                     <span>₹{finalMoneyAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {paymentMethod === 'tokens' && (
-                  <div className="flex justify-between font-bold text-blue-600">
+                  <div className="flex justify-between font-bold text-eco-green-dark">
                     <span>Total to Pay:</span>
                     <span>{finalTokenAmount} tokens</span>
                   </div>

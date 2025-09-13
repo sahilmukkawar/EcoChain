@@ -195,11 +195,16 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
   };
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-      <h2>{product ? 'Edit Product' : 'Add New Product'}</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="productInfo.name" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-semibold mb-6 text-green-800 flex items-center gap-2">
+        <span className="text-xl">🌱</span>
+        <span className="bg-gradient-to-r from-green-500 to-blue-400 text-transparent bg-clip-text">
+          {product ? 'Edit Product' : 'Add New Product'}
+        </span>
+      </h2>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="form-group">
+          <label htmlFor="productInfo.name" className="block text-sm font-medium text-gray-700 mb-1">
             Product Name
           </label>
           <input
@@ -209,12 +214,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
             value={formData.productInfo.name}
             onChange={handleChange}
             required
-            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+            placeholder="Enter product name"
           />
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="productInfo.description" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+        <div className="form-group">
+          <label htmlFor="productInfo.description" className="block text-sm font-medium text-gray-700 mb-1">
             Description
           </label>
           <textarea
@@ -224,12 +230,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
             onChange={handleChange}
             required
             rows={4}
-            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+            placeholder="Describe your product"
           />
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="productInfo.category" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+        <div className="form-group">
+          <label htmlFor="productInfo.category" className="block text-sm font-medium text-gray-700 mb-1">
             Category
           </label>
           <select
@@ -237,7 +244,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
             name="productInfo.category"
             value={formData.productInfo.category}
             onChange={handleChange}
-            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-white"
           >
             <option value="home_decor">Home Decor</option>
             <option value="furniture">Furniture</option>
@@ -253,100 +260,109 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
         </div>
 
         {/* Image Upload Section */}
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+        <div className="form-group">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Product Images
           </label>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleImageChange}
-            multiple
-            accept="image/*"
-            style={{ marginBottom: '8px' }}
-          />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div className="flex items-center justify-center w-full mb-4">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <svg className="w-8 h-8 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p className="mb-1 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                multiple
+                accept="image/*"
+                className="hidden"
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-3">
             {imagePreviews.map((preview, index) => (
-              <div key={index} style={{ position: 'relative' }}>
+              <div key={index} className="relative group">
                 <img 
                   src={preview} 
                   alt={`Preview ${index + 1}`} 
-                  style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '4px' }} 
+                  className="w-24 h-24 object-cover rounded-lg border border-gray-200 shadow-sm transition-all group-hover:shadow-md" 
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  style={{
-                    position: 'absolute',
-                    top: '-8px',
-                    right: '-8px',
-                    backgroundColor: '#e74c3c',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '50%',
-
-                    width: '20px',
-                    height: '20px',
-                    cursor: 'pointer'
-                  }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:bg-red-600 transition-colors"
+                  aria-label="Remove image"
                 >
                   ×
                 </button>
               </div>
             ))}
             {imagePreviews.length === 0 && (
-              <div style={{ 
-                width: '100px', 
-                height: '100px', 
-                border: '2px dashed #ccc', 
-                borderRadius: '4px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                color: '#999'
-              }}>
+              <div className="w-24 h-24 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-sm">
                 No images
               </div>
             )}
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-          <div>
-            <label htmlFor="pricing.sellingPrice" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-              EcoToken Price
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="form-group">
+            <label htmlFor="pricing.sellingPrice" className="block text-sm font-medium text-gray-700 mb-1">
+              <span className="flex items-center gap-1">
+                <span className="text-green-600">🪙</span> EcoToken Price
+              </span>
             </label>
-            <input
-              type="number"
-              id="pricing.sellingPrice"
-              name="pricing.sellingPrice"
-              value={formData.pricing.sellingPrice}
-              onChange={handleChange}
-              min="0"
-              required
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
+            <div className="relative">
+              <input
+                type="number"
+                id="pricing.sellingPrice"
+                name="pricing.sellingPrice"
+                value={formData.pricing.sellingPrice}
+                onChange={handleChange}
+                min="0"
+                required
+                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                placeholder="0"
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <span className="text-green-600 text-sm">Ξ</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <label htmlFor="pricing.costPrice" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-              Fiat Price (₹)
+          <div className="form-group">
+            <label htmlFor="pricing.costPrice" className="block text-sm font-medium text-gray-700 mb-1">
+              <span className="flex items-center gap-1">
+                <span>💰</span> Fiat Price (₹)
+              </span>
             </label>
-            <input
-              type="number"
-              id="pricing.costPrice"
-              name="pricing.costPrice"
-              value={formData.pricing.costPrice}
-              onChange={handleChange}
-              min="0"
-              required
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
+            <div className="relative">
+              <input
+                type="number"
+                id="pricing.costPrice"
+                name="pricing.costPrice"
+                value={formData.pricing.costPrice}
+                onChange={handleChange}
+                min="0"
+                required
+                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                placeholder="0"
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <span className="text-gray-500">₹</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="inventory.currentStock" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            Available Stock
+        <div className="form-group">
+          <label htmlFor="inventory.currentStock" className="block text-sm font-medium text-gray-700 mb-1">
+            <span className="flex items-center gap-1">
+              <span>📦</span> Available Stock
+            </span>
           </label>
           <input
             type="number"
@@ -356,54 +372,78 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
             onChange={handleChange}
             min="0"
             required
-            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+            placeholder="0"
           />
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="sustainability.recycledMaterialPercentage" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            Sustainability Score (0-100)
+        <div className="form-group">
+          <label htmlFor="sustainability.recycledMaterialPercentage" className="block text-sm font-medium text-gray-700 mb-1">
+            <span className="flex items-center gap-1">
+              <span>♻️</span> Sustainability Score (0-100)
+            </span>
           </label>
-          <input
-            type="number"
-            id="sustainability.recycledMaterialPercentage"
-            name="sustainability.recycledMaterialPercentage"
-            value={formData.sustainability.recycledMaterialPercentage}
-            onChange={handleChange}
-            min="0"
-            max="100"
-            required
-            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+          <div className="relative">
             <input
-              type="checkbox"
-              name="availability.isActive"
-              checked={formData.availability.isActive}
+              type="number"
+              id="sustainability.recycledMaterialPercentage"
+              name="sustainability.recycledMaterialPercentage"
+              value={formData.sustainability.recycledMaterialPercentage}
               onChange={handleChange}
-              style={{ marginRight: '8px' }}
+              min="0"
+              max="100"
+              required
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
             />
-            Active Status
-          </label>
+            <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-gradient-to-r from-green-500 to-blue-400 h-2.5 rounded-full transition-all duration-300" 
+                style={{ width: `${formData.sustainability.recycledMaterialPercentage}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+        <div className="form-group">
+          <div className="flex items-center">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="availability.isActive"
+                checked={formData.availability.isActive}
+                onChange={handleChange}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+              <span className="ml-3 text-sm font-medium text-gray-700">Active Status</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
           <button
             type="button"
             onClick={onCancel}
-            style={{ padding: '10px 20px', backgroundColor: '#f5f5f5', color: '#333', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            style={{ padding: '10px 20px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-500 to-blue-400 hover:from-green-600 hover:to-blue-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {loading ? 'Saving...' : product ? 'Update Product' : 'Add Product'}
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </span>
+            ) : (
+              <span>{product ? 'Update Product' : 'Add Product'}</span>
+            )}
           </button>
         </div>
       </form>
