@@ -68,6 +68,7 @@ const CollectorDashboard: React.FC = () => {
   const [assignedCollections, setAssignedCollections] = useState<WasteSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Function to calculate payment in INR based on Indian industry standards
   const calculatePaymentINR = (wasteType: string, weight: number, quality: string = 'fair') => {
@@ -481,432 +482,522 @@ const CollectorDashboard: React.FC = () => {
         return { ...baseStyle, backgroundColor: '#f5f5f5', color: '#666' };
     }
   };
+  const refreshDashboard = async () => {
+    setRefreshing(true);
+    try {
+      // Add your refresh logic here
+      setError(null);
+    } catch (err) {
+      console.error('Error refreshing dashboard:', err);
+      setError('Failed to refresh data. Please try again.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-  return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1>Collector Dashboard {user && `- ${user.name}`}</h1>
-      
-      {/* Stats Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h3 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>Today's Pickups</h3>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.todayPickups}</div>
-        </div>
-        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h3 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>Total Earnings</h3>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#28a745' }}>₹{stats.totalEarningsINR}</div>
-          <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px' }}>{stats.totalEarnings} EcoTokens</div>
-        </div>
-        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', border: stats.pendingPaymentsINR > 0 ? '2px solid #ffc107' : '1px solid #dee2e6' }}>
-          <h3 style={{ color: stats.pendingPaymentsINR > 0 ? '#856404' : '#1976d2', margin: '0 0 8px 0' }}>Pending Payments</h3>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: stats.pendingPaymentsINR > 0 ? '#856404' : '#666' }}>₹{stats.pendingPaymentsINR}</div>
-          {stats.pendingPaymentsINR > 0 && (
-            <div style={{ fontSize: '0.75rem', color: '#856404', marginTop: '4px' }}>⚠️ Awaiting admin approval</div>
-          )}
-        </div>
-        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h3 style={{ color: '#1976d2', margin: '0 0 8px 0' }}>Route Stops</h3>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.routeStops}</div>
-        </div>
-      </div>
-      
-      {/* Pickup Requests Section */}
-      <h2 style={{ marginTop: '32px', marginBottom: '16px' }}>Pickup Requests ({pickupRequests.length} available)</h2>
-      <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '32px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ backgroundColor: '#f5f5f5' }}>
-            <tr>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Address</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Waste Type</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Quantity</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Scheduled Date</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Scheduled Time</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Status</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pickupRequests.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: '#666' }}>
-                  No pickup requests available at the moment. New requests will appear here automatically.
-                </td>
-              </tr>
-            ) : (
-              pickupRequests.map((request) => (
-                <tr key={request._id}>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{request.location.pickupAddress}</td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{request.collectionDetails.type}</td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{request.collectionDetails.weight}kg</td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                    {request.scheduling.requestedDate ? new Date(request.scheduling.requestedDate).toLocaleDateString() : 'TBD'}
-                  </td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{request.scheduling.preferredTimeSlot}</td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                    <span style={getStatusStyle(request.status)}>
-                      {request.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                    {request.status === 'requested' ? (
-                      <button 
-                        onClick={() => handleAcceptRequest(request._id)}
-                        style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.875rem', 
-                          backgroundColor: '#4caf50', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer',
-                          marginRight: '8px'
-                        }}
-                      >
-                        Accept
-                      </button>
-                    ) : (
-                      <button style={{ 
-                        padding: '6px 12px', 
-                        fontSize: '0.875rem', 
-                        backgroundColor: '#1976d2', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: '4px', 
-                        cursor: 'pointer' 
-                      }}>
-                        View Details
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Collection History Section */}
-      <h2 style={{ marginBottom: '16px' }}>Collection History</h2>
-      <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '32px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ backgroundColor: '#f5f5f5' }}>
-            <tr>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Date</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Address</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Waste Type</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Quantity</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Payment Earned (₹)</th>
-              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {collectionHistory.map((collection) => (
-              <tr key={collection._id}>
-                <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                  {collection.scheduling.actualPickupDate ? 
-                    new Date(collection.scheduling.actualPickupDate).toLocaleDateString() : 'N/A'}
-                </td>
-                <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collection.location.pickupAddress}</td>
-                <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collection.collectionDetails.type}</td>
-                <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collection.collectionDetails.weight}kg</td>
-                <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                  <div>
-                    <div style={{ fontWeight: 'bold', color: '#28a745' }}>
-                      ₹{calculatePaymentINR(collection.collectionDetails.type, collection.collectionDetails.weight, collection.collectionDetails.quality || 'fair')}
-                    </div>
-                    <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                      {collection.tokenCalculation?.totalTokensIssued || 0} tokens
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                  <span style={getStatusStyle(collection.status)}>
-                    {collection.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Quick Actions */}
-      <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '32px' }}>
-        <h3>Quick Actions</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          <button style={{ padding: '12px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Start Route</button>
-          <button style={{ padding: '12px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Scan Waste</button>
-          <button style={{ padding: '12px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Report Issue</button>
-          <button style={{ padding: '12px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>View Map</button>
-        </div>
-      </div>
-      
-      {/* Current Work Section */}
-      <h2 style={{ marginTop: '32px', marginBottom: '16px' }}>Current Work ({assignedCollections.length} active collections)</h2>
-      <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '32px' }}>        
-        {assignedCollections.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '32px', 
-            color: '#666'
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📋</div>
-            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>No active collections</div>
-            <div style={{ fontSize: '0.875rem' }}>Accept pickup requests to see them here</div>
-          </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead style={{ backgroundColor: '#f5f5f5' }}>
-              <tr>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Collection ID</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Address</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Waste Details</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Expected Payment (₹)</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Status</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Scheduled Date</th>
-                <th style={{ padding: '12px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assignedCollections.map((collection) => (
-                <tr key={collection._id}>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>{collection.collectionId}</td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>{collection.location.pickupAddress}</td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                    <div>
-                      <div style={{ fontWeight: 'bold' }}>{collection.collectionDetails.weight}kg</div>
-                      <div style={{ fontSize: '0.875rem', color: '#666', textTransform: 'capitalize' }}>{collection.collectionDetails.type}</div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#28a745' }}>
-                        ₹{calculatePaymentINR(collection.collectionDetails.type, collection.collectionDetails.weight, collection.collectionDetails.quality || 'fair')}
-                      </div>
-                      <div style={{ fontSize: '0.875rem', color: '#666' }}>Quality: {collection.collectionDetails.quality || 'fair'}</div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                    <span style={getStatusStyle(collection.status)}>
-                      {collection.status.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                    {collection.scheduling.scheduledDate ? 
-                      new Date(collection.scheduling.scheduledDate).toLocaleDateString() : 
-                      'Not scheduled'
-                    }
-                  </td>
-                  <td style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-                    {collection.status === 'scheduled' && (
-                      <button 
-                        onClick={() => handleUpdateStatus(collection._id, 'in_progress')}
-                        style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.75rem', 
-                          backgroundColor: '#ff9800', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          marginRight: '4px'
-                        }}
-                      >
-                        🚀 Start Pickup
-                      </button>
-                    )}
-                    {collection.status === 'in_progress' && (
-                      <button 
-                        onClick={() => handleUpdateStatus(collection._id, 'collected')}
-                        style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '0.75rem', 
-                          backgroundColor: '#4caf50', 
-                          color: 'white', 
-                          border: 'none', 
-                          borderRadius: '4px', 
-                          cursor: 'pointer',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        ✅ Collect Waste
-                      </button>
-                    )}
-                    {collection.status === 'collected' && (
-                      <span style={{ color: '#28a745', fontWeight: 'bold', padding: '4px 8px', backgroundColor: '#d4edda', borderRadius: '4px' }}>
-                        ✅ Awaiting Admin Payment
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Today's Schedule and Performance Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0 }}>Today's Schedule</h3>
-            <div style={{ fontSize: '0.875rem', color: '#666', fontWeight: 'bold' }}>
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </div>
-          </div>
-          
-          {todaySchedule.length === 0 ? (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '32px', 
-              color: '#666',
-              backgroundColor: '#f5f5f5',
-              borderRadius: '8px',
-              border: '2px dashed #ddd'
-            }}>
-              <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📅</div>
-              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>No collections scheduled for today</div>
-              <div style={{ fontSize: '0.875rem' }}>Check back later or accept new pickup requests</div>
-            </div>
-          ) : (
+    return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
             <div>
-              {todaySchedule.map((item, index) => (
-                <div key={item._id} style={{ 
-                  padding: '16px', 
-                  marginBottom: '12px',
-                  backgroundColor: item.status === 'completed' ? '#f8f9fa' : 
-                                  item.status === 'in_progress' ? '#e3f2fd' : '#fff',
-                  border: '1px solid #eee',
-                  borderRadius: '8px',
-                  borderLeft: `4px solid ${
-                    item.status === 'completed' ? '#4caf50' : 
-                    item.status === 'in_progress' ? '#2196f3' : '#ff9800'
-                  }`
-                }}>
-                  {/* Time and Status Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ 
-                        fontWeight: 'bold', 
-                        fontSize: '1.1rem',
-                        color: '#1976d2'
-                      }}>
-                        🕐 {item.time}
-                      </span>
-                      <span style={{ 
-                        fontSize: '0.8rem', 
-                        color: '#666',
-                        backgroundColor: '#f0f0f0',
-                        padding: '2px 8px',
-                        borderRadius: '12px'
-                      }}>
-                        #{index + 1}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <span style={getStatusStyle(item.status)}>
-                        {item.status === 'completed' ? '✅ ' : item.status === 'in_progress' ? '🚛 ' : '⏰ '}
-                        {item.status === 'scheduled' ? 'Scheduled' :
-                         item.status === 'in_progress' ? 'In Progress' : 'Completed'}
-                      </span>
-                      {item.status === 'scheduled' && (
-                        <button 
-                          onClick={() => handleUpdateStatus(item._id, 'in_progress')}
-                          style={{ 
-                            padding: '6px 12px', 
-                            fontSize: '0.75rem', 
-                            backgroundColor: '#ff9800', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '4px', 
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          🚀 Start Pickup
-                        </button>
-                      )}
-                      {item.status === 'in_progress' && (
-                        <button 
-                          onClick={() => handleUpdateStatus(item._id, 'collected')}
-                          style={{ 
-                            padding: '6px 12px', 
-                            fontSize: '0.75rem', 
-                            backgroundColor: '#4caf50', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '4px', 
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          ✅ Collect Waste
-                        </button>
-                      )}
-                    </div>
+              <h1 className="text-2xl font-bold text-gray-900">Collector Dashboard</h1>
+              <p className="text-sm text-gray-500">Welcome back, {user?.name}! Manage your waste collection routes</p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Active Collections Badge */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-eco-green-50 text-eco-green-700 border border-eco-green-200">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <span>{assignedCollections?.length || 0} Active Collections</span>
+              </div>
+
+              {/* Refresh Button */}
+              <button
+                onClick={refreshDashboard}
+                disabled={refreshing}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${refreshing
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-600 hover:bg-gray-700 text-white shadow-sm hover:shadow-md'
+                  }`}
+              >
+                <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border-b border-red-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-red-800 font-medium text-sm">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-600 hover:text-red-800 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Payments Alert */}
+      {stats?.pendingPaymentsINR > 0 && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-amber-800 font-medium text-sm">
+                  Payment Pending: ₹{stats.pendingPaymentsINR} awaiting admin approval
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Today's Pickups</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.todayPickups || 0}</p>
+              </div>
+              <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Earnings</p>
+                <p className="text-3xl font-bold text-eco-green-600 mt-2">₹{stats?.totalEarningsINR || 0}</p>
+                <p className="text-xs text-gray-500 mt-1">{stats?.totalEarnings || 0} EcoTokens</p>
+              </div>
+              <div className="h-12 w-12 bg-eco-green-50 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className={`rounded-xl border p-6 ${stats?.pendingPaymentsINR > 0
+            ? 'bg-amber-50 border-amber-200'
+            : 'bg-white border-gray-200'
+            }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pending Payments</p>
+                <p className={`text-3xl font-bold mt-2 ${stats?.pendingPaymentsINR > 0 ? 'text-amber-600' : 'text-gray-900'
+                  }`}>
+                  ₹{stats?.pendingPaymentsINR || 0}
+                </p>
+              </div>
+              <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${stats?.pendingPaymentsINR > 0 ? 'bg-amber-100' : 'bg-gray-50'
+                }`}>
+                {stats?.pendingPaymentsINR > 0 ? (
+                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            {stats?.pendingPaymentsINR > 0 && (
+              <p className="text-sm text-amber-600 font-medium mt-4">Awaiting admin approval</p>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Route Stops</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.routeStops || 0}</p>
+              </div>
+              <div className="h-12 w-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+          {/* Quick Actions */}
+          <div className="xl:col-span-1">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+              </div>
+              <div className="p-6 space-y-3">
+                <button className="w-full flex items-center gap-3 p-4 bg-eco-green-50 hover:bg-eco-green-100 rounded-xl transition-all duration-200 hover:shadow-md border border-eco-green-100 hover:border-eco-green-200">
+                  <div className="w-10 h-10 bg-eco-green-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
                   </div>
-                  
-                  {/* Location and Details */}
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ marginRight: '8px', fontSize: '1.1rem' }}>📍</span>
-                    <span style={{ fontWeight: '500', color: '#333' }}>{item.location.pickupAddress}</span>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-900 text-sm">Start Route</div>
+                    <div className="text-xs text-gray-600">Begin collection route</div>
                   </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.875rem', color: '#666' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span>🗂️</span>
-                      <span>Waste Type: <strong>{item.collectionDetails.type}</strong></span>
-                    </div>
-                    {item.scheduledDate && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span>📅</span>
-                        <span>Scheduled: {new Date(item.scheduledDate).toLocaleDateString()}</span>
-                      </div>
-                    )}
+                </button>
+
+                <button className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:shadow-md border border-gray-100 hover:border-gray-200">
+                  <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11a6 6 0 11-12 0v-1m12 1a6 6 0 11-12 0v-1m0 1v4a2 2 0 002 2h8a2 2 0 002-2v-4m0 0V9a2 2 0 00-2-2H10a2 2 0 00-2 2v6.5" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-900 text-sm">Scan Waste</div>
+                    <div className="text-xs text-gray-600">QR code scanner</div>
+                  </div>
+                </button>
+
+                <button className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:shadow-md border border-gray-100 hover:border-gray-200">
+                  <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-900 text-sm">Report Issue</div>
+                    <div className="text-xs text-gray-600">Submit problem report</div>
+                  </div>
+                </button>
+
+                <button className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:shadow-md border border-gray-100 hover:border-gray-200">
+                  <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-medium text-gray-900 text-sm">View Map</div>
+                    <div className="text-xs text-gray-600">Route optimization</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Today's Schedule */}
+          <div className="xl:col-span-2">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Today's Schedule</h3>
+                  <div className="text-sm text-gray-500 font-medium">
+                    {new Date().toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="p-6">
+                {!todaySchedule || todaySchedule.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No collections scheduled</h3>
+                    <p className="text-gray-600">Check back later or accept new pickup requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {todaySchedule.map((item, index) => (
+                      <div key={item._id} className={`p-4 rounded-lg border-l-4 ${
+                        item.status === 'completed' ? 'bg-eco-green-50 border-eco-green-500' : 
+                        item.status === 'in_progress' ? 'bg-blue-50 border-blue-500' : 'bg-amber-50 border-amber-500'
+                      }`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg font-bold text-gray-900">
+                              🕐 {item.time}
+                            </span>
+                            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">
+                              #{index + 1}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.status === 'completed' ? 'bg-eco-green-100 text-eco-green-800' :
+                              item.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {item.status === 'completed' ? '✅ Completed' :
+                               item.status === 'in_progress' ? '🚛 In Progress' : '⏰ Scheduled'}
+                            </span>
+                            {item.status === 'scheduled' && (
+                              <button 
+                                onClick={() => handleUpdateStatus(item._id, 'in_progress')}
+                                className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 text-xs font-medium rounded-lg transition-colors"
+                              >
+                                🚀 Start
+                              </button>
+                            )}
+                            {item.status === 'in_progress' && (
+                              <button 
+                                onClick={() => handleUpdateStatus(item._id, 'collected')}
+                                className="bg-eco-green-500 hover:bg-eco-green-600 text-white px-3 py-1 text-xs font-medium rounded-lg transition-colors"
+                              >
+                                ✅ Complete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          </svg>
+                          <span className="font-medium text-gray-900">{item.location.pickupAddress}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span><strong>{item.collectionDetails.type}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16l-3-9m3 9l3-9" />
+                            </svg>
+                            <span>{item.collectionDetails.weight}kg</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pickup Requests */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Available Pickup Requests</h3>
+              <span className="text-sm text-gray-500">{pickupRequests?.length || 0} requests available</span>
+            </div>
+          </div>
+
+          {!pickupRequests || pickupRequests.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No pickup requests</h3>
+              <p className="text-gray-600">New requests will appear here automatically</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waste Details</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {pickupRequests.map((request) => (
+                    <tr key={request._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {request.location.pickupAddress}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
+                          <div className="font-medium text-gray-900">{request.collectionDetails.type}</div>
+                          <div className="text-gray-500">{request.collectionDetails.weight}kg</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
+                          <div className="text-gray-900">
+                            {request.scheduling.requestedDate ? 
+                              new Date(request.scheduling.requestedDate).toLocaleDateString() : 'TBD'}
+                          </div>
+                          <div className="text-gray-500">{request.scheduling.preferredTimeSlot}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          request.status === 'requested' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {request.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {request.status === 'requested' ? (
+                          <button 
+                            onClick={() => handleAcceptRequest(request._id)}
+                            className="bg-eco-green-500 hover:bg-eco-green-600 text-white px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                          >
+                            Accept
+                          </button>
+                        ) : (
+                          <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 text-xs font-medium rounded-lg transition-colors">
+                            View Details
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
-        
-        {/* Performance Metrics */}
-        <div style={{ padding: '16px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h3>Performance Metrics</h3>
-          <div>
-            <div style={{ padding: '16px 0', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 'bold' }}>Collections Completed</div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>{stats.completedCollections} collections</div>
-              </div>
-              <span style={getStatusStyle('completed')}>{stats.completedCollections} / {stats.completedCollections + stats.pendingCollections}</span>
+
+        {/* Performance Metrics & Collection History */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Performance Metrics */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Performance Metrics</h3>
             </div>
-            <div style={{ padding: '16px 0', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 'bold' }}>Average Collection Time</div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>15 minutes per collection</div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900">Collections Completed</div>
+                    <div className="text-sm text-gray-600">{stats?.completedCollections || 0} collections</div>
+                  </div>
+                  <span className="bg-eco-green-100 text-eco-green-800 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                    {stats?.completedCollections || 0} / {(stats?.completedCollections || 0) + (stats?.pendingCollections || 0)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900">Average Collection Time</div>
+                    <div className="text-sm text-gray-600">15 minutes per collection</div>
+                  </div>
+                  <span className="bg-eco-green-100 text-eco-green-800 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                    On Target
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900">Waste Quality Rating</div>
+                    <div className="text-sm text-gray-600">High quality recyclables</div>
+                  </div>
+                  <span className="bg-eco-green-100 text-eco-green-800 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                    4.8/5
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900">Route Efficiency</div>
+                    <div className="text-sm text-gray-600">Optimized for minimum fuel</div>
+                  </div>
+                  <span className="bg-eco-green-100 text-eco-green-800 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                    92%
+                  </span>
+                </div>
               </div>
-              <span style={getStatusStyle('completed')}>On Target</span>
             </div>
-            <div style={{ padding: '16px 0', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 'bold' }}>Waste Quality Rating</div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>High quality recyclables</div>
+          </div>
+
+          {/* Collection History Preview */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Recent Collections</h3>
+                <button className="text-sm text-eco-green-600 hover:text-eco-green-700 font-medium">
+                  View All
+                </button>
               </div>
-              <span style={getStatusStyle('completed')}>4.8/5</span>
             </div>
-            <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 'bold' }}>Route Efficiency</div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>Optimized for minimum fuel consumption</div>
-              </div>
-              <span style={getStatusStyle('completed')}>92%</span>
+            <div className="p-6">
+              {!collectionHistory || collectionHistory.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500 mb-2">No collections yet</div>
+                  <div className="text-sm text-gray-400">Completed collections will appear here</div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {collectionHistory.slice(0, 3).map((collection) => (
+                    <div key={collection._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="font-medium text-gray-900 text-sm">
+                          {collection.collectionDetails.type} - {collection.collectionDetails.weight}kg
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {collection.scheduling.actualPickupDate ? 
+                            new Date(collection.scheduling.actualPickupDate).toLocaleDateString() : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-eco-green-600 text-sm">
+                          ₹{calculatePaymentINR ? 
+                            calculatePaymentINR(collection.collectionDetails.type, collection.collectionDetails.weight, collection.collectionDetails.quality || 'fair') 
+                            : '0'
+                          }
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {collection.tokenCalculation?.totalTokensIssued || 0} tokens
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -916,4 +1007,3 @@ const CollectorDashboard: React.FC = () => {
 };
 
 export default CollectorDashboard;
-
