@@ -9,6 +9,7 @@ import { authAPI } from '../services/api.ts';
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { user, updateUser } = useAuth();
   const { 
@@ -22,34 +23,27 @@ const Dashboard: React.FC = () => {
   const [ordersLoading, setOrdersLoading] = useState<boolean>(true);
   const [ordersError, setOrdersError] = useState<string | null>(null);
   
-  // Add waste collection requests state
   const [wasteRequests, setWasteRequests] = useState<WasteSubmission[]>([]);
   const [wasteLoading, setWasteLoading] = useState<boolean>(true);
   const [wasteError, setWasteError] = useState<string | null>(null);
   
-  // Add current token balance state from database
   const [currentTokenBalance, setCurrentTokenBalance] = useState<number>(user?.ecoWallet?.currentBalance || 0);
   const [lastTokenUpdate, setLastTokenUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
-    // Set loading to false once we have user data
     if (user) {
       console.log('Dashboard useEffect - User detected, initializing...');
       console.log('User initial token balance:', user.ecoWallet?.currentBalance);
       
       setLoading(false);
       
-      // Only update token balance if it's different from current state
       const userTokenBalance = user.ecoWallet?.currentBalance || 0;
       if (userTokenBalance !== currentTokenBalance) {
         setCurrentTokenBalance(userTokenBalance);
       }
       
-      // Fetch all dashboard data
       fetchOrders();
       fetchWasteRequests();
-      
-      // Fetch latest user data only once on initial load
       fetchLatestUserData();
     } else {
       setLoading(false);
@@ -84,7 +78,6 @@ const Dashboard: React.FC = () => {
     }
   };
   
-  // Function to fetch latest user data including updated token balance
   const fetchLatestUserData = async () => {
     try {
       console.log('Fetching latest user data from database...');
@@ -96,7 +89,6 @@ const Dashboard: React.FC = () => {
         console.log('Previous token balance:', currentTokenBalance);
         console.log('New token balance from database:', newTokenBalance);
         
-        // Only update if the token balance has actually changed
         if (newTokenBalance !== currentTokenBalance) {
           setCurrentTokenBalance(newTokenBalance);
           setLastTokenUpdate(new Date());
@@ -105,7 +97,6 @@ const Dashboard: React.FC = () => {
           console.log('Token balance unchanged, skipping update');
         }
         
-        // Update user in AuthContext with fresh data (but only if significantly different)
         if (updateUser && (newTokenBalance !== currentTokenBalance || !user?.ecoWallet)) {
           updateUser(latestUserData);
           console.log('Updated user in AuthContext with fresh data');
@@ -121,299 +112,520 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-32 bg-gray-100 rounded-lg">Loading...</div>;
-  if (error) return <div className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded">Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-eco-green-600 mx-auto mb-4"></div>
+          <p className="text-lg font-medium text-gray-700">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-red-200">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Dashboard</h3>
+            <p className="text-red-600 text-sm mb-6 leading-relaxed">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleRefresh = async () => {
     try {
       console.log('Dashboard refresh initiated...');
-      setLoading(true);
+      setRefreshing(true);
+      setError(null);
       
-      // Refresh all data in parallel for better performance
       await Promise.all([
         refreshCollections(),
         fetchOrders(),
         fetchWasteRequests(),
-        fetchLatestUserData() // Always refresh user token balance
+        fetchLatestUserData()
       ]);
       
       console.log('Dashboard refresh completed successfully');
-      setLoading(false);
     } catch (error) {
       console.error('Refresh failed:', error);
       setError('Failed to refresh data. Please try again.');
-      setLoading(false);
+    } finally {
+      setRefreshing(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Your Dashboard</h1>
-        <button 
-          className="bg-eco-green hover:bg-eco-green-dark text-white px-4 py-2 rounded-lg transition-colors shadow-md"
-          onClick={handleRefresh}
-        >
-          Refresh Data
-        </button>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1 bg-eco-beige/20 p-6 rounded-xl shadow-md border border-eco-beige/30">
-          <div className="flex flex-col gap-6">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
             <div>
-              <h3 className="text-lg font-semibold mb-3">Your EcoTokens</h3>
-              <div className="flex items-center gap-2 text-2xl font-bold text-eco-green">
-                <span className="text-3xl">🌱</span>
-                <span className="token-amount">{currentTokenBalance}</span>
-              </div>
-              {lastTokenUpdate && (
-                <div className="text-xs text-gray-500 mt-1 italic">
-                  Last updated: {lastTokenUpdate.toLocaleTimeString()}
-                </div>
-              )}
-              <div className="mt-3">
-                <button 
-                  onClick={() => {
-                    console.log('Manual token balance refresh clicked');
-                    fetchLatestUserData();
-                  }}
-                  className="w-full bg-gradient-to-r from-eco-green to-eco-green-dark text-white py-2 px-4 rounded-lg font-medium shadow hover:from-eco-green-dark hover:to-eco-green transition-all"
-                >
-                  🔄 Refresh Balance
-                </button>
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+              <p className="text-sm text-gray-500">Welcome back, {user?.name}! Track your eco-friendly journey</p>
             </div>
-            <div className="bg-eco-green-light/10 p-4 rounded-lg border border-eco-green-light/20">
-              <h4 className="font-semibold text-eco-green-dark mb-2">Your Environmental Impact</h4>
-              <ul className="space-y-1 text-sm">
-                <li className="flex justify-between">
-                  <span>CO2 Saved:</span>
-                  <span className="font-medium">{environmentalImpact.co2Saved} kg</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Trees Equivalent:</span>
-                  <span className="font-medium">{environmentalImpact.treesEquivalent}</span>
-                </li>
-                <li className="flex justify-between">
-                  <span>Water Saved:</span>
-                  <span className="font-medium">{environmentalImpact.waterSaved} L</span>
-                </li>
-              </ul>
+
+            <div className="flex items-center gap-4">
+              {/* EcoTokens Balance */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-eco-green-50 text-eco-green-700 border border-eco-green-200">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <span>{currentTokenBalance} EcoTokens</span>
+              </div>
+
+              {/* Refresh Button */}
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${refreshing
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-eco-green-600 hover:bg-eco-green-700 text-white shadow-sm hover:shadow-md'
+                  }`}
+              >
+                <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {refreshing ? 'Refreshing...' : 'Refresh Data'}
+              </button>
             </div>
           </div>
         </div>
-        
-        <div className="lg:col-span-3">
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h3 className="text-gray-600 mb-2">Total Requests</h3>
-              <p className="text-2xl font-bold">{wasteRequests.length}</p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h3 className="text-gray-600 mb-2">Total Weight</h3>
-              <p className="text-2xl font-bold">
-                {wasteRequests.reduce((sum, item) => sum + (item.collectionDetails?.weight || 0), 0).toFixed(2)} kg
-              </p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h3 className="text-gray-600 mb-2">Completed Collections</h3>
-              <p className="text-2xl font-bold">
-                {wasteRequests.filter(item => item.status === 'completed').length}
-              </p>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow text-center">
-              <h3 className="text-gray-600 mb-2">Pending Requests</h3>
-              <p className="text-2xl font-bold">
-                {wasteRequests.filter(item => item.status === 'requested').length}
-              </p>
-            </div>
-          </section>
+      </div>
 
-          <section className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Your Waste Collection Requests</h2>
-            {wasteLoading ? (
-              <div className="flex justify-center items-center h-32 bg-gray-50 rounded-lg">
-                Loading your requests...
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border-b border-red-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-red-800 font-medium text-sm">{error}</p>
               </div>
-            ) : wasteError ? (
-              <div className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded">
-                {wasteError}
+              <button
+                onClick={() => setError(null)}
+                className="text-red-600 hover:text-red-800 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Sidebar - EcoTokens & Environmental Impact */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* EcoTokens Card */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-eco-green-50 to-eco-green-100">
+                <h3 className="text-lg font-semibold text-eco-green-900">Your EcoTokens</h3>
               </div>
-            ) : wasteRequests.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
-                <p className="mb-4">No waste collection requests found.</p>
-                <Link 
-                  to="/waste-submission" 
-                  className="inline-block bg-eco-green hover:bg-eco-green-dark text-white px-4 py-2 rounded-lg transition-colors"
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-eco-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-eco-green-600">{currentTokenBalance}</div>
+                    <div className="text-sm text-gray-600">Available Balance</div>
+                  </div>
+                </div>
+                {lastTokenUpdate && (
+                  <div className="text-xs text-gray-500 mb-4 italic">
+                    Last updated: {lastTokenUpdate.toLocaleTimeString()}
+                  </div>
+                )}
+                <button 
+                  onClick={fetchLatestUserData}
+                  className="w-full bg-eco-green-600 hover:bg-eco-green-700 text-white py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
                 >
-                  Submit Your First Waste Request
-                </Link>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh Balance
+                </button>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collection ID</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Requested</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waste Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight (kg)</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quality</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pickup Address</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estimated Tokens</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {wasteRequests.map(request => {
-                      const statusClass = `inline-block px-2 py-1 text-xs font-medium rounded capitalize ${
-                        request.status === 'completed' ? 'bg-eco-green/10 text-eco-green-dark' :
-                        request.status === 'requested' ? 'bg-eco-yellow/10 text-eco-yellow-dark' :
-                        request.status === 'scheduled' ? 'bg-eco-blue/10 text-eco-blue-dark' :
-                        request.status === 'in_progress' ? 'bg-eco-purple/10 text-eco-purple-dark' :
-                        request.status === 'collected' ? 'bg-eco-indigo/10 text-eco-indigo-dark' :
-                        request.status === 'rejected' ? 'bg-eco-red/10 text-eco-red-dark' :
-                        'bg-gray-100 text-gray-800'
-                      }`;
-                      const estimatedTokens = request.tokenCalculation?.totalTokensIssued || 0;
-                      
-                      return (
-                        <tr key={request._id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{request.collectionId}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(request.createdAt).toLocaleDateString()}
+            </div>
+
+            {/* Environmental Impact Card */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 className="text-lg font-semibold text-gray-900">Environmental Impact</h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex justify-between items-center p-3 bg-eco-green-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-900">CO2 Saved</span>
+                  </div>
+                  <span className="font-bold text-eco-green-600">{environmentalImpact.co2Saved} kg</span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-eco-green-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-900">Trees Equivalent</span>
+                  </div>
+                  <span className="font-bold text-eco-green-600">{environmentalImpact.treesEquivalent}</span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-eco-green-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-900">Water Saved</span>
+                  </div>
+                  <span className="font-bold text-eco-green-600">{environmentalImpact.waterSaved} L</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:col-span-3 space-y-8">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Requests</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">{wasteRequests.length}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Weight</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                      {wasteRequests.reduce((sum, item) => sum + (item.collectionDetails?.weight || 0), 0).toFixed(1)}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">kg collected</p>
+                  </div>
+                  <div className="h-12 w-12 bg-eco-green-50 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16l-3-9m3 9l3-9" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Completed</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                      {wasteRequests.filter(item => item.status === 'completed').length}
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-eco-green-50 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pending</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                      {wasteRequests.filter(item => item.status === 'requested').length}
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-amber-50 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Waste Collection Requests */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Waste Collection Requests</h2>
+                  <Link 
+                    to="/collection-request" 
+                    className="bg-eco-green-600 hover:bg-eco-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    New Request
+                  </Link>
+                </div>
+              </div>
+
+              {wasteLoading ? (
+                <div className="p-12 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-eco-green-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading your requests...</p>
+                </div>
+              ) : wasteError ? (
+                <div className="p-6">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-700">{wasteError}</p>
+                  </div>
+                </div>
+              ) : wasteRequests.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No collection requests</h3>
+                  <p className="text-gray-600 mb-6">Start your eco-friendly journey by submitting your first waste collection request.</p>
+                  <Link 
+                    to="/collection-request" 
+                    className="inline-flex items-center gap-2 bg-eco-green-600 hover:bg-eco-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Submit First Request
+                  </Link>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waste Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tokens</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {wasteRequests.slice(0, 5).map(request => {
+                        const estimatedTokens = request.tokenCalculation?.totalTokensIssued || 0;
+                        
+                        return (
+                          <tr key={request._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {request.collectionId}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(request.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                              {request.collectionDetails?.type}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {request.collectionDetails?.weight || 0} kg
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                request.status === 'completed' ? 'bg-eco-green-100 text-eco-green-800' :
+                                request.status === 'requested' ? 'bg-amber-100 text-amber-800' :
+                                request.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+                                request.status === 'in_progress' ? 'bg-purple-100 text-purple-800' :
+                                request.status === 'collected' ? 'bg-indigo-100 text-indigo-800' :
+                                request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {request.status.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-eco-green-600">
+                              {estimatedTokens}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {request.status === 'completed' && (
+                                <span className="text-eco-green-600 font-medium">✅ Earned!</span>
+                              )}
+                              {request.status === 'requested' && (
+                                <span className="text-amber-600">⏳ Waiting</span>
+                              )}
+                              {request.status === 'scheduled' && (
+                                <span className="text-blue-600">📅 Scheduled</span>
+                              )}
+                              {request.status === 'in_progress' && (
+                                <span className="text-purple-600">🚛 Collecting</span>
+                              )}
+                              {request.status === 'collected' && (
+                                <span className="text-indigo-600">📦 Processing</span>
+                              )}
+                              {request.status === 'rejected' && (
+                                <span className="text-red-600">❌ Rejected</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {wasteRequests.length > 5 && (
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 text-center">
+                      <Link 
+                        to="/waste-history" 
+                        className="text-eco-green-600 hover:text-eco-green-700 font-medium text-sm"
+                      >
+                        View All {wasteRequests.length} Requests →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Orders Section */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
+                  <Link 
+                    to="/marketplace" 
+                    className="text-eco-green-600 hover:text-eco-green-700 font-medium text-sm"
+                  >
+                    Browse Marketplace →
+                  </Link>
+                </div>
+              </div>
+
+              {ordersLoading ? (
+                <div className="p-12 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-eco-green-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading your orders...</p>
+                </div>
+              ) : ordersError ? (
+                <div className="p-6">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-700">{ordersError}</p>
+                  </div>
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v5a2 2 0 002 2h2a2 2 0 002-2v-5" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
+                  <p className="text-gray-600 mb-6">Explore our eco-friendly marketplace to find sustainable products.</p>
+                  <Link 
+                    to="/marketplace" 
+                    className="inline-flex items-center gap-2 bg-eco-green-600 hover:bg-eco-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Browse Marketplace
+                  </Link>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tokens Used</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {orders.slice(0, 5).map((order) => (
+                        <tr key={order._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            #{order._id.substring(0, 8)}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 capitalize">
-                            {request.collectionDetails?.type}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(order.createdAt).toLocaleDateString()}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                            {request.collectionDetails?.weight || 0}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 capitalize">
-                            {request.collectionDetails?.quality || 'fair'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={statusClass}>
-                              {request.status.replace('_', ' ')}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              order.status === 'completed' ? 'bg-eco-green-100 text-eco-green-800' :
+                              order.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                              order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                              order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                              order.status === 'delivered' ? 'bg-indigo-100 text-indigo-800' :
+                              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {order.status}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            {request.location?.pickupAddress || 'N/A'}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ₹{order.totalPrice}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                            {estimatedTokens}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-eco-green-600">
+                            {order.totalTokenPrice}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            {request.status === 'requested' && (
-                              <span className="text-gray-500">Waiting for collector</span>
-                            )}
-                            {request.status === 'scheduled' && (
-                              <span className="text-eco-blue">Collector assigned</span>
-                            )}
-                            {request.status === 'in_progress' && (
-                              <span className="text-eco-purple">Collection in progress</span>
-                            )}
-                            {request.status === 'collected' && (
-                              <span className="text-eco-indigo">Collected, processing...</span>
-                            )}
-                            {request.status === 'completed' && (
-                              <span className="text-eco-green font-medium">✅ Tokens earned!</span>
-                            )}
-                            {request.status === 'rejected' && (
-                              <span className="text-eco-red font-medium">❌ Rejected</span>
-                            )}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex gap-2">
+                              <Link 
+                                to={`/order-confirmation/${order._id}`} 
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs font-medium rounded-lg transition-colors"
+                              >
+                                View
+                              </Link>
+                              {order.trackingNumber && (
+                                <Link 
+                                  to={`/order-tracking/${order.trackingNumber}`} 
+                                  className="bg-eco-green-500 hover:bg-eco-green-600 text-white px-3 py-1 text-xs font-medium rounded-lg transition-colors"
+                                >
+                                  Track
+                                </Link>
+                              )}
+                            </div>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-          
-          <section className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Your Orders</h2>
-            {ordersLoading ? (
-              <div className="flex justify-center items-center h-32 bg-gray-50 rounded-lg">
-                Loading your orders...
-              </div>
-            ) : ordersError ? (
-              <div className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded">
-                {ordersError}
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="text-center py-8 bg-gray-50 rounded-lg">
-                You haven't placed any orders yet.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tokens Used</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {orders.map((order) => (
-                      <tr key={order._id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                          {order._id.substring(0, 8)}...
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`inline-block px-2 py-1 text-xs font-medium rounded capitalize ${
-                            order.status === 'completed' ? 'bg-eco-green/10 text-eco-green-dark' :
-                            order.status === 'pending' ? 'bg-eco-yellow/10 text-eco-yellow-dark' :
-                            order.status === 'processing' ? 'bg-eco-blue/10 text-eco-blue-dark' :
-                            order.status === 'shipped' ? 'bg-eco-purple/10 text-eco-purple-dark' :
-                            order.status === 'delivered' ? 'bg-eco-indigo/10 text-eco-indigo-dark' :
-                            order.status === 'cancelled' ? 'bg-eco-red/10 text-eco-red-dark' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                          ₹{order.totalPrice}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                          {order.totalTokenPrice}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
-                          <div className="flex gap-2">
-                            <Link 
-                              to={`/order-confirmation/${order._id}`} 
-                              className="inline-block bg-eco-blue/10 hover:bg-eco-blue/20 text-eco-blue-dark px-3 py-1 rounded text-xs font-medium transition-colors"
-                            >
-                              View
-                            </Link>
-                            {order.trackingNumber && (
-                              <Link 
-                                to={`/order-tracking/${order.trackingNumber}`} 
-                                className="inline-block bg-eco-green/10 hover:bg-eco-green/20 text-eco-green-dark px-3 py-1 rounded text-xs font-medium transition-colors"
-                              >
-                                Track
-                              </Link>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+                      ))}
+                    </tbody>
+                  </table>
+                  {orders.length > 5 && (
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 text-center">
+                      <Link 
+                        to="/orders" 
+                        className="text-eco-green-600 hover:text-eco-green-700 font-medium text-sm"
+                      >
+                        View All {orders.length} Orders →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
