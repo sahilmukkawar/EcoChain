@@ -245,54 +245,47 @@ const FactoryProductManagement: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Product Form */}
         {showForm && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-lg mb-8 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {editingProduct ? 'Edit Product' : 'Add New Product'}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {editingProduct ? 'Update your product information' : 'Create a new sustainable product listing'}
-                  </p>
-                </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="relative w-full max-w-2xl mx-auto">
+              <div className="absolute top-2 right-2 z-10">
                 <button
                   onClick={resetForm}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="bg-white rounded-full p-2 shadow hover:bg-gray-100"
+                  aria-label="Close"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
-            </div>
-            <div className="p-6">
-              <ProductForm 
-                product={editingProduct ? {
-                  productInfo: {
-                    name: editingProduct.productInfo.name,
-                    description: editingProduct.productInfo.description,
-                    category: editingProduct.productInfo.category,
-                    images: editingProduct.productInfo.images || []
-                  },
-                  pricing: {
-                    costPrice: editingProduct.pricing.sellingPrice,
-                    sellingPrice: editingProduct.pricing.ecoTokenDiscount || 0
-                  },
-                  inventory: {
-                    currentStock: editingProduct.inventory.currentStock
-                  },
-                  sustainability: {
-                    recycledMaterialPercentage: editingProduct.sustainability.recycledMaterialPercentage
-                  },
-                  availability: {
-                    isActive: editingProduct.availability.isActive
-                  }
-                } as any : undefined}
-                onSubmit={handleSubmit}
-                onCancel={resetForm}
-                loading={formLoading}
-              />
+              <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-0 max-h-[90vh] overflow-y-auto">
+                <ProductForm
+                  product={editingProduct ? {
+                    productInfo: {
+                      name: editingProduct.productInfo.name,
+                      description: editingProduct.productInfo.description,
+                      category: editingProduct.productInfo.category,
+                      images: editingProduct.productInfo.images || []
+                    },
+                    pricing: {
+                      costPrice: editingProduct.pricing.sellingPrice,
+                      sellingPrice: editingProduct.pricing.ecoTokenDiscount || 0
+                    },
+                    inventory: {
+                      currentStock: editingProduct.inventory.currentStock
+                    },
+                    sustainability: {
+                      recycledMaterialPercentage: editingProduct.sustainability.recycledMaterialPercentage
+                    },
+                    availability: {
+                      isActive: editingProduct.availability.isActive
+                    }
+                  } as any : undefined}
+                  onSubmit={handleSubmit}
+                  onCancel={resetForm}
+                  loading={formLoading}
+                />
+              </div>
             </div>
           </div>
         )}

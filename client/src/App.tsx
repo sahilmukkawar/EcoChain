@@ -23,45 +23,49 @@ import PickupScheduling from './pages/PickupScheduling.tsx';
 import CustomerHelpCenter from './pages/CustomerHelpCenter.tsx';
 import Login from './pages/Login.tsx';
 import Register from './pages/Register.tsx';
+import Achievements from './pages/Achievements.tsx';
+import Wallet from './pages/Wallet.tsx';
 
 function App() {
   const location = useLocation();
-  
+
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
-  
+
   return (
     <AuthProvider>
       <EcoChainProvider>
         <CartProvider>
-         
-            <Navigation />
-            <main className="flex-grow "> {/* Add padding-top to account for fixed navbar */}
-              <AnimatePresence mode="wait">
-                <Routes location={location} key={location.pathname}>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/marketplace" element={<Marketplace />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/waste-submission" element={<WasteSubmission />} />
-                  <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['user']} />} />
-                  <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
-                  <Route path="/factory-dashboard" element={<ProtectedRoute element={<FactoryDashboard />} allowedRoles={['factory']} />} />
-                  <Route path="/factory-product-management" element={<ProtectedRoute element={<FactoryProductManagement />} allowedRoles={['factory']} />} />
-                  <Route path="/collector-dashboard" element={<ProtectedRoute element={<CollectorDashboard />} allowedRoles={['collector']} />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
-                  <Route path="/order-tracking/:trackingNumber" element={<OrderTracking />} />
-                  <Route path="/pickup-scheduling/:collectionId" element={<PickupScheduling />} />
-                  <Route path="/help" element={<CustomerHelpCenter />} />
-                </Routes>
-              </AnimatePresence>
-            </main>
-            <Footer />
-       
+
+          <Navigation />
+          <main className="flex-grow "> {/* Add padding-top to account for fixed navbar */}
+            <AnimatePresence mode="wait">
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/waste-submission" element={<WasteSubmission />} />
+                <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['user']} />} />
+                <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
+                <Route path="/factory-dashboard" element={<ProtectedRoute element={<FactoryDashboard />} allowedRoles={['factory']} />} />
+                <Route path="/factory-product-management" element={<ProtectedRoute element={<FactoryProductManagement />} allowedRoles={['factory']} />} />
+                <Route path="/collector-dashboard" element={<ProtectedRoute element={<CollectorDashboard />} allowedRoles={['collector']} />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+                <Route path="/order-tracking/:trackingNumber" element={<OrderTracking />} />
+                <Route path="/pickup-scheduling/:collectionId" element={<PickupScheduling />} />
+                <Route path="/help" element={<CustomerHelpCenter />} />
+                <Route path="/achievements" element={<Achievements />} />
+                <Route path="/wallet" element={<ProtectedRoute element={<Wallet />} allowedRoles={['user']} />} />
+              </Routes>
+            </AnimatePresence>
+          </main>
+          <Footer />
+
         </CartProvider>
       </EcoChainProvider>
     </AuthProvider>

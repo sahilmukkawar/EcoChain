@@ -33,163 +33,285 @@ const Cart: React.FC = () => {
 
   if (cart.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
-          <p className="text-gray-600 mb-6">Add some eco-friendly products to your cart and pay with money or EcoTokens!</p>
-          <button 
-            className="bg-eco-green hover:bg-eco-green-dark text-white font-bold py-2 px-4 rounded-lg transition-colors"
-            onClick={() => navigate('/marketplace')}
-          >
-            Browse Products
-          </button>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Shopping Cart</h1>
+                <p className="text-sm text-gray-500">Review your eco-friendly selections</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Empty State */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v5a2 2 0 002 2h2a2 2 0 002-2v-5" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+              Discover amazing eco-friendly products and pay with money or EcoTokens!
+            </p>
+            <button 
+              className="inline-flex items-center gap-2 bg-eco-green-600 hover:bg-eco-green-700 text-white font-medium py-3 px-8 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              onClick={() => navigate('/marketplace')}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              Browse Products
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Your Shopping Cart</h1>
-        {cart.length > 0 && (
-          <button
-            onClick={handleClearCart}
-            disabled={isClearing}
-            className="bg-eco-red hover:bg-eco-red-dark text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {isClearing ? 'Clearing...' : 'Clear All'}
-          </button>
-        )}
-      </div>
-      
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="lg:w-2/3">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="py-3 px-4 text-left">Product</th>
-                  <th className="py-3 px-4 text-center">Price</th>
-                  <th className="py-3 px-4 text-center">Quantity</th>
-                  <th className="py-3 px-4 text-right">Total</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cart.map((item) => (
-                  <tr key={item.product.id} className="border-b border-gray-200">
-                    <td className="py-4 px-4">
-                      <div className="flex items-center">
-                        <img 
-                          src={item.product.imageUrl || '/logo192.png'} 
-                          alt={item.product.name} 
-                          className="w-16 h-16 object-cover rounded-md mr-4"
-                        />
-                        <div>
-                          <h3 className="font-bold">{item.product.name}</h3>
-                          <p className="text-gray-600 text-sm">{item.product.description}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="font-semibold text-eco-green">₹{item.product.price}</div>
-                      <div className="text-sm text-eco-green-dark font-medium">{item.product.tokenPrice} tokens</div>
-                      <div className="text-xs text-gray-500 mt-1">or mix both</div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex items-center justify-center">
-                        <button 
-                          className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-l"
-                          onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}
-                        >
-                          -
-                        </button>
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleQuantityChange(item.product.id, parseInt(e.target.value) || 1)}
-                          className="w-12 h-8 text-center border-y border-gray-300"
-                        />
-                        <button 
-                          className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-r"
-                          onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-right">
-                      <div className="font-semibold text-eco-green">₹{Math.round((item.product.price * item.quantity) * 100) / 100}</div>
-                      <div className="text-sm text-eco-green-dark font-medium">{Math.round(item.product.tokenPrice * item.quantity)} tokens</div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <button 
-                        className="text-eco-red hover:text-eco-red-dark"
-                        onClick={() => removeFromCart(item.product.id)}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Shopping Cart</h1>
+              <p className="text-sm text-gray-500">{cart.length} item{cart.length !== 1 ? 's' : ''} in your cart</p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Cart Items Badge */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-eco-green-50 text-eco-green-700 border border-eco-green-200">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v5a2 2 0 002 2h2a2 2 0 002-2v-5" />
+                </svg>
+                <span>{cart.length} Items</span>
+              </div>
+
+              {/* Clear Cart Button */}
+              {cart.length > 0 && (
+                <button
+                  onClick={handleClearCart}
+                  disabled={isClearing}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${isClearing
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md'
+                    }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  {isClearing ? 'Clearing...' : 'Clear All'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
-        
-        <div className="lg:w-1/3">
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
-            <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-            <div className="space-y-3 mb-4">
-              <div className="flex justify-between">
-                <span>Money Total:</span>
-                <span className="font-semibold text-eco-green">₹{finalCartTotal}</span>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cart Items */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h2 className="text-lg font-semibold text-gray-900">Cart Items</h2>
               </div>
-              <div className="flex justify-between">
-                <span>Token Total:</span>
-                <span className="font-semibold text-eco-green-dark">{finalTokenTotal} tokens</span>
-              </div>
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Items in Cart:</span>
-                <span>{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
-              </div>
-              <div className="bg-eco-green-light/10 p-3 rounded-lg mt-3">
-                <div className="flex justify-between text-sm">
-                  <span>Your EcoTokens:</span>
-                  <span className="font-medium">{totalEcoTokens} tokens</span>
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {totalEcoTokens >= finalTokenTotal ? 
-                    '✓ You have enough tokens!' : 
-                    `Need ${finalTokenTotal - totalEcoTokens} more tokens`
-                  }
-                </div>
+              
+              <div className="divide-y divide-gray-200">
+                {cart.map((item) => (
+                  <div key={item.product.id} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex gap-6">
+                      {/* Product Image */}
+                      <div className="flex-shrink-0 w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
+                        <img 
+                          src={item.product.imageUrl || '/uploads/default-product.svg'} 
+                          alt={item.product.name} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/uploads/default-product.svg';
+                          }}
+                        />
+                      </div>
+
+                      {/* Product Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                              {item.product.name}
+                            </h3>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {item.product.description}
+                            </p>
+                          </div>
+                          <button 
+                            className="text-red-500 hover:text-red-700 p-2 -m-2 transition-colors"
+                            onClick={() => removeFromCart(item.product.id)}
+                            title="Remove from cart"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          {/* Pricing */}
+                          <div>
+                            <div className="text-lg font-bold text-eco-green-600">
+                              ₹{item.product.price}
+                            </div>
+                            <div className="text-sm text-gray-600 flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                              </svg>
+                              {item.product.tokenPrice} tokens
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">or mix both</div>
+                          </div>
+
+                          {/* Quantity Controls */}
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center bg-gray-100 rounded-lg">
+                              <button 
+                                className="w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-l-lg transition-colors"
+                                onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                </svg>
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => handleQuantityChange(item.product.id, parseInt(e.target.value) || 1)}
+                                className="w-16 h-10 text-center bg-transparent border-0 focus:outline-none"
+                              />
+                              <button 
+                                className="w-10 h-10 flex items-center justify-center hover:bg-gray-200 rounded-r-lg transition-colors"
+                                onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                              </button>
+                            </div>
+
+                            {/* Item Total */}
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-eco-green-600">
+                                ₹{Math.round((item.product.price * item.quantity) * 100) / 100}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {Math.round(item.product.tokenPrice * item.quantity)} tokens
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            
-            <div className="flex flex-col gap-3">
-              <div className="text-sm text-gray-600 mb-2">
-                <div className="font-medium mb-1">Payment Options:</div>
-                <div className="text-xs space-y-1">
-                  <div>• Pay with money (₹{finalCartTotal})</div>
-                  <div>• Pay with tokens ({finalTokenTotal} tokens)</div>
-                  <div>• Mix both payment methods</div>
+          </div>
+
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden sticky top-8">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h2 className="text-lg font-semibold text-gray-900">Order Summary</h2>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Totals */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Money Total</span>
+                    <span className="text-xl font-bold text-eco-green-600">₹{finalCartTotal}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Token Total</span>
+                    <span className="text-xl font-bold text-eco-green-600">{finalTokenTotal} tokens</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Items in Cart</span>
+                    <span className="font-medium">{cart.length} {cart.length === 1 ? 'item' : 'items'}</span>
+                  </div>
+                </div>
+
+                {/* EcoTokens Balance */}
+                <div className="bg-eco-green-50 p-4 rounded-lg border border-eco-green-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-5 h-5 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    <span className="font-medium text-eco-green-800">Your EcoTokens</span>
+                  </div>
+                  <div className="text-2xl font-bold text-eco-green-600 mb-1">
+                    {totalEcoTokens} tokens
+                  </div>
+                  <div className={`text-sm font-medium ${
+                    totalEcoTokens >= finalTokenTotal ? 'text-eco-green-700' : 'text-amber-600'
+                  }`}>
+                    {totalEcoTokens >= finalTokenTotal ? 
+                      '✓ You have enough tokens!' : 
+                      `Need ${finalTokenTotal - totalEcoTokens} more tokens`
+                    }
+                  </div>
+                </div>
+
+                {/* Payment Options */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-3">Payment Options</h3>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-eco-green-500 rounded-full"></div>
+                      <span>Pay with money (₹{finalCartTotal})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-eco-green-500 rounded-full"></div>
+                      <span>Pay with tokens ({finalTokenTotal} tokens)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-eco-green-500 rounded-full"></div>
+                      <span>Mix both payment methods</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <button 
+                    className="w-full flex items-center justify-center gap-2 bg-eco-green-600 hover:bg-eco-green-700 text-white font-medium py-3 px-4 rounded-lg transition-all shadow-sm hover:shadow-md"
+                    onClick={() => navigate('/checkout')}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z" />
+                    </svg>
+                    Proceed to Checkout
+                  </button>
+                  
+                  <button 
+                    className="w-full flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-4 rounded-lg transition-all shadow-sm hover:shadow-md"
+                    onClick={() => navigate('/marketplace')}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    Continue Shopping
+                  </button>
                 </div>
               </div>
-              <button 
-                className="bg-eco-green hover:bg-eco-green-dark text-white font-bold py-3 px-4 rounded-lg transition-colors"
-                onClick={() => navigate('/checkout')}
-              >
-                Proceed to Checkout
-              </button>
-              <button 
-                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
-                onClick={() => navigate('/marketplace')}
-              >
-                Continue Shopping
-              </button>
             </div>
           </div>
         </div>

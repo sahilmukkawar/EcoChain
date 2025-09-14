@@ -7,6 +7,45 @@ import { Order } from '../services/orderService.ts';
 import wasteService, { WasteSubmission } from '../services/wasteService.ts';
 import { authAPI } from '../services/api.ts';
 
+// Helper function to get CSS classes for order status
+const getOrderStatusClass = (status: Order['status'] | 'completed') => {
+  switch (status) {
+    case 'completed':
+    case 'delivered':
+      return 'bg-eco-green-100 text-eco-green-800';
+    case 'pending':
+      return 'bg-amber-100 text-amber-800';
+    case 'processing':
+      return 'bg-blue-100 text-blue-800';
+    case 'shipped':
+      return 'bg-purple-100 text-purple-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Helper function to get CSS classes for waste request status
+const getWasteRequestStatusClass = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return 'bg-eco-green-100 text-eco-green-800';
+    case 'requested':
+      return 'bg-amber-100 text-amber-800';
+    case 'scheduled':
+      return 'bg-blue-100 text-blue-800';
+    case 'in_progress':
+      return 'bg-purple-100 text-purple-800';
+    case 'collected':
+      return 'bg-indigo-100 text-indigo-800';
+    case 'rejected':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -276,7 +315,7 @@ const Dashboard: React.FC = () => {
                 <div className="flex justify-between items-center p-3 bg-eco-green-50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 104 0 2 2 0 012-2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span className="text-sm font-medium text-gray-900">CO2 Saved</span>
                   </div>
@@ -452,13 +491,7 @@ const Dashboard: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                request.status === 'completed' ? 'bg-eco-green-100 text-eco-green-800' :
-                                request.status === 'requested' ? 'bg-amber-100 text-amber-800' :
-                                request.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                                request.status === 'in_progress' ? 'bg-purple-100 text-purple-800' :
-                                request.status === 'collected' ? 'bg-indigo-100 text-indigo-800' :
-                                request.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
+                                getWasteRequestStatusClass(request.status)
                               }`}>
                                 {request.status.replace('_', ' ')}
                               </span>
@@ -573,13 +606,7 @@ const Dashboard: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              order.status === 'completed' ? 'bg-eco-green-100 text-eco-green-800' :
-                              order.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                              order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                              order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                              order.status === 'delivered' ? 'bg-indigo-100 text-indigo-800' :
-                              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
+                              getOrderStatusClass(order.status)
                             }`}>
                               {order.status}
                             </span>

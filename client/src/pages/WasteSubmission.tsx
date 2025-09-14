@@ -20,10 +20,10 @@ const WasteSubmission: React.FC = () => {
   
   const [formData, setFormData] = useState<WasteSubmissionForm>({
     wasteType: '',
-    quantity: 1,
-    quality: 'fair', // Default quality
+    quantity: 0,
+    quality: 'fair',
     description: '',
-    pickupAddress: '', // User will need to enter their address
+    pickupAddress: '',
     pickupDate: '',
     pickupTimeSlot: '',
     images: []
@@ -64,7 +64,6 @@ const WasteSubmission: React.FC = () => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       
-      // Create preview URLs for the images
       const newPreviewUrls = filesArray.map(file => URL.createObjectURL(file));
       setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
       
@@ -76,7 +75,6 @@ const WasteSubmission: React.FC = () => {
   };
   
   const removeImage = (index: number) => {
-    // Revoke the object URL to avoid memory leaks
     URL.revokeObjectURL(previewUrls[index]);
     
     setPreviewUrls(prev => prev.filter((_, i) => i !== index));
@@ -97,12 +95,10 @@ const WasteSubmission: React.FC = () => {
     setError(null);
     
     try {
-      // Validate required fields
       if (!formData.wasteType || !formData.quantity || !formData.pickupAddress) {
         throw new Error('Please fill in all required fields');
       }
       
-      // Create submission data
       const submissionData: CreateWasteSubmissionData = {
         wasteType: formData.wasteType as 'plastic' | 'paper' | 'metal' | 'glass' | 'electronic' | 'organic' | 'other',
         quantity: formData.quantity,
@@ -114,13 +110,11 @@ const WasteSubmission: React.FC = () => {
         images: formData.images
       };
       
-      // Submit waste data to the API
       const result = await wasteService.createSubmission(submissionData);
       
       console.log('Waste submission successful:', result);
       setSuccess(true);
       
-      // Redirect to dashboard after 2 seconds
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
@@ -135,7 +129,7 @@ const WasteSubmission: React.FC = () => {
   if (success) {
     return (
       <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-eco-green-light border border-eco-green text-eco-green-dark px-4 py-3 rounded relative">
+        <div className="bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-lg">
           <h2 className="text-2xl font-bold mb-2">Waste Submission Successful!</h2>
           <p className="mb-2">Your request has been submitted successfully.</p>
           <p className="mb-2">Estimated EcoTokens: <strong>{calculateEstimatedTokens()}</strong></p>
@@ -147,16 +141,20 @@ const WasteSubmission: React.FC = () => {
   
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-2">Submit Waste for Collection</h1>
+      <h1 className="text-3xl font-bold text-green-700 mb-2">Submit Waste for Collection</h1>
       <p className="text-gray-600 mb-6">
         Submit your recyclable waste for collection and earn EcoTokens that you can use in our marketplace.
       </p>
       
-      {error && <div className="bg-eco-red-light border border-eco-red text-eco-red-dark px-4 py-3 rounded mb-4">{error}</div>}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
       
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <div className="mb-4">
-          <label htmlFor="wasteType" className="block text-gray-700 text-sm font-bold mb-2">
+      <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg px-8 pt-6 pb-8 mb-4 border border-gray-100">
+        <div className="mb-6">
+          <label htmlFor="wasteType" className="block text-gray-700 text-sm font-semibold mb-2">
             Waste Type
           </label>
           <select 
@@ -165,7 +163,7 @@ const WasteSubmission: React.FC = () => {
             value={formData.wasteType} 
             onChange={handleInputChange}
             required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
           >
             <option value="">Select waste type</option>
             {wasteTypes.map(type => (
@@ -174,8 +172,8 @@ const WasteSubmission: React.FC = () => {
           </select>
         </div>
         
-        <div className="mb-4">
-          <label htmlFor="quantity" className="block text-gray-700 text-sm font-bold mb-2">
+        <div className="mb-6">
+          <label htmlFor="quantity" className="block text-gray-700 text-sm font-semibold mb-2">
             Quantity (kg)
           </label>
           <input 
@@ -184,15 +182,16 @@ const WasteSubmission: React.FC = () => {
             name="quantity" 
             min="0.1" 
             step="0.1" 
-            value={formData.quantity} 
+            value={formData.quantity || ''} 
             onChange={handleInputChange}
+            placeholder="Enter quantity"
             required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
           />
         </div>
         
-        <div className="mb-4">
-          <label htmlFor="quality" className="block text-gray-700 text-sm font-bold mb-2">
+        <div className="mb-6">
+          <label htmlFor="quality" className="block text-gray-700 text-sm font-semibold mb-2">
             Waste Quality
           </label>
           <select 
@@ -200,20 +199,20 @@ const WasteSubmission: React.FC = () => {
             name="quality" 
             value={formData.quality} 
             onChange={handleInputChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
           >
             <option value="poor">Poor</option>
             <option value="fair">Fair</option>
             <option value="good">Good</option>
             <option value="excellent">Excellent</option>
           </select>
-          <p className="text-gray-600 text-xs italic mt-1">
+          <p className="text-gray-500 text-xs italic mt-1">
             Quality affects the token multiplier (Poor: 0.7x, Fair: 1.0x, Good: 1.2x, Excellent: 1.5x)
           </p>
         </div>
         
-        <div className="mb-4">
-          <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">
+        <div className="mb-6">
+          <label htmlFor="description" className="block text-gray-700 text-sm font-semibold mb-2">
             Description
           </label>
           <textarea 
@@ -223,12 +222,12 @@ const WasteSubmission: React.FC = () => {
             onChange={handleInputChange}
             placeholder="Provide details about your waste (condition, packaging, etc.)"
             rows={4}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors resize-none"
           />
         </div>
         
-        <div className="mb-4">
-          <label htmlFor="pickupAddress" className="block text-gray-700 text-sm font-bold mb-2">
+        <div className="mb-6">
+          <label htmlFor="pickupAddress" className="block text-gray-700 text-sm font-semibold mb-2">
             Pickup Address
           </label>
           <input 
@@ -237,14 +236,15 @@ const WasteSubmission: React.FC = () => {
             name="pickupAddress" 
             value={formData.pickupAddress} 
             onChange={handleInputChange}
+            placeholder="Enter your pickup address"
             required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
           />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
-            <label htmlFor="pickupDate" className="block text-gray-700 text-sm font-bold mb-2">
+            <label htmlFor="pickupDate" className="block text-gray-700 text-sm font-semibold mb-2">
               Pickup Date
             </label>
             <input 
@@ -255,12 +255,12 @@ const WasteSubmission: React.FC = () => {
               onChange={handleInputChange}
               min={new Date().toISOString().split('T')[0]}
               required
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
             />
           </div>
           
           <div>
-            <label htmlFor="pickupTimeSlot" className="block text-gray-700 text-sm font-bold mb-2">
+            <label htmlFor="pickupTimeSlot" className="block text-gray-700 text-sm font-semibold mb-2">
               Preferred Time Slot
             </label>
             <select 
@@ -269,7 +269,7 @@ const WasteSubmission: React.FC = () => {
               value={formData.pickupTimeSlot} 
               onChange={handleInputChange}
               required
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
             >
               <option value="">Select time slot</option>
               {timeSlots.map(slot => (
@@ -280,7 +280,7 @@ const WasteSubmission: React.FC = () => {
         </div>
         
         <div className="mb-6">
-          <label htmlFor="images" className="block text-gray-700 text-sm font-bold mb-2">
+          <label htmlFor="images" className="block text-gray-700 text-sm font-semibold mb-2">
             Upload Images
           </label>
           <input 
@@ -290,27 +290,27 @@ const WasteSubmission: React.FC = () => {
             onChange={handleImageChange}
             accept="image/*"
             multiple
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
           />
-          <p className="text-gray-600 text-xs italic mt-1">
+          <p className="text-gray-500 text-xs italic mt-1">
             Upload clear images of your waste to help us verify the type and quantity.
           </p>
         </div>
         
         {previewUrls.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">Image Previews</h3>
+            <h3 className="text-lg font-semibold mb-3 text-gray-700">Image Previews</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {previewUrls.map((url, index) => (
                 <div key={index} className="relative">
                   <img 
                     src={url} 
                     alt={`Waste preview ${index + 1}`} 
-                    className="w-full h-32 object-cover rounded border"
+                    className="w-full h-32 object-cover rounded-lg border border-gray-200"
                   />
                   <button 
                     type="button" 
-                    className="absolute top-1 right-1 bg-eco-red text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-eco-red-dark"
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
                     onClick={() => removeImage(index)}
                   >
                     ×
@@ -321,20 +321,20 @@ const WasteSubmission: React.FC = () => {
           </div>
         )}
         
-        <div className="bg-eco-beige p-4 rounded-lg mb-6">
-          <p className="text-lg">
-            Estimated EcoTokens: <strong className="text-eco-green">{calculateEstimatedTokens()}</strong>
+        <div className="bg-green-50 border border-green-200 p-4 rounded-lg mb-6">
+          <p className="text-lg text-green-800">
+            Estimated EcoTokens: <strong>{calculateEstimatedTokens()}</strong>
           </p>
           <p className="text-gray-600 text-sm mt-1">
             Final token amount may vary based on verification by our collectors.
           </p>
         </div>
         
-        <div className="flex items-center justify-between">
+        <div className="flex justify-center">
           <button 
             type="submit" 
             disabled={loading}
-            className={`bg-eco-green hover:bg-eco-green-dark text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+            className={`bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition-all ${
               loading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >

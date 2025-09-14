@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
+import ProductForm from '../components/ProductForm.tsx';
 import marketplaceService, { MarketplaceItem } from '../services/marketplaceService.ts';
 
 const FactoryDashboard: React.FC = () => {
@@ -9,6 +10,7 @@ const FactoryDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [showForm, setShowForm] = useState<boolean>(false);
 
   const fetchProducts = async (isRefresh = false) => {
     try {
@@ -340,21 +342,15 @@ const FactoryDashboard: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-4-4m4 4l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Export
-                    </button>
-                    <Link
-                      to="/factory-product-management"
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-eco-green-500 hover:bg-eco-green-600 text-white rounded-lg"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Add Product
-                    </Link>
+                    <button 
+                className="flex items-center gap-2 bg-eco-green-500 hover:bg-eco-green-600 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-sm hover:shadow-md"
+                onClick={() => setShowForm(!showForm)}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                {showForm ? 'Cancel' : 'Add Product'}
+              </button>
                   </div>
                 </div>
               </div>
