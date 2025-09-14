@@ -172,12 +172,12 @@ orderSchema.pre('save', function(next) {
 // Method to calculate total amount
 orderSchema.methods.calculateTotal = function() {
   const subtotal = this.orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const tokenValue = this.billing.ecoTokensApplied * (process.env.TOKEN_TO_MONEY_RATE || 0.1);
+  const tokenValue = this.billing.ecoTokensApplied * (process.env.TOKEN_TO_MONEY_RATE || 2); // Updated to 1 token = ₹2
   const finalAmount = subtotal + this.billing.taxes + this.billing.shippingCharges - this.billing.discount - tokenValue;
   
-  this.billing.subtotal = subtotal;
-  this.billing.ecoTokenValue = tokenValue;
-  this.billing.finalAmount = Math.max(0, finalAmount);
+  this.billing.subtotal = Math.round(subtotal * 100) / 100; // Round to 2 decimal places
+  this.billing.ecoTokenValue = Math.round(tokenValue * 100) / 100; // Round to 2 decimal places
+  this.billing.finalAmount = Math.max(0, Math.round(finalAmount * 100) / 100); // Round to 2 decimal places and ensure non-negative
   
   return this.billing.finalAmount;
 };

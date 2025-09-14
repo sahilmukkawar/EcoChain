@@ -112,7 +112,7 @@ This document summarizes the implementation of the complete flow from adding pro
 ## Payment Methods
 
 ### EcoTokens
-- 1 EcoToken = ₹0.1 (configurable)
+- 1 EcoToken = ₹2 (configurable)
 - Tokens are deducted from user's wallet balance
 - Transaction records are created for all token usage
 - Tokens are refunded if order is cancelled

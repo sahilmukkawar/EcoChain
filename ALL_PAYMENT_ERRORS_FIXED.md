@@ -13,7 +13,7 @@
 **Problem**: Backend calculated wrong token amount (972 instead of 400)
 **Solution**:
 - Fixed token calculation logic to use actual product token prices
-- Consistent 1:10 ratio: 1 rupee = 10 tokens, 1 token = ₹0.1
+- Consistent 1:10 ratio: 1 rupee = 10 tokens, 1 token = ₹2
 - Backend now correctly calculates 400 tokens for ₹40 product
 
 ### 3. ❌ **Token Price Inconsistency**
@@ -39,7 +39,7 @@ const tokenPricePerUnit = product.pricing.sellingPrice * 10; // 1 rupee = 10 tok
 const itemTokenTotal = tokenPricePerUnit * item.quantity;
 
 // Fixed token rate
-const tokenRate = 0.1; // 1 token = ₹0.1
+const tokenRate = 2; // 1 token = ₹2
 
 // Enhanced mixed payment handling
 if (payment.method === 'token') {

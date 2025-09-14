@@ -164,7 +164,7 @@ GET  /api/factories/products - Get factory's products
 
 ### 💰 Token Economy System
 - **Dynamic token calculation** based on material type, weight, and quality
-- **Token-to-money conversion** (1 token = ₹0.1)
+- **Token-to-money conversion** (1 token = ₹2)
 - **Maximum 30% token usage** per order
 - **Complete transaction history** and wallet management
 - **Sustainability scoring** system

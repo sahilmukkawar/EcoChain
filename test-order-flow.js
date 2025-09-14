@@ -93,7 +93,7 @@ async function testOrderFlow() {
     
     const totalTokensNeeded = testProduct.pricing.ecoTokenDiscount * 2; // 300 tokens
     const ecoTokensApplied = Math.min(totalTokensNeeded, testUser.ecoWallet.currentBalance);
-    const ecoTokenValue = ecoTokensApplied * 0.1;
+    const ecoTokenValue = ecoTokensApplied * 2;
 
     console.log(`   Total tokens needed: ${totalTokensNeeded}`);
     console.log(`   User token balance: ${testUser.ecoWallet.currentBalance}`);
@@ -144,7 +144,7 @@ async function testOrderFlow() {
       transactionType: 'spent',
       details: {
         amount: Number(ecoTokensApplied),
-        monetaryValue: Number(ecoTokensApplied * 0.1),
+        monetaryValue: Number(ecoTokensApplied * 2),
         description: String(`Used for order ${testOrder.orderId}`),
         referenceId: String(testOrder.orderId)
       },

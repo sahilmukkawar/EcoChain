@@ -81,7 +81,7 @@ function testPaymentMethods() {
   // Test 2: Mixed payment
   console.log('\n2. Mixed Payment (100 tokens + money):');
   const tokensToUse = 100;
-  const tokenValue = tokensToUse * 0.1; // 1 token = ₹0.1
+  const tokenValue = tokensToUse * 2; // Updated to 1 token = ₹2
   const remainingFiat = fiatTotal - tokenValue;
   console.log(`   Tokens to use: ${tokensToUse} (₹${tokenValue})`);
   console.log(`   Remaining fiat: ₹${remainingFiat}`);

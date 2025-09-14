@@ -67,7 +67,7 @@ const systemConfigurationSchema = new mongoose.Schema({
   businessRules: {
     platformCommission: { type: Number, default: 7.5 }, // percentage
     factoryPartnershipFee: { type: Number, default: 25000 }, // monthly fee
-    tokenToMoneyConversion: { type: Number, default: 0.1 }, // 1 token = 0.1 rupees
+    tokenToMoneyConversion: { type: Number, default: 2 }, // 1 token = ₹2
     minimumOrderValue: { type: Number, default: 100 },
     maxTokenUsagePercentage: { type: Number, default: 30 }
   },

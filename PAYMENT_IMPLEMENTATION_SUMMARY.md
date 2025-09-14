@@ -15,7 +15,7 @@
   - **Mixed Payment**: Use both tokens and money with a slider to choose token amount
 
 - **Smart Payment Calculation:**
-  - Token to money conversion rate: 1 token = ₹0.1
+  - Token to money conversion rate: 1 token = ₹2
   - Real-time calculation of final amounts
   - Balance validation before checkout
 

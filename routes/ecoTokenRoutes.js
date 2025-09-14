@@ -54,6 +54,100 @@ router.get('/transactions', authenticate, async (req, res) => {
   }
 });
 
+// Create EcoToken transaction
+const createTransaction = async (req, res) => {
+  try {
+    const { userId, type, tokens, description, referenceId } = req.body;
+    
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Initialize ecoWallet if it doesn't exist
+    if (!user.ecoWallet) {
+      user.ecoWallet = {
+        currentBalance: 0,
+        totalEarned: 0,
+        totalSpent: 0
+      };
+    }
+
+    // Update wallet based on transaction type
+    if (type === 'earned') {
+      user.ecoWallet.currentBalance += tokens;
+      user.ecoWallet.totalEarned += tokens;
+    } else if (type === 'spent') {
+      if (user.ecoWallet.currentBalance < tokens) {
+        return res.status(400).json({ message: 'Insufficient token balance' });
+      }
+      user.ecoWallet.currentBalance -= tokens;
+      user.ecoWallet.totalSpent += tokens;
+    } else if (type === 'transfer') {
+      // Handle transfers
+      const { recipientId } = req.body;
+      const recipient = await User.findById(recipientId);
+      if (!recipient) {
+        return res.status(404).json({ message: 'Recipient not found' });
+      }
+      
+      if (user.ecoWallet.currentBalance < tokens) {
+        return res.status(400).json({ message: 'Insufficient token balance' });
+      }
+      
+      // Deduct from sender
+      user.ecoWallet.currentBalance -= tokens;
+      user.ecoWallet.totalSpent += tokens;
+      
+      // Add to recipient
+      if (!recipient.ecoWallet) {
+        recipient.ecoWallet = {
+          currentBalance: 0,
+          totalEarned: 0,
+          totalSpent: 0
+        };
+      }
+      recipient.ecoWallet.currentBalance += tokens;
+      recipient.ecoWallet.totalEarned += tokens;
+      
+      // Save recipient
+      await recipient.save();
+    }
+
+    // Save user
+    await user.save();
+
+    // Create transaction record
+    const transaction = new EcoTokenTransaction({
+      transactionId: 'TXN' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase(),
+      userId,
+      transactionType: type,
+      details: {
+        amount: tokens,
+        monetaryValue: tokens * 2, // Updated to 1 token = ₹2
+        description,
+        referenceId
+      },
+      metadata: {
+        source: 'manual_transaction',
+        category: 'admin_adjustment'
+      },
+      walletBalance: {
+        beforeTransaction: user.ecoWallet.currentBalance,
+        afterTransaction: type === 'earned' ? user.ecoWallet.currentBalance - tokens : user.ecoWallet.currentBalance + tokens
+      }
+    });
+
+    await transaction.save();
+
+    res.status(201).json(transaction);
+  } catch (error) {
+    logger.error('Error creating EcoToken transaction:', error);
+    res.status(500).json({ message: 'Failed to create transaction', error: error.message });
+  }
+};
+
 // Award tokens for garbage collection (Internal use)
 router.post('/award', authenticate, async (req, res) => {
   try {
@@ -82,7 +176,7 @@ router.post('/award', authenticate, async (req, res) => {
       transactionType: 'earned',
       details: {
         amount: tokens,
-        monetaryValue: tokens * 0.1, // Assuming 1 token = 0.1 rupees
+        monetaryValue: tokens * 2, // Updated to 1 token = ₹2
         description: reason,
         referenceId: collection.collectionId
       },
@@ -212,7 +306,7 @@ router.post('/calculate', authenticate, async (req, res) => {
         baseRate,
         qualityMultiplier,
         estimatedTokens,
-        monetaryValue: estimatedTokens * 0.1
+        monetaryValue: estimatedTokens * 2 // Updated to 1 token = ₹2
       }
     });
   } catch (error) {

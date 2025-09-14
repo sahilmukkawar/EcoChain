@@ -198,15 +198,22 @@ interface OrderData {
 
 // Updated interface for order response
 interface OrderItem {
-  productId: string;
-  quantity: number;
-  price: number;
-  tokenPrice: number;
-  product: {
-    name: string;
-    description: string;
-    images: string[];
+  productId: {
+    _id: string;
+    productInfo: {
+      name: string;
+      description?: string;
+      images?: string[];
+    };
+    pricing?: {
+      sellingPrice?: number;
+      ecoTokenDiscount?: number;
+    };
   };
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  ecoTokensUsed?: number;
 }
 
 interface Order {
@@ -214,13 +221,34 @@ interface Order {
   orderId: string;
   userId: string;
   orderItems: OrderItem[];
-  totalAmount: number;
-  totalTokens: number;
+  billing: {
+    subtotal: number;
+    ecoTokensApplied: number;
+    ecoTokenValue: number;
+    taxes: number;
+    shippingCharges: number;
+    discount: number;
+    finalAmount: number;
+  };
   status: string;
-  shippingAddress: ShippingData;
-  paymentMethod: string;
+  shipping: {
+    address: {
+      name: string;
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      country: string;
+      phone: string;
+    };
+    trackingNumber?: string;
+    estimatedDelivery?: string;
+  };
+  payment: {
+    method: string;
+    status: string;
+  };
   createdAt: string;
-  estimatedDelivery?: string;
 }
 
 const marketplaceAPI = {

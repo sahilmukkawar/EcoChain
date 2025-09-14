@@ -118,7 +118,8 @@ router.post('/', authenticate, async (req, res) => {
         productId: product._id,
         quantity: item.quantity,
         unitPrice: product.pricing.sellingPrice,
-        totalPrice: itemTotal
+        totalPrice: itemTotal,
+        ecoTokensUsed: itemTokenTotal // Add token usage per item
       });
     }
 
@@ -141,30 +142,36 @@ router.post('/', authenticate, async (req, res) => {
     console.log(`User token balance: ${user.ecoWallet?.currentBalance || 0}`);
     
     if (payment.method === 'token' || tokensRequested > 0) {
-      // For EcoTokens: 1 rupee = 10 tokens, so 1 token = ₹0.1
-      const tokenRate = 0.1; // 1 token = ₹0.1
+      // For EcoTokens: 1 token = ₹2
+      const tokenRate = 2; // 1 token = ₹2
       const userTokenBalance = user.ecoWallet?.currentBalance || 0;
       
       if (payment.method === 'token') {
-        // User wants to pay entirely with tokens - use totalTokens (product token price)
-        ecoTokensApplied = Math.min(totalTokens, userTokenBalance);
+        // User wants to pay entirely with tokens - check if they have enough tokens
+        if (userTokenBalance < totalTokens) {
+          console.log(`INSUFFICIENT TOKENS: Need ${totalTokens}, have ${userTokenBalance}`);
+          return res.status(400).json({ 
+            success: false, 
+            message: `Insufficient EcoTokens. You need ${totalTokens} tokens but only have ${userTokenBalance}.` 
+          });
+        }
+        // If they have enough tokens, apply all tokens needed
+        ecoTokensApplied = totalTokens;
         console.log(`Token-only payment: applying ${ecoTokensApplied} tokens`);
       } else if (tokensRequested > 0) {
-        // Mixed payment - use specified token amount
-        ecoTokensApplied = Math.min(tokensRequested, userTokenBalance);
+        // Mixed payment - use specified token amount, but check if user has enough
+        if (userTokenBalance < tokensRequested) {
+          console.log(`INSUFFICIENT TOKENS: Requested ${tokensRequested}, have ${userTokenBalance}`);
+          return res.status(400).json({ 
+            success: false, 
+            message: `Insufficient EcoTokens. You requested ${tokensRequested} tokens but only have ${userTokenBalance}.` 
+          });
+        }
+        ecoTokensApplied = tokensRequested;
         console.log(`Mixed payment: applying ${ecoTokensApplied} tokens`);
       }
       
       ecoTokenValue = ecoTokensApplied * tokenRate;
-      
-      // Check if user has enough tokens for token-only payment
-      if (payment.method === 'token' && ecoTokensApplied < totalTokens) {
-        console.log(`INSUFFICIENT TOKENS: Need ${totalTokens}, have ${userTokenBalance}`);
-        return res.status(400).json({ 
-          success: false, 
-          message: `Insufficient EcoTokens. You need ${totalTokens} tokens but only have ${userTokenBalance}.` 
-        });
-      }
     }
     
     console.log(`Final tokens to be applied: ${ecoTokensApplied}`);
@@ -175,13 +182,13 @@ router.post('/', authenticate, async (req, res) => {
       userId: req.user.id,
       orderItems: processedItems,
       billing: {
-        subtotal,
-        taxes,
-        shippingCharges,
+        subtotal: Math.round(subtotal * 100) / 100, // Round to 2 decimal places
+        taxes: Math.round(taxes * 100) / 100, // Round to 2 decimal places
+        shippingCharges: Math.round(shippingCharges * 100) / 100, // Round to 2 decimal places
         discount: 0,
-        ecoTokensApplied,
-        ecoTokenValue,
-        finalAmount: finalAmount - ecoTokenValue
+        ecoTokensApplied: Math.round(ecoTokensApplied), // Round to integer for tokens
+        ecoTokenValue: Math.round(ecoTokenValue * 100) / 100, // Round to 2 decimal places
+        finalAmount: 0 // Will be calculated by the model method
       },
       payment: {
         method: payment.method,
@@ -205,6 +212,9 @@ router.post('/', authenticate, async (req, res) => {
         placedAt: new Date()
       }
     });
+
+    // Calculate the final amount using the model method
+    order.calculateTotal();
 
     await order.save();
     console.log('Order created successfully:', order.orderId, 'with tracking:', order.shipping.trackingNumber);
@@ -241,7 +251,7 @@ router.post('/', authenticate, async (req, res) => {
         transactionType: 'spent',
         details: {
           amount: ecoTokensApplied,
-          monetaryValue: ecoTokensApplied * 0.1, // 1 token = ₹0.1
+          monetaryValue: ecoTokensApplied * 2, // Updated to 1 token = ₹2
           description: `Used for order ${order.orderId}`,
           referenceId: order.orderId
         },
@@ -312,7 +322,7 @@ router.get('/user', authenticate, async (req, res) => {
 router.get('/:id', authenticate, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate('orderItems.productId', 'productInfo.name productInfo.images')
+      .populate('orderItems.productId', 'productInfo.name productInfo.images productInfo.description pricing.sellingPrice pricing.ecoTokenDiscount')
       .populate('userId', 'personalInfo.name personalInfo.email');
 
     if (!order) {
@@ -337,7 +347,7 @@ router.get('/:id', authenticate, async (req, res) => {
 router.get('/tracking/:trackingNumber', async (req, res) => {
   try {
     const order = await Order.findOne({ 'shipping.trackingNumber': req.params.trackingNumber })
-      .populate('orderItems.productId', 'productInfo.name productInfo.images')
+      .populate('orderItems.productId', 'productInfo.name productInfo.images productInfo.description pricing.sellingPrice pricing.ecoTokenDiscount')
       .populate('userId', 'personalInfo.name personalInfo.email');
 
     if (!order) {
@@ -420,7 +430,7 @@ router.patch('/:id/cancel', authenticate, async (req, res) => {
           transactionType: 'refund',
           details: {
             amount: order.billing.ecoTokensApplied,
-            monetaryValue: order.billing.ecoTokensApplied * 0.1, // 1 token = ₹0.1
+            monetaryValue: order.billing.ecoTokensApplied * 2, // Updated to 1 token = ₹2
             description: `Refund for cancelled order ${order.orderId}`,
             referenceId: order.orderId
           },

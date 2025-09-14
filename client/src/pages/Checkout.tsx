@@ -40,7 +40,7 @@ const Checkout: React.FC = () => {
 
   // Calculate payment details based on payment method with proper rounding
   const maxTokensUsable = Math.min(tokenTotal, totalEcoTokens);
-  const tokenValue = Math.round(tokensToUse * 0.1 * 100) / 100; // 1 token = ₹0.1 with proper rounding
+  const tokenValue = Math.round(tokensToUse * 2 * 100) / 100; // 1 token = ₹2 with proper rounding
   
   let finalMoneyAmount = 0;
   let finalTokenAmount = 0;
@@ -57,6 +57,26 @@ const Checkout: React.FC = () => {
     case 'mixed':
       finalTokenAmount = Math.round(tokensToUse);
       finalMoneyAmount = Math.max(0, Math.round((cartTotal - tokenValue) * 100) / 100);
+      break;
+  }
+
+  // Calculate taxes and shipping for order summary
+  const taxes = Math.round(cartTotal * 0.18 * 100) / 100; // 18% GST
+  const shipping = cartTotal > 500 ? 0 : 50;
+  
+  // Calculate final total for display in order summary
+  let displayFinalTotal = 0;
+  switch (paymentMethod) {
+    case 'money':
+      displayFinalTotal = Math.round((cartTotal + taxes + shipping) * 100) / 100;
+      break;
+    case 'tokens':
+      // When using tokens, calculate the remaining amount after token deduction
+      const tokenDeduction = Math.round(tokenTotal) * 2; // Convert tokens to rupees
+      displayFinalTotal = Math.max(0, Math.round((cartTotal + taxes + shipping - tokenDeduction) * 100) / 100);
+      break;
+    case 'mixed':
+      displayFinalTotal = Math.max(0, Math.round((cartTotal + taxes + shipping - tokenValue) * 100) / 100);
       break;
   }
 
@@ -433,14 +453,14 @@ const Checkout: React.FC = () => {
                           <input
                             type="range"
                             min="0"
-                            max={Math.min(totalEcoTokens, Math.floor(cartTotal / 0.1))}
+                            max={Math.min(totalEcoTokens, tokenTotal)}
                             value={tokensToUse}
                             onChange={(e) => setTokensToUse(parseInt(e.target.value))}
                             className="w-full"
                           />
                           <div className="flex justify-between text-xs text-gray-500 mt-1">
                             <span>0 tokens</span>
-                            <span>{Math.min(totalEcoTokens, Math.floor(cartTotal / 0.1))} tokens max</span>
+                            <span>{Math.min(totalEcoTokens, tokenTotal)} tokens max</span>
                           </div>
                           <div className="mt-2 text-sm">
                             <div>Tokens: {tokensToUse} tokens (₹{tokenValue.toFixed(2)})</div>
@@ -481,7 +501,7 @@ const Checkout: React.FC = () => {
                   {paymentMethod === 'money' && (
                     <div className="flex justify-between font-semibold text-green-600">
                       <span>You will pay:</span>
-                      <span>₹{finalMoneyAmount.toFixed(2)}</span>
+                      <span>₹{displayFinalTotal.toFixed(2)}</span>
                     </div>
                   )}
                   {paymentMethod === 'tokens' && (
@@ -500,12 +520,12 @@ const Checkout: React.FC = () => {
                         <span>Money:</span>
                         <span>₹{finalMoneyAmount.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between font-semibold border-t pt-2">
-                        <span>Total Value:</span>
-                        <span>₹{(finalMoneyAmount + (finalTokenAmount * 0.1)).toFixed(2)}</span>
-                      </div>
                     </>
                   )}
+                  <div className="flex justify-between font-semibold border-t pt-2">
+                    <span>Final Total:</span>
+                    <span>₹{displayFinalTotal.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
               
@@ -548,37 +568,38 @@ const Checkout: React.FC = () => {
             <div className="border-t border-gray-200 pt-4">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Items (Money):</span>
+                  <span>Subtotal:</span>
                   <span>₹{Math.round(cartTotal * 100) / 100}</span>
                 </div>
+                {paymentMethod !== 'money' && (
+                  <div className="flex justify-between">
+                    <span>EcoTokens Used:</span>
+                    <span>
+                      {paymentMethod === 'tokens' ? Math.round(tokenTotal) : tokensToUse} tokens 
+                      {` (₹${(paymentMethod === 'tokens' ? Math.round(tokenTotal) : tokensToUse) * 2})`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
-                  <span>Items (Tokens):</span>
-                  <span>{Math.round(tokenTotal)} tokens</span>
+                  <span>Taxes (18% GST):</span>
+                  <span>₹{taxes.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping:</span>
+                  <span>₹{shipping.toFixed(2)}</span>
                 </div>
                 <hr className="my-2" />
-                {paymentMethod === 'money' && (
-                  <div className="flex justify-between font-bold text-eco-green">
-                    <span>Total to Pay:</span>
-                    <span>₹{finalMoneyAmount.toFixed(2)}</span>
+                <div className="flex justify-between font-bold">
+                  <span>Final Total:</span>
+                  <span>₹{displayFinalTotal.toFixed(2)}</span>
+                </div>
+                {paymentMethod !== 'money' && (
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Payment:</span>
+                    <span>
+                      {paymentMethod === 'tokens' ? `${Math.round(tokenTotal)} tokens` : `${tokensToUse} tokens + ₹${displayFinalTotal.toFixed(2)}`}
+                    </span>
                   </div>
-                )}
-                {paymentMethod === 'tokens' && (
-                  <div className="flex justify-between font-bold text-eco-green-dark">
-                    <span>Total to Pay:</span>
-                    <span>{finalTokenAmount} tokens</span>
-                  </div>
-                )}
-                {paymentMethod === 'mixed' && (
-                  <>
-                    <div className="flex justify-between text-blue-600">
-                      <span>Tokens:</span>
-                      <span>{finalTokenAmount} tokens</span>
-                    </div>
-                    <div className="flex justify-between text-green-600">
-                      <span>Money:</span>
-                      <span>₹{finalMoneyAmount.toFixed(2)}</span>
-                    </div>
-                  </>
                 )}
               </div>
             </div>
