@@ -55,7 +55,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [existingImages, setExistingImages] = useState<string[]>([]); // Track existing images
+  const [existingImages, setExistingImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (product) {
@@ -82,14 +82,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
         }
       });
       setImagePreviews(images);
-      setExistingImages(images); // Store existing images
+      setExistingImages(images);
     }
   }, [product]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
-    // Handle checkbox separately
     if (type === 'checkbox') {
       const checkbox = e.target as HTMLInputElement;
       const isChecked = checkbox.checked;
@@ -106,7 +105,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
       return;
     }
     
-    // Handle nested properties
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
@@ -129,27 +127,22 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
       const files = Array.from(e.target.files);
       const previews: string[] = [];
       
-      // Create preview URLs
       files.forEach(file => {
         const previewUrl = URL.createObjectURL(file);
         previews.push(previewUrl);
       });
       
       setSelectedFiles(files);
-      // Combine existing images with new previews
       setImagePreviews(prev => [...existingImages, ...previews]);
     }
   };
   
   const removeImage = (index: number) => {
-    // Check if this is an existing image or a new preview
     if (index < existingImages.length) {
-      // Removing an existing image
       const newExistingImages = existingImages.filter((_, i) => i !== index);
       setExistingImages(newExistingImages);
       setImagePreviews([...newExistingImages, ...selectedFiles.map(file => URL.createObjectURL(file))]);
       
-      // Update form data to reflect removed existing image
       setFormData(prev => ({
         ...prev,
         productInfo: {
@@ -158,7 +151,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
         }
       }));
     } else {
-      // Removing a new preview
       const newSelectedFiles = [...selectedFiles];
       newSelectedFiles.splice(index - existingImages.length, 1);
       setSelectedFiles(newSelectedFiles);
@@ -169,23 +161,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Ensure exact value preservation by validating numeric fields
     const formDataToSend = { ...formData };
     
-    // Validate and ensure pricing values are exact numbers (no precision loss)
     if (formDataToSend.pricing) {
-      // Ensure pricing values are properly formatted numbers
       formDataToSend.pricing.costPrice = Number(formDataToSend.pricing.costPrice);
       formDataToSend.pricing.sellingPrice = Number(formDataToSend.pricing.sellingPrice);
       
-      // Log the exact values being submitted for debugging
       console.log('ProductForm submitting exact values:');
       console.log('  Fiat Price (₹):', formDataToSend.pricing.costPrice);
       console.log('  Token Price:', formDataToSend.pricing.sellingPrice);
     }
     
-    // For new products, don't send images array, let backend handle it
-    // For existing products, send the images array
     if (!product && (!formData.productInfo.images || formData.productInfo.images.length === 0)) {
       const { images, ...productInfoWithoutImages } = formData.productInfo;
       formDataToSend.productInfo = { ...productInfoWithoutImages, images: [] };
@@ -195,16 +181,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-6 text-green-800 flex items-center gap-2">
-        <span className="text-xl">🌱</span>
-        <span className="bg-gradient-to-r from-green-500 to-blue-400 text-transparent bg-clip-text">
-          {product ? 'Edit Product' : 'Add New Product'}
-        </span>
+    <div className="bg-white rounded-lg shadow-lg border border-gray-100 p-8 max-w-2xl mx-auto">
+      <h2 className="text-2xl font-bold text-eco-green-700 mb-8">
+        {product ? 'Edit Product' : 'Add New Product'}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="form-group">
-          <label htmlFor="productInfo.name" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="productInfo.name" className="block text-sm font-semibold text-gray-700 mb-2">
             Product Name
           </label>
           <input
@@ -214,13 +197,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
             value={formData.productInfo.name}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green transition-colors"
             placeholder="Enter product name"
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="productInfo.description" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="productInfo.description" className="block text-sm font-semibold text-gray-700 mb-2">
             Description
           </label>
           <textarea
@@ -230,13 +213,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
             onChange={handleChange}
             required
             rows={4}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green transition-colors resize-none"
             placeholder="Describe your product"
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="productInfo.category" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="productInfo.category" className="block text-sm font-semibold text-gray-700 mb-2">
             Category
           </label>
           <select
@@ -244,7 +227,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
             name="productInfo.category"
             value={formData.productInfo.category}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green transition-colors bg-white"
           >
             <option value="home_decor">Home Decor</option>
             <option value="furniture">Furniture</option>
@@ -259,18 +242,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
           </select>
         </div>
 
-        {/* Image Upload Section */}
         <div className="form-group">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
             Product Images
           </label>
           <div className="flex items-center justify-center w-full mb-4">
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <svg className="w-8 h-8 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                 </svg>
-                <p className="mb-1 text-sm text-gray-500"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                <p className="mb-1 text-sm text-gray-500"><span className="font-medium">Click to upload</span> or drag and drop</p>
                 <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
               </div>
               <input
@@ -289,12 +271,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
                 <img 
                   src={preview} 
                   alt={`Preview ${index + 1}`} 
-                  className="w-24 h-24 object-cover rounded-lg border border-gray-200 shadow-sm transition-all group-hover:shadow-md" 
+                  className="w-24 h-24 object-cover rounded-lg border border-gray-200 shadow-sm" 
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:bg-red-600 transition-colors"
+                  className="absolute -top-2 -right-2 bg-eco-red text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-eco-red-dark transition-colors"
                   aria-label="Remove image"
                 >
                   ×
@@ -311,96 +293,76 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="form-group">
-            <label htmlFor="pricing.sellingPrice" className="block text-sm font-medium text-gray-700 mb-1">
-              <span className="flex items-center gap-1">
-                <span className="text-green-600">🪙</span> EcoToken Price
-              </span>
+            <label htmlFor="pricing.sellingPrice" className="block text-sm font-semibold text-gray-700 mb-2">
+              EcoToken Price
             </label>
-            <div className="relative">
-              <input
-                type="number"
-                id="pricing.sellingPrice"
-                name="pricing.sellingPrice"
-                value={formData.pricing.sellingPrice}
-                onChange={handleChange}
-                min="0"
-                required
-                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-                placeholder="0"
-              />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <span className="text-green-600 text-sm">Ξ</span>
-              </div>
-            </div>
+            <input
+              type="number"
+              id="pricing.sellingPrice"
+              name="pricing.sellingPrice"
+              value={formData.pricing.sellingPrice || ''}
+              onChange={handleChange}
+              min="0"
+              placeholder="Enter token price"
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green transition-colors"
+            />
           </div>
           <div className="form-group">
-            <label htmlFor="pricing.costPrice" className="block text-sm font-medium text-gray-700 mb-1">
-              <span className="flex items-center gap-1">
-                <span>💰</span> Fiat Price (₹)
-              </span>
+            <label htmlFor="pricing.costPrice" className="block text-sm font-semibold text-gray-700 mb-2">
+              Fiat Price (₹)
             </label>
-            <div className="relative">
-              <input
-                type="number"
-                id="pricing.costPrice"
-                name="pricing.costPrice"
-                value={formData.pricing.costPrice}
-                onChange={handleChange}
-                min="0"
-                required
-                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-                placeholder="0"
-              />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <span className="text-gray-500">₹</span>
-              </div>
-            </div>
+            <input
+              type="number"
+              id="pricing.costPrice"
+              name="pricing.costPrice"
+              value={formData.pricing.costPrice || ''}
+              onChange={handleChange}
+              min="0"
+              placeholder="Enter fiat price"
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green transition-colors"
+            />
           </div>
         </div>
 
         <div className="form-group">
-          <label htmlFor="inventory.currentStock" className="block text-sm font-medium text-gray-700 mb-1">
-            <span className="flex items-center gap-1">
-              <span>📦</span> Available Stock
-            </span>
+          <label htmlFor="inventory.currentStock" className="block text-sm font-semibold text-gray-700 mb-2">
+            Available Stock
           </label>
           <input
             type="number"
             id="inventory.currentStock"
             name="inventory.currentStock"
-            value={formData.inventory.currentStock}
+            value={formData.inventory.currentStock || ''}
             onChange={handleChange}
             min="0"
+            placeholder="Enter stock quantity"
             required
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-            placeholder="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green transition-colors"
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="sustainability.recycledMaterialPercentage" className="block text-sm font-medium text-gray-700 mb-1">
-            <span className="flex items-center gap-1">
-              <span>♻️</span> Sustainability Score (0-100)
-            </span>
+          <label htmlFor="sustainability.recycledMaterialPercentage" className="block text-sm font-semibold text-gray-700 mb-2">
+            Sustainability Score (0-100)
           </label>
-          <div className="relative">
-            <input
-              type="number"
-              id="sustainability.recycledMaterialPercentage"
-              name="sustainability.recycledMaterialPercentage"
-              value={formData.sustainability.recycledMaterialPercentage}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-            />
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-gradient-to-r from-green-500 to-blue-400 h-2.5 rounded-full transition-all duration-300" 
-                style={{ width: `${formData.sustainability.recycledMaterialPercentage}%` }}
-              ></div>
-            </div>
+          <input
+            type="number"
+            id="sustainability.recycledMaterialPercentage"
+            name="sustainability.recycledMaterialPercentage"
+            value={formData.sustainability.recycledMaterialPercentage}
+            onChange={handleChange}
+            min="0"
+            max="100"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green transition-colors"
+          />
+          <div className="mt-3 w-full bg-eco-beige-light rounded-md h-3">
+            <div 
+              className="bg-eco-green h-3 rounded-md transition-all duration-300" 
+              style={{ width: `${formData.sustainability.recycledMaterialPercentage}%` }}
+            ></div>
           </div>
         </div>
 
@@ -414,24 +376,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
                 onChange={handleChange}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-              <span className="ml-3 text-sm font-medium text-gray-700">Active Status</span>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-eco-green rounded-xl peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-eco-green"></div>
+              <span className="ml-3 text-sm font-semibold text-gray-700">Active Status</span>
             </label>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <div className="flex justify-center gap-4 pt-6 border-t border-gray-200">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all"
+            className="px-6 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-eco-green transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-500 to-blue-400 hover:from-green-600 hover:to-blue-500 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+            className="px-6 py-2 text-sm font-semibold text-white bg-eco-green hover:bg-eco-green-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-eco-green-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center gap-2">

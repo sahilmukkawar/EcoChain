@@ -100,6 +100,7 @@ const Navigation: React.FC = () => {
   function getNavigationItems() {
     const commonItems = [
       { to: "/marketplace", label: "Marketplace", icon: ShoppingCart },
+      
     ];
     
     if (!isAuthenticated) return commonItems;
