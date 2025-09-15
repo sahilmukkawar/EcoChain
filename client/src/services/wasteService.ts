@@ -57,7 +57,7 @@ export interface WasteSubmissionResponse {
 }
 
 class WasteService {
-  private baseURL = '/collections'; // Matches the route path
+  private readonly baseURL = '/collections'; // Matches the route path
 
   // Calculate estimated tokens based on waste type and quantity (matches database model logic)
   calculateEstimatedTokens(wasteType: string, quantity: number, quality: string = 'fair'): number {

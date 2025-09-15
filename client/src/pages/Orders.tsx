@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.tsx';
 import { orderService, Order } from '../services/orderService.ts';
 
 // Helper function to get CSS classes for order status
@@ -26,7 +25,6 @@ const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {

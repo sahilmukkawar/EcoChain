@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import walletService, { WalletInfo, WalletTransaction } from '../services/walletService.ts';
 
 const Wallet: React.FC = () => {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -11,7 +11,7 @@ const Wallet: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
 
-  const fetchWallet = async (isRefresh = false) => {
+  const fetchWallet = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -29,7 +29,7 @@ const Wallet: React.FC = () => {
       setError(null);
       
       // Update user context if balance changed
-      if (updateUser && walletData.currentBalance !== user?.ecoWallet?.currentBalance) {
+      if (walletData.currentBalance !== user?.ecoWallet?.currentBalance) {
         // The AuthContext should handle updating the user state
         // We could trigger a refresh through AuthContext methods if needed
       }
@@ -40,11 +40,11 @@ const Wallet: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchWallet();
-  }, []);
+  }, [fetchWallet]);
 
   const getTransactionIcon = (transaction: WalletTransaction) => {
     if (transaction.transactionType === 'earned') {

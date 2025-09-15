@@ -26,6 +26,7 @@ import Register from './pages/Register.tsx';
 import Achievements from './pages/Achievements.tsx';
 import Wallet from './pages/Wallet.tsx';
 import Orders from './pages/Orders.tsx';
+import FactoryOrders from './pages/FactoryOrders.tsx';
 
 function App() {
   const location = useLocation();
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
                 <Route path="/factory-dashboard" element={<ProtectedRoute element={<FactoryDashboard />} allowedRoles={['factory']} />} />
                 <Route path="/factory-product-management" element={<ProtectedRoute element={<FactoryProductManagement />} allowedRoles={['factory']} />} />
+                <Route path="/factory-orders" element={<ProtectedRoute element={<FactoryOrders />} allowedRoles={['factory']} />} />
                 <Route path="/collector-dashboard" element={<ProtectedRoute element={<CollectorDashboard />} allowedRoles={['collector']} />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />

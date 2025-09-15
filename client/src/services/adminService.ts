@@ -129,7 +129,7 @@ export interface PaymentStatistics {
 }
 
 class AdminService {
-  private baseURL = '/admin';
+  private readonly baseURL = '/admin';
 
   // Get collections ready for collector payment
   async getCollectionsForPayment(page: number = 1, limit: number = 20) {
@@ -154,7 +154,7 @@ class AdminService {
     try {
       // Handle legacy parameters
       const requestData = {
-        approveCollection: paymentData.approveCollection !== undefined ? paymentData.approveCollection : true,
+        approveCollection: paymentData.approveCollection ?? true,
         paymentMethod: paymentData.paymentMethod || 'digital_transfer',
         adminNotes: paymentData.adminNotes || paymentData.notes || ''
       };

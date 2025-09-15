@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -64,28 +64,6 @@ const authAPI = {
 };
 
 // Garbage Collection API endpoints
-interface CollectionDetails {
-  type: string;
-  subType?: string;
-  weight?: number;
-  quality?: string;
-  description?: string;
-  images?: string[];
-}
-
-interface LocationData {
-  address: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-}
-
-interface SchedulingData {
-  requestedDate?: string;
-  preferredTimeSlot?: string;
-}
-
 interface CollectionRequestData {
   type: string;
   subType?: string;
@@ -197,59 +175,24 @@ interface OrderData {
 }
 
 // Updated interface for order response
-interface OrderItem {
-  productId: {
-    _id: string;
-    productInfo: {
-      name: string;
-      description?: string;
-      images?: string[];
-    };
-    pricing?: {
-      sellingPrice?: number;
-      ecoTokenDiscount?: number;
-    };
-  };
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  ecoTokensUsed?: number;
-}
-
-interface Order {
-  _id: string;
-  orderId: string;
-  userId: string;
-  orderItems: OrderItem[];
-  billing: {
-    subtotal: number;
-    ecoTokensApplied: number;
-    ecoTokenValue: number;
-    taxes: number;
-    shippingCharges: number;
-    discount: number;
-    finalAmount: number;
-  };
-  status: string;
-  shipping: {
-    address: {
-      name: string;
-      street: string;
-      city: string;
-      state: string;
-      zipCode: string;
-      country: string;
-      phone: string;
-    };
-    trackingNumber?: string;
-    estimatedDelivery?: string;
-  };
-  payment: {
-    method: string;
-    status: string;
-  };
-  createdAt: string;
-}
+// interface OrderItem {
+//   productId: {
+//     _id: string;
+//     productInfo: {
+//       name: string;
+//       description?: string;
+//       images?: string[];
+//     };
+//     pricing?: {
+//       sellingPrice?: number;
+//       ecoTokenDiscount?: number;
+//     };
+//   };
+//   quantity: number;
+//   unitPrice: number;
+//   totalPrice: number;
+//   ecoTokensUsed?: number;
+// }
 
 const marketplaceAPI = {
   // Get all products
@@ -309,18 +252,6 @@ const marketplaceAPI = {
 };
 
 // Wallet and Transaction API endpoints
-interface TransactionData {
-  type: 'reward' | 'purchase' | 'transfer' | 'collection';
-  amount: number;
-  description?: string;
-  metadata?: {
-    collectionId?: string;
-    orderId?: string;
-    productId?: string;
-    recipientId?: string;
-  };
-}
-
 interface TransferData {
   recipientId: string;
   amount: number;
@@ -554,38 +485,21 @@ const factoryAPI = {
 };
 
 // Achievement and Gamification API endpoints
-interface AchievementData {
-  title: string;
-  description: string;
-  category: 'collection' | 'recycling' | 'community' | 'marketplace' | 'special';
-  icon: string;
-  points: number;
-  criteria: {
-    type: 'collection_count' | 'token_earned' | 'marketplace_purchases' | 'days_active' | 'referrals' | 'custom';
-    threshold: number;
-    timeframe?: 'day' | 'week' | 'month' | 'year' | 'all_time';
-  };
-  rewards?: {
-    tokens?: number;
-    badges?: string[];
-  };
-}
-
-interface ChallengeData {
-  title: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  participants?: number;
-  goal: {
-    type: 'collection_count' | 'token_earned' | 'marketplace_purchases' | 'referrals' | 'custom';
-    target: number;
-  };
-  rewards: {
-    tokens?: number;
-    badges?: string[];
-  };
-}
+// interface ChallengeData {
+//   title: string;
+//   description: string;
+//   startDate: string;
+//   endDate: string;
+//   participants?: number;
+//   goal: {
+//     type: 'collection_count' | 'token_earned' | 'marketplace_purchases' | 'referrals' | 'custom';
+//     target: number;
+//   };
+//   rewards: {
+//     tokens?: number;
+//     badges?: string[];
+//   };
+// }
 
 const gamificationAPI = {
   // Get user achievements
@@ -655,16 +569,6 @@ const gamificationAPI = {
 };
 
 // Notification Service API endpoints
-interface NotificationData {
-  type: 'collection' | 'marketplace' | 'wallet' | 'achievement' | 'system' | 'custom';
-  title: string;
-  message: string;
-  priority?: 'high' | 'medium' | 'low';
-  data?: Record<string, any>;
-  read?: boolean;
-  actionUrl?: string;
-}
-
 const notificationAPI = {
   // Get user notifications
   getNotifications: (filters?: { read?: boolean; type?: string; limit?: number; }) => {

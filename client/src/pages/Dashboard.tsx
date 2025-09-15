@@ -2,29 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useEcoChain } from '../contexts/EcoChainContext.tsx';
-import { orderService } from '../services/orderService.ts';
-import { Order } from '../services/orderService.ts';
 import wasteService, { WasteSubmission } from '../services/wasteService.ts';
 import { authAPI } from '../services/api.ts';
-
-// Helper function to get CSS classes for order status
-const getOrderStatusClass = (status: Order['status'] | 'completed') => {
-  switch (status) {
-    case 'completed':
-    case 'delivered':
-      return 'bg-eco-green-100 text-eco-green-800';
-    case 'pending':
-      return 'bg-amber-100 text-amber-800';
-    case 'processing':
-      return 'bg-blue-100 text-blue-800';
-    case 'shipped':
-      return 'bg-purple-100 text-purple-800';
-    case 'cancelled':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
 
 // Helper function to get CSS classes for waste request status
 const getWasteRequestStatusClass = (status: string) => {
@@ -52,15 +31,9 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { user, updateUser } = useAuth();
   const { 
-    collectionHistory, 
     environmentalImpact, 
-    totalEcoTokens, 
     refreshCollections 
   } = useEcoChain();
-  
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState<boolean>(true);
-  const [ordersError, setOrdersError] = useState<string | null>(null);
   
   const [wasteRequests, setWasteRequests] = useState<WasteSubmission[]>([]);
   const [wasteLoading, setWasteLoading] = useState<boolean>(true);
@@ -86,7 +59,7 @@ const Dashboard: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, currentTokenBalance]); // fetchLatestUserData is intentionally omitted as it's defined after this useEffect
   
   const fetchWasteRequests = async () => {
     try {
@@ -121,7 +94,7 @@ const Dashboard: React.FC = () => {
           console.log('Token balance unchanged, skipping update');
         }
         
-        if (updateUser && (newTokenBalance !== currentTokenBalance || !user?.ecoWallet)) {
+        if (newTokenBalance !== currentTokenBalance || !user?.ecoWallet) {
           updateUser(latestUserData);
           console.log('Updated user in AuthContext with fresh data');
         }

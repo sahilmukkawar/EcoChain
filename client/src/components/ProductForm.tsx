@@ -78,7 +78,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSubmit, onCancel, 
           recycledMaterialPercentage: product.sustainability.recycledMaterialPercentage || 80
         },
         availability: {
-          isActive: product.availability.isActive !== undefined ? product.availability.isActive : true
+          isActive: product.availability.isActive ?? true
         }
       });
       setImagePreviews(images);

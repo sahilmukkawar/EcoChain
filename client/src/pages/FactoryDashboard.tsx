@@ -305,7 +305,7 @@ const FactoryDashboard: React.FC = () => {
                 </Link>
 
                 <Link 
-                  to="/orders" 
+                  to="/factory-orders" 
                   className="group flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:shadow-md border border-gray-100 hover:border-gray-200"
                 >
                   <div className="flex items-center gap-3">

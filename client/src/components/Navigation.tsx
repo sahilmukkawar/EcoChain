@@ -121,7 +121,7 @@ const Navigation: React.FC = () => {
           { to: "/factory-product-management", label: "Product Management", icon: Package },
           { to: "/materials", label: "Materials", icon: Recycle },
           { to: "/production", label: "Production", icon: Settings },
-          { to: "/orders", label: "Orders", icon: ShoppingCart },
+          { to: "/factory-orders", label: "Orders", icon: ShoppingCart },
         ];
       case "collector":
         return [
@@ -270,10 +270,12 @@ const Navigation: React.FC = () => {
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 rounded-lg"
+            className="flex items-center gap-2 text-green-600"
             aria-label="EcoChain Home"
           >
-            <Leaf size={32} className="text-green-500" />
+            <div className="p-2 bg-green-100 rounded-lg">
+           <Leaf className="h-8 w-8 text-green-500" />
+             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-green-500 to-blue-400 text-transparent bg-clip-text">
               EcoChain
             </span>

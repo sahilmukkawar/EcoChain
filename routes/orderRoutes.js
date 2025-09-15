@@ -2,7 +2,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
-const { Order, Product, User, EcoTokenTransaction } = require('../database/models');
+const { Order, Product, User, EcoTokenTransaction, Factory } = require('../database/models');
 const { authenticate } = require('../middleware/auth');
 
 // Helper function to create EcoTokenTransaction with all required fields
@@ -318,9 +318,70 @@ router.get('/user', authenticate, async (req, res) => {
   }
 });
 
+// Get factory's orders (Factory only)
+router.get('/factory', authenticate, async (req, res) => {
+  try {
+    console.log('Factory orders route hit');
+    console.log('Request user:', req.user);
+    
+    if (req.user.role !== 'factory') {
+      console.log('User is not a factory, role:', req.user.role);
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    console.log('Fetching factory orders for user:', req.user.id);
+    
+    // Get factory profile to find factory ID
+    const factory = await Factory.findOne({ userId: req.user.id });
+    if (!factory) {
+      console.log('Factory profile not found for user:', req.user.id);
+      return res.status(404).json({ success: false, message: 'Factory profile not found' });
+    }
+    
+    console.log('Found factory:', factory._id);
+
+    // Find all products created by this factory
+    const factoryProducts = await Product.find({ factoryId: factory._id });
+    console.log('Found products:', factoryProducts.length);
+    
+    const productIds = factoryProducts.map(product => product._id);
+    console.log('Product IDs:', productIds);
+
+    // Find all orders that contain these products
+    const orders = await Order.find({
+      'orderItems.productId': { $in: productIds }
+    })
+    .populate('orderItems.productId', 'productInfo.name productInfo.images productInfo.description pricing.sellingPrice pricing.ecoTokenDiscount')
+    .populate('userId', 'personalInfo.name personalInfo.email')
+    .sort({ createdAt: -1 });
+    
+    console.log('Found orders:', orders.length);
+
+    res.json({
+      success: true,
+      data: orders
+    });
+  } catch (error) {
+    console.error('Error fetching factory orders:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Handle Cast to ObjectId failed error specifically
+    if (error.name === 'CastError' && error.kind === 'ObjectId') {
+      return res.status(400).json({ success: false, message: 'Invalid ID format in request' });
+    }
+    
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Get single order
 router.get('/:id', authenticate, async (req, res) => {
   try {
+    // Check if the ID is "factory" and redirect to the factory route if so
+    if (req.params.id === 'factory') {
+      return res.redirect('/api/orders/factory');
+    }
+    
     const order = await Order.findById(req.params.id)
       .populate('orderItems.productId', 'productInfo.name productInfo.images productInfo.description pricing.sellingPrice pricing.ecoTokenDiscount')
       .populate('userId', 'personalInfo.name personalInfo.email');
@@ -339,6 +400,13 @@ router.get('/:id', authenticate, async (req, res) => {
       data: order
     });
   } catch (error) {
+    // Handle Cast to ObjectId failed error specifically
+    if (error.name === 'CastError' && error.kind === 'ObjectId') {
+      console.error('Invalid ObjectId format:', req.params.id);
+      return res.status(400).json({ success: false, message: 'Invalid order ID format' });
+    }
+    
+    console.error('Error fetching order:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -383,6 +451,15 @@ router.put('/:id/status', authenticate, async (req, res) => {
     if (carrier) order.shipping.carrier = carrier;
     
     await order.save();
+
+    // Broadcast the update to WebSocket clients
+    const socketManager = require('../utils/socketManager');
+    socketManager.broadcastUpdate('order', 'update', [{
+      _id: order._id,
+      orderId: order.orderId,
+      status: order.status,
+      timeline: order.timeline
+    }]);
 
     res.json({
       success: true,

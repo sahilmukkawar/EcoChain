@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { marketplaceAPI } from '../services/api.ts';
+import websocketService, { WebSocketMessage } from '../services/websocketService.ts';
 
 interface OrderItem {
   productId: {
@@ -36,6 +37,12 @@ interface Order {
     finalAmount: number;
   };
   status: string;
+  timeline?: {
+    placedAt?: string;
+    confirmedAt?: string;
+    shippedAt?: string;
+    deliveredAt?: string;
+  };
   shipping: {
     address: {
       name: string;
@@ -62,6 +69,21 @@ const OrderTracking: React.FC = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Handle real-time order updates
+  const handleOrderUpdate = (message: WebSocketMessage) => {
+    if (message.type === 'sync' && message.entityType === 'order' && message.changeType === 'update' && order) {
+      message.changes.forEach((change: any) => {
+        if (change._id === order._id) {
+          setOrder({
+            ...order,
+            status: change.status,
+            timeline: change.timeline ? { ...order.timeline, ...change.timeline } : order.timeline
+          });
+        }
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -111,6 +133,15 @@ const OrderTracking: React.FC = () => {
     if (trackingNumber) {
       fetchOrder();
     }
+    
+    // Subscribe to order updates
+    websocketService.subscribe(['order']);
+    websocketService.on('sync', handleOrderUpdate);
+    
+    // Clean up WebSocket listener
+    return () => {
+      websocketService.off('sync', handleOrderUpdate);
+    };
   }, [trackingNumber]);
 
   const getStatusSteps = () => {
