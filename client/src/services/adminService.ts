@@ -26,6 +26,9 @@ export interface CollectionForPayment {
   tokenCalculation: {
     totalTokensIssued: number;
   };
+  payment?: {
+    calculatedAmount?: number;
+  };
   status: string;
   updatedAt: string;
   logistics?: {

@@ -79,9 +79,11 @@ const garbageCollectionSchema = new mongoose.Schema({
   payment: {
     collectorPaid: { type: Boolean, default: false },
     collectorPaymentAmount: { type: Number },
+    calculatedAmount: { type: Number },
     collectorPaymentDate: { type: Date },
     collectorPaymentMethod: { type: String },
-    adminNotes: { type: String }
+    adminNotes: { type: String },
+    paymentCalculation: { type: mongoose.Schema.Types.Mixed }
   },
   createdAt: {
     type: Date,

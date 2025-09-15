@@ -327,40 +327,56 @@ interface TransferData {
   notes?: string;
 }
 
+interface WalletData {
+  currentBalance: number;
+  totalEarned: number;
+  totalSpent: number;
+}
+
 const walletAPI = {
-  // Get wallet balance
+  // Get wallet balance and info
   getBalance: () => {
-    return api.get('/wallet/balance');
+    return api.get<{ success: boolean; data: { wallet: WalletData } }>('/eco-token/wallet');
   },
   
   // Get transaction history
-  getTransactions: (filters?: { type?: string; startDate?: string; endDate?: string; }) => {
-    return api.get('/wallet/transactions', { params: filters });
+  getTransactions: (filters?: { type?: string; startDate?: string; endDate?: string; page?: number; limit?: number; }) => {
+    return api.get<{ success: boolean; data: any[]; pagination: any }>('/eco-token/transactions', { params: filters });
   },
   
   // Get transaction by ID
   getTransactionById: (transactionId: string) => {
-    return api.get(`/wallet/transactions/${transactionId}`);
+    return api.get<{ success: boolean; data: any }>(`/eco-token/transactions/${transactionId}`);
   },
   
   // Transfer tokens to another user
   transferTokens: (transferData: TransferData) => {
-    return api.post('/wallet/transfer', transferData);
+    return api.post('/eco-token/transactions/transfer', transferData);
+  },
+  
+  // Get token earning opportunities
+  getEarningOpportunities: () => {
+    return api.get('/eco-token/opportunities');
+  },
+  
+  // Calculate potential tokens for waste submission
+  calculateTokens: (data: { materialType: string; weight: number; quality?: string }) => {
+    return api.post('/eco-token/calculate', data);
   },
   
   // Get token earning statistics
   getEarningStats: (period?: 'day' | 'week' | 'month' | 'year') => {
-    return api.get('/wallet/stats/earnings', { params: { period } });
+    return api.get('/eco-token/wallet/stats/earnings', { params: { period } });
   },
   
   // Get token spending statistics
   getSpendingStats: (period?: 'day' | 'week' | 'month' | 'year') => {
-    return api.get('/wallet/stats/spending', { params: { period } });
+    return api.get('/eco-token/wallet/stats/spending', { params: { period } });
   },
   
   // Get environmental impact statistics
   getImpactStats: () => {
-    return api.get('/wallet/stats/impact');
+    return api.get('/eco-token/wallet/stats/impact');
   }
 };
 

@@ -162,6 +162,10 @@ const processCollectorPayment = async (req, res) => {
     
     const collectorPaymentINR = paymentCalculation.paymentSummary.finalAmount;
     
+    // Store the calculated payment in the collection for consistency
+    collection.payment.calculatedAmount = collectorPaymentINR;
+    collection.payment.paymentCalculation = paymentCalculation;
+    
     // Initialize payment object if it doesn't exist
     if (!collection.payment) {
       collection.payment = {};

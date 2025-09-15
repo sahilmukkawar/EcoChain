@@ -134,6 +134,7 @@ const Navigation: React.FC = () => {
         return [
           ...commonItems,
           { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+          { to: "/orders", label: "My Orders", icon: ShoppingCart },
           { to: "/waste-submission", label: "Submit Waste", icon: Upload },
           { to: "/wallet", label: "Wallet", icon: Wallet },
           { to: "/achievements", label: "Achievements", icon: Award },

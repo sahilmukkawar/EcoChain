@@ -32,20 +32,107 @@ import {
 
 // Helper function to calculate payment for a collection
 function calculatePayment(collection: CollectionForPayment): number {
-  // Example calculation: base rate per kg depending on waste type
-  const baseRates: { [key: string]: number } = {
-    plastic: 10,
-    paper: 8,
-    metal: 15,
-    glass: 12,
-    electronic: 20,
-    organic: 5,
-    other: 7
+  // Use the stored calculated amount if available, otherwise calculate
+  if (collection.payment?.calculatedAmount) {
+    return collection.payment.calculatedAmount;
+  }
+  
+  // Fallback calculation: base rate per kg depending on waste type (matching backend logic)
+  const COLLECTOR_PAYMENT_RATES: { [key: string]: { baseRate: number; qualityMultipliers: { [key: string]: number } } } = {
+    plastic: {
+      baseRate: 12,
+      qualityMultipliers: {
+        excellent: 1.4,
+        good: 1.2,
+        fair: 1.0,
+        poor: 0.7
+      }
+    },
+    paper: {
+      baseRate: 8,
+      qualityMultipliers: {
+        excellent: 1.3,
+        good: 1.1,
+        fair: 1.0,
+        poor: 0.6
+      }
+    },
+    metal: {
+      baseRate: 25,
+      qualityMultipliers: {
+        excellent: 1.5,
+        good: 1.2,
+        fair: 1.0,
+        poor: 0.8
+      }
+    },
+    glass: {
+      baseRate: 3,
+      qualityMultipliers: {
+        excellent: 1.3,
+        good: 1.1,
+        fair: 1.0,
+        poor: 0.5
+      }
+    },
+    electronic: {
+      baseRate: 35,
+      qualityMultipliers: {
+        excellent: 1.6,
+        good: 1.3,
+        fair: 1.0,
+        poor: 0.7
+      }
+    },
+    organic: {
+      baseRate: 2,
+      qualityMultipliers: {
+        excellent: 1.2,
+        good: 1.0,
+        fair: 0.8,
+        poor: 0.5
+      }
+    },
+    other: {
+      baseRate: 5,
+      qualityMultipliers: {
+        excellent: 1.2,
+        good: 1.0,
+        fair: 0.8,
+        poor: 0.6
+      }
+    }
   };
+
+  // Volume bonuses (minimum kg required)
+  const volumeBonuses: { [key: number]: number } = {
+    50: 1.1,   // 10% bonus for 50kg+
+    100: 1.15, // 15% bonus for 100kg+
+    200: 1.2   // 20% bonus for 200kg+
+  };
+
   const type = collection.collectionDetails?.type || 'other';
   const weight = Number(collection.collectionDetails?.weight) || 0;
-  const rate = baseRates[type] || baseRates['other'];
-  return Math.round(weight * rate);
+  const quality = collection.collectionDetails?.quality || 'fair';
+
+  // Get base rate for waste type
+  const wasteRates = COLLECTOR_PAYMENT_RATES[type] || COLLECTOR_PAYMENT_RATES.other;
+  const baseRate = wasteRates.baseRate;
+  const qualityMultiplier = wasteRates.qualityMultipliers[quality] || wasteRates.qualityMultipliers.fair;
+
+  // Calculate base payment
+  let basePayment = baseRate * weight * qualityMultiplier;
+
+  // Apply volume bonus
+  let volumeMultiplier = 1;
+  if (weight >= 200) volumeMultiplier = volumeBonuses[200];
+  else if (weight >= 100) volumeMultiplier = volumeBonuses[100];
+  else if (weight >= 50) volumeMultiplier = volumeBonuses[50];
+
+  // Calculate final payment (simplified without distance and time bonuses for frontend)
+  const totalPayment = basePayment * volumeMultiplier;
+
+  return Math.round(totalPayment * 100) / 100; // Round to 2 decimal places
 }
 
 const AdminDashboard: React.FC = () => {
@@ -1190,7 +1277,7 @@ const AdminDashboard: React.FC = () => {
                         <td className="px-6 py-4">
                           <div>
                             <div className="font-medium text-gray-900 text-sm">{payment.userName || 'N/A'}</div>
-                            <div className="text-gray-500 text-xs">{payment.useremail || 'N/A'}</div>
+                            <div className="text-gray-500 text-xs">{payment.userName || 'N/A'}</div>
                           </div>
                         </td>
                         <td className="px-6 py-4">

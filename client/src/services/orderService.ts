@@ -8,12 +8,24 @@ export interface OrderItem {
   tokenPrice: number;
 }
 
+export interface OrderBilling {
+  subtotal: number;
+  ecoTokensApplied: number;
+  ecoTokenValue: number;
+  taxes: number;
+  shippingCharges: number;
+  discount: number;
+  finalAmount: number;
+}
+
 export interface Order {
   _id: string;
   userId: string;
   items: OrderItem[];
-  totalPrice: number;
-  totalTokenPrice: number;
+  // Add the billing object to match backend response
+  billing?: OrderBilling;
+  totalPrice?: number; // Keep for backward compatibility
+  totalTokenPrice?: number; // Keep for backward compatibility
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   shippingAddress: Address;
   paymentMethod: 'cash_on_delivery' | 'online_payment' | 'token_payment' | 'mixed_payment';
@@ -108,4 +120,3 @@ const orderService = {
 
 export default orderService;
 export { orderService };
-export type { OrderItem, Order, Address, CreateOrderData };

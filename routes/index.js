@@ -21,8 +21,8 @@ router.use('/collections', garbageCollectionRoutes);
 // Use marketplace routes for marketplace functionality
 router.use('/marketplace', marketplaceRoutes);
 router.use('/orders', orderRoutes);
-router.use('/transactions', transactionRoutes);
-router.use('/', ecoTokenRoutes);
+router.use('/general-transactions', transactionRoutes);
+router.use('/eco-token', ecoTokenRoutes);
 
 // Health check route
 router.get('/health', (req, res) => {

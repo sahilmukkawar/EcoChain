@@ -1,73 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
-import { useEcoChain } from '../contexts/EcoChainContext.tsx';
-import { authAPI } from '../services/api.ts';
-
-interface WalletInfo {
-  balance: number;
-  lifetimeEarned: number;
-  lifetimeSpent: number;
-}
-
-interface Transaction {
-  id: string;
-  type: 'earned' | 'spent';
-  amount: number;
-  description: string;
-  date: Date;
-  source: 'collection' | 'purchase' | 'bonus' | 'referral';
-  status: 'completed' | 'pending';
-}
+import walletService, { WalletInfo, WalletTransaction } from '../services/walletService.ts';
 
 const Wallet: React.FC = () => {
   const { user, updateUser } = useAuth();
-  const { totalEcoTokens, collectionHistory } = useEcoChain();
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions'>('overview');
-
-  // Mock recent transactions - in real app, this would come from API
-  const mockTransactions: Transaction[] = [
-    {
-      id: '1',
-      type: 'earned',
-      amount: 150,
-      description: 'Plastic waste collection',
-      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      source: 'collection',
-      status: 'completed'
-    },
-    {
-      id: '2',
-      type: 'spent',
-      amount: 200,
-      description: 'Eco-friendly notebook purchase',
-      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      source: 'purchase',
-      status: 'completed'
-    },
-    {
-      id: '3',
-      type: 'earned',
-      amount: 75,
-      description: 'Paper waste collection',
-      date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      source: 'collection',
-      status: 'completed'
-    },
-    {
-      id: '4',
-      type: 'earned',
-      amount: 50,
-      description: 'Achievement bonus',
-      date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      source: 'bonus',
-      status: 'completed'
-    }
-  ];
 
   const fetchWallet = async (isRefresh = false) => {
     try {
@@ -77,27 +19,23 @@ const Wallet: React.FC = () => {
         setLoading(true);
       }
       
-      const res = await authAPI.getCurrentUser();
-      if (res.data.success) {
-        const userData = res.data.data;
-        const walletData = {
-          balance: userData.ecoWallet?.currentBalance || 0,
-          lifetimeEarned: userData.ecoWallet?.lifetimeEarned || 0,
-          lifetimeSpent: userData.ecoWallet?.lifetimeSpent || 0
-        };
-        
-        setWallet(walletData);
-        setTransactions(mockTransactions);
-        setError(null);
-        
-        // Update user context if balance changed
-        if (updateUser && userData.ecoWallet?.currentBalance !== user?.ecoWallet?.currentBalance) {
-          updateUser(userData);
-        }
+      // Fetch wallet info from the new wallet service
+      const walletData = await walletService.getWalletInfo();
+      setWallet(walletData);
+      
+      // Fetch transaction history
+      const transactionResponse = await walletService.getTransactionHistory({ limit: 20 });
+      setTransactions(transactionResponse.transactions);
+      setError(null);
+      
+      // Update user context if balance changed
+      if (updateUser && walletData.currentBalance !== user?.ecoWallet?.currentBalance) {
+        // The AuthContext should handle updating the user state
+        // We could trigger a refresh through AuthContext methods if needed
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to load wallet:', e);
-      setError('Failed to load wallet information');
+      setError(e.message || 'Failed to load wallet information');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -108,10 +46,10 @@ const Wallet: React.FC = () => {
     fetchWallet();
   }, []);
 
-  const getTransactionIcon = (transaction: Transaction) => {
-    if (transaction.type === 'earned') {
-      switch (transaction.source) {
-        case 'collection':
+  const getTransactionIcon = (transaction: WalletTransaction) => {
+    if (transaction.transactionType === 'earned') {
+      switch (transaction.metadata.source) {
+        case 'garbage_collection':
           return (
             <div className="w-10 h-10 bg-eco-green-100 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,6 +58,7 @@ const Wallet: React.FC = () => {
             </div>
           );
         case 'bonus':
+        case 'referral':
           return (
             <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +138,7 @@ const Wallet: React.FC = () => {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
-                <span>{wallet?.balance || 0} EcoTokens</span>
+                <span>{wallet?.currentBalance || 0} EcoTokens</span>
               </div>
 
               {/* Refresh Button */}
@@ -266,7 +205,7 @@ const Wallet: React.FC = () => {
                       </svg>
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{wallet.balance}</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">{wallet.currentBalance}</p>
                   <p className="text-sm text-gray-500">EcoTokens available</p>
                 </div>
               </div>
@@ -282,7 +221,7 @@ const Wallet: React.FC = () => {
                       </svg>
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{wallet.lifetimeEarned}</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">{wallet.totalEarned}</p>
                   <p className="text-sm text-gray-500">EcoTokens earned</p>
                 </div>
               </div>
@@ -298,7 +237,7 @@ const Wallet: React.FC = () => {
                       </svg>
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-gray-900 mb-1">{wallet.lifetimeSpent}</p>
+                  <p className="text-3xl font-bold text-gray-900 mb-1">{wallet.totalSpent}</p>
                   <p className="text-sm text-gray-500">EcoTokens spent</p>
                 </div>
               </div>
@@ -338,7 +277,7 @@ const Wallet: React.FC = () => {
                   <button className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 border border-gray-100 hover:border-gray-200">
                     <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 002 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                     </div>
                     <div className="text-left">
@@ -379,20 +318,20 @@ const Wallet: React.FC = () => {
                 {transactions.slice(0, 3).length > 0 ? (
                   <div className="space-y-4">
                     {transactions.slice(0, 3).map(transaction => (
-                      <div key={transaction.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                      <div key={transaction._id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                         {getTransactionIcon(transaction)}
                         <div className="flex-1">
                           <div className="font-medium text-gray-900 text-sm">
-                            {transaction.description}
+                            {transaction.details.description}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {transaction.date.toLocaleDateString()}
+                            {new Date(transaction.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                         <div className={`text-sm font-semibold ${
-                          transaction.type === 'earned' ? 'text-eco-green-600' : 'text-red-600'
+                          transaction.transactionType === 'earned' ? 'text-eco-green-600' : 'text-red-600'
                         }`}>
-                          {transaction.type === 'earned' ? '+' : '-'}{transaction.amount} tokens
+                          {transaction.transactionType === 'earned' ? '+' : '-'}{transaction.details.amount} tokens
                         </div>
                       </div>
                     ))}
@@ -421,22 +360,22 @@ const Wallet: React.FC = () => {
               {transactions.length > 0 ? (
                 <div className="space-y-4">
                   {transactions.map(transaction => (
-                    <div key={transaction.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div key={transaction._id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       {getTransactionIcon(transaction)}
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <div className="font-medium text-gray-900">
-                            {transaction.description}
+                            {transaction.details.description}
                           </div>
                           <div className={`text-lg font-bold ${
-                            transaction.type === 'earned' ? 'text-eco-green-600' : 'text-red-600'
+                            transaction.transactionType === 'earned' ? 'text-eco-green-600' : 'text-red-600'
                           }`}>
-                            {transaction.type === 'earned' ? '+' : '-'}{transaction.amount} tokens
+                            {transaction.transactionType === 'earned' ? '+' : '-'}{transaction.details.amount} tokens
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="text-sm text-gray-500">
-                            {transaction.date.toLocaleDateString()} • {transaction.source}
+                            {new Date(transaction.createdAt).toLocaleDateString()} • {transaction.metadata.source}
                           </div>
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             transaction.status === 'completed' ? 'bg-eco-green-100 text-eco-green-800' : 'bg-amber-100 text-amber-800'

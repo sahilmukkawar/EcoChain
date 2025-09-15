@@ -25,6 +25,7 @@ import Login from './pages/Login.tsx';
 import Register from './pages/Register.tsx';
 import Achievements from './pages/Achievements.tsx';
 import Wallet from './pages/Wallet.tsx';
+import Orders from './pages/Orders.tsx';
 
 function App() {
   const location = useLocation();
@@ -59,6 +60,7 @@ function App() {
                 <Route path="/order-tracking/:trackingNumber" element={<OrderTracking />} />
                 <Route path="/pickup-scheduling/:collectionId" element={<PickupScheduling />} />
                 <Route path="/help" element={<CustomerHelpCenter />} />
+                <Route path="/orders" element={<ProtectedRoute element={<Orders />} allowedRoles={['user']} />} />
                 <Route path="/achievements" element={<Achievements />} />
                 <Route path="/wallet" element={<ProtectedRoute element={<Wallet />} allowedRoles={['user']} />} />
               </Routes>

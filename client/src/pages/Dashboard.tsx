@@ -81,27 +81,12 @@ const Dashboard: React.FC = () => {
         setCurrentTokenBalance(userTokenBalance);
       }
       
-      fetchOrders();
       fetchWasteRequests();
       fetchLatestUserData();
     } else {
       setLoading(false);
     }
   }, [user]);
-  
-  const fetchOrders = async () => {
-    try {
-      setOrdersLoading(true);
-      const userOrders = await orderService.getUserOrders();
-      setOrders(userOrders);
-      setOrdersError(null);
-    } catch (err: any) {
-      console.error('Error fetching orders:', err);
-      setOrdersError(err.message || 'Failed to load orders');
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
   
   const fetchWasteRequests = async () => {
     try {
@@ -188,7 +173,6 @@ const Dashboard: React.FC = () => {
       
       await Promise.all([
         refreshCollections(),
-        fetchOrders(),
         fetchWasteRequests(),
         fetchLatestUserData()
       ]);
@@ -538,120 +522,9 @@ const Dashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Orders Section */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
-                  <Link 
-                    to="/marketplace" 
-                    className="text-eco-green-600 hover:text-eco-green-700 font-medium text-sm"
-                  >
-                    Browse Marketplace →
-                  </Link>
-                </div>
-              </div>
-
-              {ordersLoading ? (
-                <div className="p-12 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-eco-green-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading your orders...</p>
-                </div>
-              ) : ordersError ? (
-                <div className="p-6">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-red-700">{ordersError}</p>
-                  </div>
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v5a2 2 0 002 2h2a2 2 0 002-2v-5" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No orders yet</h3>
-                  <p className="text-gray-600 mb-6">Explore our eco-friendly marketplace to find sustainable products.</p>
-                  <Link 
-                    to="/marketplace" 
-                    className="inline-flex items-center gap-2 bg-eco-green-600 hover:bg-eco-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                    Browse Marketplace
-                  </Link>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tokens Used</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {orders.slice(0, 5).map((order) => (
-                        <tr key={order._id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            #{order._id.substring(0, 8)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(order.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              getOrderStatusClass(order.status)
-                            }`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ₹{order.totalPrice}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-eco-green-600">
-                            {order.totalTokenPrice}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className="flex gap-2">
-                              <Link 
-                                to={`/order-confirmation/${order._id}`} 
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-xs font-medium rounded-lg transition-colors"
-                              >
-                                View
-                              </Link>
-                              {order.trackingNumber && (
-                                <Link 
-                                  to={`/order-tracking/${order.trackingNumber}`} 
-                                  className="bg-eco-green-500 hover:bg-eco-green-600 text-white px-3 py-1 text-xs font-medium rounded-lg transition-colors"
-                                >
-                                  Track
-                                </Link>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {orders.length > 5 && (
-                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 text-center">
-                      <Link 
-                        to="/orders" 
-                        className="text-eco-green-600 hover:text-eco-green-700 font-medium text-sm"
-                      >
-                        View All {orders.length} Orders →
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* Orders Section - REMOVED */}
+            {/* This section has been moved to the new Orders page */}
+            
           </div>
         </div>
       </div>
