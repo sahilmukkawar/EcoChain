@@ -776,6 +776,239 @@ const debugPaymentHistory = async (req, res) => {
   }
 };
 
+/**
+ * Get analytics data for admin dashboard
+ */
+const getAnalyticsData = async (req, res) => {
+  try {
+    console.log('Analytics request received:', req.user);
+    
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      console.log('User role check failed:', req.user.role);
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { period = 'monthly', dateFrom, dateTo } = req.query;
+    console.log('Analytics request params:', { period, dateFrom, dateTo });
+    
+    // Build date range filter
+    const dateFilter = {};
+    if (dateFrom) dateFilter.$gte = new Date(dateFrom);
+    if (dateTo) dateFilter.$lte = new Date(dateTo);
+    
+    // Get platform metrics
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ 
+      lastLoginAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
+    });
+    const totalCollectors = await User.countDocuments({ role: 'collector' });
+    const totalFactories = await User.countDocuments({ role: 'factory' });
+    
+    // Get total garbage collected
+    const garbageStats = await GarbageCollection.aggregate([
+      { $match: { status: { $in: ['completed', 'delivered', 'verified'] } } },
+      { $group: { _id: null, totalWeight: { $sum: '$collectionDetails.weight' } } }
+    ]);
+    const totalGarbageCollected = garbageStats[0]?.totalWeight || 0;
+    
+    // Get total tokens issued
+    const tokenStats = await GarbageCollection.aggregate([
+      { $match: { 'tokenCalculation.totalTokensIssued': { $exists: true } } },
+      { $group: { _id: null, totalTokens: { $sum: '$tokenCalculation.totalTokensIssued' } } }
+    ]);
+    const totalTokensIssued = tokenStats[0]?.totalTokens || 0;
+    
+    // Get total revenue (sum of all collector payments)
+    const revenueStats = await GarbageCollection.aggregate([
+      { $match: { 'payment.collectorPaid': true, 'payment.collectorPaymentAmount': { $exists: true } } },
+      { $group: { _id: null, totalRevenue: { $sum: '$payment.collectorPaymentAmount' } } }
+    ]);
+    const totalRevenue = revenueStats[0]?.totalRevenue || 0;
+    
+    // Get environmental impact metrics (estimated)
+    // Based on industry standards: 1kg of recycled waste saves ~0.5kg CO2, ~0.01 trees, ~0.2kWh energy, ~0.5L water
+    const co2Saved = totalGarbageCollected * 0.5; // kg CO2 equivalent
+    const treesEquivalent = totalGarbageCollected * 0.01; // trees
+    const energySaved = totalGarbageCollected * 0.2; // kWh
+    const waterSaved = totalGarbageCollected * 0.5; // liters
+    
+    // Get business metrics
+    // For now, we'll use placeholder values since we don't have order data in this model
+    const ordersPlaced = 0;
+    const averageOrderValue = 0;
+    const customerRetentionRate = 0;
+    const factorySatisfactionScore = 0;
+    
+    // Get top performers
+    // Top users by collections
+    const topUsers = await GarbageCollection.aggregate([
+      { $match: { status: { $in: ['completed', 'delivered', 'verified'] } } },
+      { $group: { 
+          _id: '$userId', 
+          collections: { $sum: 1 },
+          totalWeight: { $sum: '$collectionDetails.weight' }
+      } },
+      { $sort: { collections: -1 } },
+      { $limit: 5 },
+      { $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+      } },
+      { $unwind: '$user' },
+      { $project: {
+          _id: '$_id',
+          name: { $ifNull: ['$user.personalInfo.name', 'Unknown User'] },
+          collections: 1,
+          tokens: { $multiply: ['$totalWeight', 10] } // Estimate tokens based on weight
+      } }
+    ]).catch(err => {
+      console.error('Error in topUsers aggregation:', err);
+      return [];
+    });
+    
+    // Top collectors by earnings
+    const topCollectors = await User.find({ role: 'collector' })
+      .sort({ 'collectorStats.totalEarnings': -1 })
+      .limit(5)
+      .select('personalInfo.name collectorStats.totalEarnings collectorStats.totalCollections');
+    
+    const formattedTopCollectors = topCollectors.map(collector => ({
+      _id: collector._id,
+      name: collector.personalInfo.name,
+      collections: collector.collectorStats?.totalCollections || 0,
+      earnings: collector.collectorStats?.totalEarnings || 0
+    }));
+    
+    // Top factories by materials processed (using collections as proxy)
+    const topFactories = await GarbageCollection.aggregate([
+      { $match: { factoryId: { $exists: true }, status: { $in: ['delivered', 'verified', 'completed'] } } },
+      { $group: { 
+          _id: '$factoryId', 
+          materials: { $sum: '$collectionDetails.weight' },
+          collections: { $sum: 1 }
+      } },
+      { $sort: { materials: -1 } },
+      { $limit: 5 },
+      { $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'factory'
+      } },
+      { $unwind: '$factory' },
+      { $project: {
+          _id: '$_id',
+          name: {
+            $concat: [
+              { $ifNull: ['$factory.companyInfo.name', ''] },
+              ' ',
+              { $ifNull: ['$factory.personalInfo.name', ''] }
+            ]
+          },
+          materials: 1
+      } }
+    ]).catch(err => {
+      console.error('Error in topFactories aggregation:', err);
+      return [];
+    });
+
+    // Waste type distribution
+    const wasteTypeDistribution = await GarbageCollection.aggregate([
+      { $match: { status: { $in: ['completed', 'delivered', 'verified'] } } },
+      { $group: { 
+          _id: '$collectionDetails.type', 
+          count: { $sum: 1 },
+          totalWeight: { $sum: '$collectionDetails.weight' }
+      } },
+      { $sort: { totalWeight: -1 } }
+    ]);
+    
+    // Calculate percentages
+    const totalCollectionsCount = wasteTypeDistribution.reduce((sum, item) => sum + item.count, 0);
+    const formattedWasteTypeDistribution = wasteTypeDistribution.map(item => ({
+      type: item._id,
+      count: item.count,
+      weight: item.totalWeight,
+      percentage: totalCollectionsCount > 0 ? (item.count / totalCollectionsCount) * 100 : 0
+    }));
+    
+    // Collection trends (last 7 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+    
+    const collectionTrends = await GarbageCollection.aggregate([
+      { $match: { 
+          status: { $in: ['completed', 'delivered', 'verified'] },
+          createdAt: { $gte: startDate, $lte: endDate }
+      } },
+      { $group: {
+          _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          collections: { $sum: 1 },
+          totalWeight: { $sum: '$collectionDetails.weight' }
+      } },
+      { $sort: { _id: 1 } }
+    ]);
+    
+    const formattedCollectionTrends = collectionTrends.map(item => ({
+      date: item._id,
+      collections: item.collections,
+      weight: item.totalWeight
+    }));
+    
+    console.log('Analytics data fetched successfully');
+    
+    res.json({
+      success: true,
+      data: {
+        platformMetrics: {
+          totalUsers,
+          activeUsers,
+          totalCollectors,
+          totalFactories,
+          totalGarbageCollected,
+          totalTokensIssued,
+          totalRevenue
+        },
+        environmentalImpact: {
+          co2Saved,
+          treesEquivalent,
+          energySaved,
+          waterSaved
+        },
+        businessMetrics: {
+          ordersPlaced,
+          averageOrderValue,
+          customerRetentionRate,
+          factorySatisfactionScore
+        },
+        topPerformers: {
+          topUsers,
+          topCollectors: formattedTopCollectors,
+          topFactories
+        },
+        wasteTypeDistribution: formattedWasteTypeDistribution,
+        collectionTrends: formattedCollectionTrends
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching analytics data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch analytics data',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getCollectionsForPayment,
   processCollectorPayment,
@@ -785,5 +1018,6 @@ module.exports = {
   getAllFactories,
   getPaymentHistory,
   getPaymentStatistics,
-  debugPaymentHistory
+  debugPaymentHistory,
+  getAnalyticsData // Add this export
 };

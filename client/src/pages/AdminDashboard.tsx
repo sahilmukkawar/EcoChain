@@ -10,6 +10,7 @@ import adminService, {
   PaymentStatistics
 } from '../services/adminService.ts';
 import websocketService from '../services/websocketService.ts';
+import Analytics from '../components/Analytics.tsx';
 import {
   BarChart3,
   Users,
@@ -25,8 +26,6 @@ import {
   X,
   Leaf,
   MoreHorizontal,
-  Download,
-  Filter,
   Clock
 } from 'lucide-react';
 
@@ -145,7 +144,7 @@ const AdminDashboard: React.FC = () => {
   const [collectionsForPayment, setCollectionsForPayment] = useState<CollectionForPayment[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [paymentStats, setPaymentStats] = useState<PaymentStatistics | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'history'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'history' | 'analytics'>('overview');
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
 
@@ -682,14 +681,15 @@ const AdminDashboard: React.FC = () => {
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'payments', label: 'Pending Payments', icon: DollarSign, badge: collectionsForPayment.length },
-              { id: 'history', label: 'Payment History', icon: Clock }
+              { id: 'history', label: 'Payment History', icon: Clock },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 }
             ].map(tab => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => {
-                    setActiveTab(tab.id as 'overview' | 'payments' | 'history');
+                    setActiveTab(tab.id as 'overview' | 'payments' | 'history' | 'analytics');
                     if (tab.id === 'overview') {
                       setTimeout(refreshAdminData, 100);
                     } else if (tab.id === 'payments') {
@@ -1010,101 +1010,109 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Pending Payments Tab */}
+        {/* Payments Tab */}
         {activeTab === 'payments' && (
           <div className="space-y-6">
-            {collectionsForPayment.length > 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Collector Payment Approvals</h3>
-                      <p className="text-sm text-gray-500 mt-1">{collectionsForPayment.length} collection{collectionsForPayment.length !== 1 ? 's' : ''} pending approval</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                        <Download size={16} />
-                        Export
-                      </button>
-                      <button
-                        onClick={refreshAdminData}
-                        disabled={loading}
-                        className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg ${loading ? 'bg-gray-100 text-gray-400' : 'bg-green-500 hover:bg-green-600 text-white'
-                          }`}
-                      >
-                        <RefreshCw className={loading ? 'animate-spin' : ''} size={16} />
-                        Refresh
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Pending Collector Payments</h2>
+              <button
+                onClick={refreshAdminData}
+                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+              >
+                <RefreshCw size={16} />
+                Refresh
+              </button>
+            </div>
 
+            {collectionsForPayment.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <CheckCircle className="mx-auto text-green-500" size={48} />
+                <h3 className="mt-4 text-lg font-medium text-gray-900">No pending payments</h3>
+                <p className="mt-2 text-gray-500">All collector payments have been processed.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collection</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collector</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waste Details</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Collection ID
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Collector
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Waste Details
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tokens
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Calculated Payment
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {collectionsForPayment.map(collection => {
-                        const calculatedPayment = calculatePayment(collection);
-                        return (
-                          <tr key={collection._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4">
-                              <div className="font-medium text-green-600 text-sm">{collection.collectionId}</div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div>
-                                <div className="font-medium text-gray-900 text-sm">{collection.collectorId?.personalInfo?.name}</div>
-                                <div className="text-gray-500 text-xs">{collection.collectorId?.personalInfo?.email}</div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm text-gray-900">{collection.userId?.personalInfo?.name}</div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div>
-                                <div className="text-sm font-medium text-gray-900 capitalize">{collection.collectionDetails?.type}</div>
-                                <div className="text-xs text-gray-500">{collection.collectionDetails?.weight} kg • {collection.collectionDetails?.quality}</div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="font-semibold text-green-600">₹{calculatedPayment}</div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleProcessPayment(collection._id)}
-                                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleRejectCollection(collection._id)}
-                                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {collectionsForPayment.map((collection) => (
+                        <tr key={collection._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{collection.collectionId}</div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(collection.updatedAt).toLocaleDateString()}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{collection.userId.personalInfo.name}</div>
+                            <div className="text-xs text-gray-500">{collection.userId.personalInfo.email}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{collection.collectorId.personalInfo.name}</div>
+                            <div className="text-xs text-gray-500">{collection.collectorId.personalInfo.email}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 capitalize">{collection.collectionDetails.type}</div>
+                            <div className="text-xs text-gray-500">
+                              {collection.collectionDetails.weight} kg • {collection.collectionDetails.quality}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-green-600">
+                              {collection.tokenCalculation?.totalTokensIssued || 0} tokens
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              ₹{calculatePayment(collection).toFixed(2)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleProcessPayment(collection._id)}
+                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                              >
+                                Approve & Pay
+                              </button>
+                              <button
+                                onClick={() => handleRejectCollection(collection._id)}
+                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <CheckCircle className="mx-auto text-green-500 mb-4" size={48} />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">All Payments Current</h3>
-                <p className="text-gray-500">No collector payments are pending approval at this time.</p>
               </div>
             )}
           </div>
@@ -1113,221 +1121,140 @@ const AdminDashboard: React.FC = () => {
         {/* Payment History Tab */}
         {activeTab === 'history' && (
           <div className="space-y-6">
-            {/* Payment Filters */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter Payment History</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Action</label>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">Payment History</h2>
+              <div className="flex gap-3">
+                <div className="relative">
                   <select
                     value={paymentFilters.action}
-                    onChange={(e) => setPaymentFilters({ ...paymentFilters, action: e.target.value as '' | 'approved' | 'rejected' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    onChange={(e) => setPaymentFilters(prev => ({ ...prev, action: e.target.value as any }))}
+                    className="border border-gray-300 rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   >
                     <option value="">All Actions</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Waste Type</label>
-                  <select
-                    value={paymentFilters.wasteType}
-                    onChange={(e) => setPaymentFilters({ ...paymentFilters, wasteType: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">All Types</option>
-                    <option value="plastic">Plastic</option>
-                    <option value="paper">Paper</option>
-                    <option value="metal">Metal</option>
-                    <option value="glass">Glass</option>
-                    <option value="electronic">Electronic</option>
-                    <option value="organic">Organic</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
-                  <input
-                    type="date"
-                    value={paymentFilters.dateFrom}
-                    onChange={(e) => setPaymentFilters({ ...paymentFilters, dateFrom: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
-                  <input
-                    type="date"
-                    value={paymentFilters.dateTo}
-                    onChange={(e) => setPaymentFilters({ ...paymentFilters, dateTo: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-6">
                 <button
-                  onClick={fetchPaymentHistory}
-                  disabled={loading}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm ${loading ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'
-                    }`}
+                  onClick={() => {
+                    fetchPaymentHistory();
+                    fetchPaymentStats();
+                  }}
+                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
                 >
-                  <Filter size={16} />
-                  Apply Filters
+                  <RefreshCw size={16} />
+                  Refresh
                 </button>
               </div>
             </div>
 
-            {/* Payment Statistics */}
             {paymentStats && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Payments</p>
-                      <p className="text-3xl font-bold text-gray-900 mt-2">{paymentStats.overview.totalPayments}</p>
-                    </div>
-                    <div className="h-12 w-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                      <BarChart3 className="text-blue-600" size={24} />
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="text-sm font-medium text-gray-500">Total Payments</div>
+                  <div className="text-2xl font-bold text-gray-900 mt-1">{paymentStats.overview.totalPayments}</div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Amount</p>
-                      <p className="text-3xl font-bold text-gray-900 mt-2">₹{paymentStats.overview.totalAmountPaid.toLocaleString()}</p>
-                    </div>
-                    <div className="h-12 w-12 bg-green-50 rounded-lg flex items-center justify-center">
-                      <DollarSign className="text-green-600" size={24} />
-                    </div>
-                  </div>
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="text-sm font-medium text-gray-500">Approved</div>
+                  <div className="text-2xl font-bold text-green-600 mt-1">{paymentStats.overview.approvedPayments}</div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Approved</p>
-                      <p className="text-3xl font-bold text-green-600 mt-2">{paymentStats.overview.approvedPayments}</p>
-                    </div>
-                    <div className="h-12 w-12 bg-green-50 rounded-lg flex items-center justify-center">
-                      <CheckCircle className="text-green-600" size={24} />
-                    </div>
-                  </div>
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="text-sm font-medium text-gray-500">Rejected</div>
+                  <div className="text-2xl font-bold text-red-600 mt-1">{paymentStats.overview.rejectedPayments}</div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Rejected</p>
-                      <p className="text-3xl font-bold text-red-600 mt-2">{paymentStats.overview.rejectedPayments}</p>
-                    </div>
-                    <div className="h-12 w-12 bg-red-50 rounded-lg flex items-center justify-center">
-                      <AlertCircle className="text-red-600" size={24} />
-                    </div>
-                  </div>
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="text-sm font-medium text-gray-500">Total Amount</div>
+                  <div className="text-2xl font-bold text-gray-900 mt-1">₹{paymentStats.overview.totalAmountPaid.toLocaleString()}</div>
+                </div>
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="text-sm font-medium text-gray-500">Avg Payment</div>
+                  <div className="text-2xl font-bold text-gray-900 mt-1">₹{paymentStats.overview.avgPaymentAmount.toFixed(2)}</div>
                 </div>
               </div>
             )}
 
-            {/* Payment History Table */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
-                  <button className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                    <Download size={16} />
-                    Export
-                  </button>
-                </div>
-              </div>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collection</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collector</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waste</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Payment ID
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Collection
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        User
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Collector
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Waste Details
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {paymentHistory.length > 0 ? paymentHistory.map((payment) => (
+                    {paymentHistory.map((payment) => (
                       <tr key={payment.paymentId} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {payment.processedAt
-                          ? new Date(payment.processedAt).toLocaleDateString() + ' ' + new Date(payment.processedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                          : 'N/A'}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{payment.paymentId.slice(-8)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-green-600 text-sm">{payment.collectionId}</div>
+                          <div className="text-sm font-medium text-gray-900">{payment.collectionId}</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-medium text-gray-900 text-sm">{payment.collectorName || 'N/A'}</div>
-                            <div className="text-gray-500 text-xs">{payment.collectorEmail || 'N/A'}</div>
-                          </div>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{payment.userName}</div>
+                          <div className="text-xs text-gray-500">{payment.collectorEmail}</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-medium text-gray-900 text-sm">{payment.userName || 'N/A'}</div>
-                            <div className="text-gray-500 text-xs">{payment.userName || 'N/A'}</div>
-                          </div>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{payment.collectorName}</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 capitalize">{payment.wasteType || 'N/A'}</div>
-                            <div className="text-xs text-gray-500">{payment.weight || 0} kg</div>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 capitalize">{payment.wasteType}</div>
+                          <div className="text-xs text-gray-500">
+                            {payment.weight} kg • {payment.quality}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-semibold text-green-600">₹{(payment.amount || 0).toLocaleString()}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {payment.amount ? `₹${payment.amount.toFixed(2)}` : 'N/A'}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${payment.status === 'approved'
-                            ? 'bg-green-100 text-green-800'
-                            : payment.status === 'rejected'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                            }`}>
-                            {payment.status || 'N/A'}
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            payment.action === 'approved' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {payment.action}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                          {payment.adminNotes || 'No notes'}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(payment.processedAt).toLocaleDateString()}
                         </td>
                       </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center">
-                          <div className="text-gray-500">
-                            {loading ? (
-                              <div className="flex items-center justify-center gap-2">
-                                <RefreshCw className="animate-spin" size={20} />
-                                <span>Loading payment history...</span>
-                              </div>
-                            ) : (
-                              <div>
-                                <Clock className="mx-auto text-gray-400 mb-3" size={32} />
-                                <p className="text-lg font-medium">No payment history found</p>
-                                <p className="text-sm">Try adjusting your filters or check back later</p>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <Analytics />
         )}
       </div>
     </div>

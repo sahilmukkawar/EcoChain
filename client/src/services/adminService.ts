@@ -128,6 +128,61 @@ export interface PaymentStatistics {
   }>;
 }
 
+// New interface for analytics data
+export interface AnalyticsData {
+  platformMetrics: {
+    totalUsers: number;
+    activeUsers: number;
+    totalCollectors: number;
+    totalFactories: number;
+    totalGarbageCollected: number;
+    totalTokensIssued: number;
+    totalRevenue: number;
+  };
+  environmentalImpact: {
+    co2Saved: number;
+    treesEquivalent: number;
+    energySaved: number;
+    waterSaved: number;
+  };
+  businessMetrics: {
+    ordersPlaced: number;
+    averageOrderValue: number;
+    customerRetentionRate: number;
+    factorySatisfactionScore: number;
+  };
+  topPerformers: {
+    topUsers: Array<{
+      _id: string;
+      name: string;
+      collections: number;
+      tokens: number;
+    }>;
+    topCollectors: Array<{
+      _id: string;
+      name: string;
+      collections: number;
+      earnings: number;
+    }>;
+    topFactories: Array<{
+      _id: string;
+      name: string;
+      materials: number;
+    }>;
+  };
+  wasteTypeDistribution: Array<{
+    type: string;
+    count: number;
+    weight: number;
+    percentage: number;
+  }>;
+  collectionTrends: Array<{
+    date: string;
+    collections: number;
+    weight: number;
+  }>;
+}
+
 class AdminService {
   private readonly baseURL = '/admin';
 
@@ -264,6 +319,30 @@ class AdminService {
     } catch (error: any) {
       console.error('Error fetching payment statistics:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch payment statistics');
+    }
+  }
+
+  // Get analytics data
+  async getAnalyticsData(filters: {
+    period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    dateFrom?: string;
+    dateTo?: string;
+  } = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add filters to query params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
+      
+      const response = await api.get(`${this.baseURL}/analytics?${queryParams.toString()}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching analytics data:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch analytics data');
     }
   }
 }

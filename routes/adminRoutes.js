@@ -28,6 +28,9 @@ router.get('/payments/history', authenticate, adminController.getPaymentHistory)
 // Get payment statistics
 router.get('/payments/statistics', authenticate, adminController.getPaymentStatistics);
 
+// Get analytics data
+router.get('/analytics', authenticate, adminController.getAnalyticsData);
+
 // Debug payment history (temporary)
 router.get('/debug/payment-history', authenticate, adminController.debugPaymentHistory);
 
