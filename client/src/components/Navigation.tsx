@@ -13,7 +13,6 @@ import {
   Settings,
   BarChart3,
   Users,
-  Wrench,
   Factory,
   Package,
   Recycle,
@@ -110,7 +109,7 @@ const Navigation: React.FC = () => {
         return [
           ...commonItems,
           { to: "/admin-dashboard", label: "Dashboard", icon: LayoutDashboard },
-          { to: "/analytics", label: "Analytics", icon: BarChart3 },
+          { to: "/admin-dashboard/analytics", label: "Analytics", icon: BarChart3 },
           { to: "/users", label: "Manage Users", icon: Users },
           { to: "/system-config", label: "System Config", icon: Settings },
         ];

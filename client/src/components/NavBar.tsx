@@ -37,7 +37,7 @@ const NavBar: React.FC = () => {
     admin: [
       { to: '/admin', label: 'Admin' },
       { to: '/users', label: 'Users' },
-      { to: '/analytics', label: 'Analytics' },
+      { to: '/admin-dashboard/analytics', label: 'Analytics' },
       { to: '/config', label: 'Config' }
     ],
     guest: [

@@ -12,6 +12,7 @@ import Marketplace from './pages/Marketplace.tsx';
 import WasteSubmission from './pages/WasteSubmission.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import AdminDashboard from './pages/AdminDashboard.tsx';
+import Analytics from './components/Analytics.tsx';
 import FactoryDashboard from './pages/FactoryDashboard.tsx';
 import FactoryProductManagement from './pages/FactoryProductManagement.tsx';
 import CollectorDashboard from './pages/CollectorDashboard.tsx';
@@ -53,6 +54,7 @@ function App() {
                 <Route path="/waste-submission" element={<WasteSubmission />} />
                 <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['user']} />} />
                 <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
+                <Route path="/admin-dashboard/analytics" element={<ProtectedRoute element={<Analytics />} allowedRoles={['admin']} />} />
                 <Route path="/factory-dashboard" element={<ProtectedRoute element={<FactoryDashboard />} allowedRoles={['factory']} />} />
                 <Route path="/factory-product-management" element={<ProtectedRoute element={<FactoryProductManagement />} allowedRoles={['factory']} />} />
                 <Route path="/factory-orders" element={<ProtectedRoute element={<FactoryOrders />} allowedRoles={['factory']} />} />

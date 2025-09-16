@@ -9,9 +9,7 @@ import {
   ShoppingCart,
   CreditCard,
   Leaf,
-  Star,
   Plus,
-  Minus,
   Package,
   Building2,
   ChevronLeft,
@@ -21,8 +19,7 @@ import {
   X,
   Grid3X3,
   List,
-  SortAsc,
-  SortDesc
+  Check
 } from 'lucide-react';
 
 interface Product {
@@ -55,7 +52,7 @@ const mapApiProductToProduct = (apiProduct: PopulatedMarketplaceItem): Product =
 });
 
 const Marketplace: React.FC = () => {
-  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, tokenTotal } = useCart();
+  const { cart, addToCart } = useCart();
   const { user } = useAuth();
   const totalEcoTokens = user?.ecoWallet?.currentBalance || 0;
 
@@ -69,6 +66,7 @@ const Marketplace: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [addedToCartItems, setAddedToCartItems] = useState<Record<string, boolean>>({});
   const pageSize = 12;
 
   // Fetch products from backend
@@ -121,19 +119,33 @@ const Marketplace: React.FC = () => {
   // Get unique categories from products
   const categories = ['all', ...new Set(products.map(product => product.category || 'uncategorized'))];
   const totalPages = Math.max(1, Math.ceil(computed.total / pageSize));
-  const lowStockCount = products.filter(p => p.stock > 0 && p.stock <= 10).length;
 
-  // Handle cart item quantity
-  const getCartQuantity = (productId: string) => {
-    const cartItem = cart.find(item => item.id === productId);
-    return cartItem ? cartItem.quantity : 0;
-  };
+
 
   const clearAllFilters = () => {
     setSearchTerm('');
     setActiveCategory('all');
     setSortBy('popular');
     setPage(1);
+  };
+
+  // Function to handle adding to cart with feedback
+  const handleAddToCart = (product: Product) => {
+    addToCart(product);
+    
+    // Show added to cart feedback
+    setAddedToCartItems(prev => ({
+      ...prev,
+      [product.id]: true
+    }));
+    
+    // Hide the feedback after 1 second
+    setTimeout(() => {
+      setAddedToCartItems(prev => ({
+        ...prev,
+        [product.id]: false
+      }));
+    }, 450);
   };
 
   // Ensure cart is defined
@@ -202,7 +214,7 @@ const Marketplace: React.FC = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-24">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">EcoChain Marketplace</h1>
               <p className="text-sm text-gray-500">Welcome back, {user?.name}! Discover eco-friendly products</p>
@@ -219,6 +231,7 @@ const Marketplace: React.FC = () => {
                     {totalEcoTokens?.toLocaleString() || 0}
                   </div>
                   <div className="text-xs text-green-600 font-medium">EcoTokens Available</div>
+                  <div className="text-xs text-green-600 font-medium">1 EcoTokens = 2 ₹</div>
                 </div>
               </div>
 
@@ -245,24 +258,6 @@ const Marketplace: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Low Stock Alert */}
-      {lowStockCount > 0 && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-amber-800 font-medium text-sm">
-                  Inventory Alert: {lowStockCount} product{lowStockCount !== 1 ? 's' : ''} running low on stock
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search and Filters */}
@@ -293,97 +288,96 @@ const Marketplace: React.FC = () => {
           </div>
 
           {/* Filter Controls */}
-         
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors sm:hidden"
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors sm:hidden"
+              >
+                <Filter size={16} />
+                <span className="text-sm font-medium">Filters</span>
+              </button>
+
+              {/* Sort Dropdown */}
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value as any);
+                    setPage(1);
+                  }}
+                  className="appearance-none bg-gray-50 border border-gray-300 text-gray-900 py-2 pl-3 pr-8 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors text-sm font-medium"
                 >
-                  <Filter size={16} />
-                  <span className="text-sm font-medium">Filters</span>
-                </button>
-
-                {/* Sort Dropdown */}
-                <div className="relative">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value as any);
-                      setPage(1);
-                    }}
-                    className="appearance-none bg-gray-50 border border-gray-300 text-gray-900 py-2 pl-3 pr-8 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-colors text-sm font-medium"
-                  >
-                    <option value="popular">Most Popular</option>
-                    <option value="price_low">Price: Low to High</option>
-                    <option value="price_high">Price: High to Low</option>
-                    <option value="rating">Top Rated</option>
-                  </select>
-                </div>
-
-                {/* Results Count */}
-                <span className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
-                  {computed.total} product{computed.total !== 1 ? 's' : ''}
-                </span>
+                  <option value="popular">Most Popular</option>
+                  <option value="price_low">Price: Low to High</option>
+                  <option value="price_high">Price: High to Low</option>
+                  <option value="rating">Top Rated</option>
+                </select>
               </div>
 
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-white text-green-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Grid3X3 size={16} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-md transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-white text-green-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <List size={16} />
-                </button>
-              </div>
+              {/* Results Count */}
+              <span className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
+                {computed.total} product{computed.total !== 1 ? 's' : ''}
+              </span>
             </div>
 
-            {/* Category Filters */}
-            <div className={`${showFilters ? 'block' : 'hidden sm:block'}`}>
-              <div className="flex flex-wrap gap-2">
-                {categories.map(category => (
-                  <button
-                    key={category}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                      activeCategory === category
-                        ? 'bg-green-500 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                    onClick={() => {
-                      setActiveCategory(category);
-                      setPage(1);
-                    }}
-                  >
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </button>
-                ))}
-
-                {(searchTerm || activeCategory !== 'all' || sortBy !== 'popular') && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg font-medium text-sm transition-colors"
-                  >
-                    <X size={14} />
-                    <span>Clear All</span>
-                  </button>
-                )}
-              </div>
-            </div>
           
+
+          {/* Category Filters */}
+          <div className={`${showFilters ? 'block' : 'hidden sm:block'}`}>
+            <div className="flex flex-wrap gap-2">
+              {categories.map(category => (
+                <button
+                  key={category}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                    activeCategory === category
+                      ? 'bg-green-500 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                  onClick={() => {
+                    setActiveCategory(category);
+                    setPage(1);
+                  }}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </button>
+              ))}
+
+              {(searchTerm || activeCategory !== 'all' || sortBy !== 'popular') && (
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg font-medium text-sm transition-colors"
+                >
+                  <X size={14} />
+                  <span>Clear All</span>
+                </button>
+              )}
+            </div>
+          </div>
+          {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-green-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Grid3X3 size={16} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white text-green-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <List size={16} />
+              </button>
+            </div>
+        </div>
         </div>
 
         {/* Products Grid/List */}
@@ -395,7 +389,7 @@ const Marketplace: React.FC = () => {
                 : "space-y-6"
             }>
               {filteredProducts.map(product => {
-                const cartQuantity = getCartQuantity(product.id);
+                const isAddedToCart = addedToCartItems[product.id];
 
                 return viewMode === 'grid' ? (
                   // Grid View
@@ -465,36 +459,35 @@ const Marketplace: React.FC = () => {
 
                       {/* Action Buttons */}
                       <div className="flex gap-2">
-                        {cartQuantity > 0 ? (
-                          <div className="flex items-center flex-1 bg-gray-100 rounded-lg">
-                            <button
-                              onClick={() => updateQuantity(product.id, Math.max(0, cartQuantity - 1))}
-                              className="p-3 hover:bg-gray-200 rounded-l-lg transition-colors"
-                              disabled={product.status === 'sold_out'}
-                            >
-                              <Minus size={16} />
-                            </button>
-                            <span className="flex-1 text-center font-semibold py-3">
-                              {cartQuantity}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(product.id, cartQuantity + 1)}
-                              className="p-3 hover:bg-gray-200 rounded-r-lg transition-colors"
-                              disabled={product.status === 'sold_out'}
-                            >
-                              <Plus size={16} />
-                            </button>
-                          </div>
+                        {isAddedToCart ? (
+                          <button
+                            className="flex-1 flex items-center justify-center gap-2 bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-sm"
+                            disabled
+                          >
+                            <Check size={16} />
+                            <span className="text-sm">Added</span>
+                          </button>
                         ) : (
                           <button
-                            onClick={() => addToCart(product)}
+                            onClick={() => handleAddToCart(product)}
                             disabled={product.status === 'sold_out'}
-                            className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                            className={`flex-1 flex items-center justify-center gap-2 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md ${
+                              product.status === 'sold_out' 
+                                ? 'bg-gray-400' 
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
                           >
-                            {product.status === 'sold_out' ? <Package size={16} /> : <Plus size={16} />}
-                            <span className="text-sm">
-                              {product.status === 'sold_out' ? 'Sold Out' : 'Add to Cart'}
-                            </span>
+                            {product.status === 'sold_out' ? (
+                              <>
+                                <Package size={16} />
+                                <span className="text-sm">Sold Out</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus size={16} />
+                                <span className="text-sm">Add to Cart</span>
+                              </>
+                            )}
                           </button>
                         )}
                       </div>
@@ -565,32 +558,35 @@ const Marketplace: React.FC = () => {
 
                           {/* Action Buttons */}
                           <div className="flex items-center gap-3">
-                            {cartQuantity > 0 ? (
-                              <div className="flex items-center bg-gray-100 rounded-lg">
-                                <button
-                                  onClick={() => updateQuantity(product.id, Math.max(0, cartQuantity - 1))}
-                                  className="p-3 hover:bg-gray-200 rounded-l-lg transition-colors"
-                                  disabled={product.status === 'sold_out'}
-                                >
-                                  <Minus size={16} />
-                                </button>
-                                <span className="px-4 py-3 font-semibold">{cartQuantity}</span>
-                                <button
-                                  onClick={() => updateQuantity(product.id, cartQuantity + 1)}
-                                  className="p-3 hover:bg-gray-200 rounded-r-lg transition-colors"
-                                  disabled={product.status === 'sold_out'}
-                                >
-                                  <Plus size={16} />
-                                </button>
-                              </div>
+                            {isAddedToCart ? (
+                              <button
+                                className="flex items-center gap-2 bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-sm"
+                                disabled
+                              >
+                                <Check size={16} />
+                                <span>Added</span>
+                              </button>
                             ) : (
                               <button
-                                onClick={() => addToCart(product)}
+                                onClick={() => handleAddToCart(product)}
                                 disabled={product.status === 'sold_out'}
-                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                                className={`flex items-center gap-2 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md ${
+                                  product.status === 'sold_out' 
+                                    ? 'bg-gray-400' 
+                                    : 'bg-green-600 hover:bg-green-700'
+                                }`}
                               >
-                                {product.status === 'sold_out' ? <Package size={16} /> : <Plus size={16} />}
-                                <span>{product.status === 'sold_out' ? 'Sold Out' : 'Add to Cart'}</span>
+                                {product.status === 'sold_out' ? (
+                                  <>
+                                    <Package size={16} />
+                                    <span>Sold Out</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus size={16} />
+                                    <span>Add to Cart</span>
+                                  </>
+                                )}
                               </button>
                             )}
                           </div>
