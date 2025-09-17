@@ -64,12 +64,36 @@ const Dashboard: React.FC = () => {
   const fetchWasteRequests = async () => {
     try {
       setWasteLoading(true);
+      setWasteError(null); // Clear previous errors
       const response = await wasteService.getUserSubmissions();
-      setWasteRequests(response.data.collections || []);
-      setWasteError(null);
+      
+      // Check if response.data exists and has collections property
+      if (response && response.data) {
+        setWasteRequests(response.data.collections || []);
+      } else {
+        // Handle empty or unexpected response format
+        setWasteRequests([]);
+        throw new Error('No waste submissions data available');
+      }
     } catch (err: any) {
       console.error('Error fetching waste requests:', err);
-      setWasteError(err.message || 'Failed to load waste requests');
+      
+      // Enhanced error handling with more specific messages
+      let errorMessage = 'Failed to load waste requests. Please try again later.';
+      
+      if (err.message.includes('Authentication required')) {
+        errorMessage = 'Please log in to view your waste submissions.';
+      } else if (err.message.includes('No submissions found')) {
+        // This is not really an error, just set empty array and don't show error
+        setWasteRequests([]);
+        setWasteError(null);
+        setWasteLoading(false);
+        return;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setWasteError(errorMessage);
     } finally {
       setWasteLoading(false);
     }

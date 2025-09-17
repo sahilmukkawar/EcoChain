@@ -5,25 +5,26 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../database/models');
 const { authenticate } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { 
-      name, 
-      email, 
-      password, 
-      phone, 
+    const {
+      name,
+      email,
+      password,
+      phone,
       role = 'user',
-      address 
+      address
     } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ 'personalInfo.email': email });
     if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User with this email already exists' 
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
       });
     }
 
@@ -82,26 +83,26 @@ router.post('/login', async (req, res) => {
     // Find user and include password for verification
     const user = await User.findOne({ 'personalInfo.email': email }).select('+password');
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid email or password' 
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
       });
     }
 
     // Check password
     const isPasswordValid = await user.matchPassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid email or password' 
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
       });
     }
 
     // Check account status
     if (user.accountStatus !== 'active') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Account is suspended or inactive' 
+      return res.status(403).json({
+        success: false,
+        message: 'Account is suspended or inactive'
       });
     }
 
@@ -122,6 +123,8 @@ router.post('/login', async (req, res) => {
           userId: user.userId,
           name: user.personalInfo.name,
           email: user.personalInfo.email,
+          phone: user.personalInfo.phone,
+          profileImage: user.personalInfo.profileImage,
           role: user.role,
           ecoWallet: user.ecoWallet,
           sustainabilityScore: user.sustainabilityScore
@@ -143,9 +146,9 @@ router.post('/refresh', async (req, res) => {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Refresh token required' 
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token required'
       });
     }
 
@@ -154,9 +157,9 @@ router.post('/refresh', async (req, res) => {
     const user = await User.findById(decoded.id).select('+refreshToken');
 
     if (!user || user.refreshToken !== refreshToken) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid refresh token' 
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token'
       });
     }
 
@@ -216,6 +219,7 @@ router.get('/me', authenticate, async (req, res) => {
         name: user.personalInfo.name,
         email: user.personalInfo.email,
         phone: user.personalInfo.phone,
+        profileImage: user.personalInfo.profileImage,
         role: user.role,
         address: user.address,
         ecoWallet: user.ecoWallet,
@@ -231,7 +235,7 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
-// Update user profile
+// Update user profile - for JSON data only
 router.put('/profile', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -239,24 +243,209 @@ router.put('/profile', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const allowedUpdates = ['personalInfo', 'address', 'preferences'];
-    const updates = {};
+    // Handle profile data updates
+    if (req.body.name) {
+      user.personalInfo.name = req.body.name;
+    }
 
-    allowedUpdates.forEach(field => {
-      if (req.body[field]) {
-        updates[field] = { ...user[field], ...req.body[field] };
+    if (req.body.email) {
+      user.personalInfo.email = req.body.email;
+    }
+
+    if (req.body.phone) {
+      user.personalInfo.phone = req.body.phone;
+    }
+
+    // Handle address updates - Enhanced validation error prevention
+    if (req.body.address) {
+      try {
+        const addressData = typeof req.body.address === 'string'
+          ? JSON.parse(req.body.address)
+          : req.body.address;
+
+        // Create clean address object with only valid values
+        const cleanAddressData = {};
+        const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
+
+        for (const [key, value] of Object.entries(addressData)) {
+          // Only include valid address fields with non-empty values
+          if (validAddressFields.includes(key) &&
+            value !== undefined && value !== null &&
+            typeof value === 'string' && value.trim() !== '') {
+            cleanAddressData[key] = value.trim();
+          }
+        }
+
+        // Never include location field from client data to prevent validation errors
+        delete cleanAddressData.location;
+
+        // Only update address if we have valid data
+        if (Object.keys(cleanAddressData).length > 0) {
+          // Initialize address if it doesn't exist
+          if (!user.address) {
+            user.address = {};
+          }
+
+          // Merge with existing address data, ensuring no undefined location
+          const mergedAddress = { ...user.address, ...cleanAddressData };
+
+          // Explicitly remove any undefined or null location field
+          if (mergedAddress.location === undefined || mergedAddress.location === null) {
+            delete mergedAddress.location;
+          }
+
+          user.address = mergedAddress;
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse address data:', parseError);
+        // If parsing fails, try to handle as individual fields
+        if (typeof req.body.address === 'object') {
+          const cleanAddressData = {};
+          const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
+
+          for (const [key, value] of Object.entries(req.body.address)) {
+            if (validAddressFields.includes(key) &&
+              value !== undefined && value !== null &&
+              typeof value === 'string' && value.trim() !== '') {
+              cleanAddressData[key] = value.trim();
+            }
+          }
+
+          if (Object.keys(cleanAddressData).length > 0) {
+            if (!user.address) {
+              user.address = {};
+            }
+            user.address = { ...user.address, ...cleanAddressData };
+          }
+        }
       }
-    });
+    }
 
-    Object.assign(user, updates);
     await user.save();
 
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: user
+      data: {
+        id: user._id,
+        userId: user.userId,
+        name: user.personalInfo.name,
+        email: user.personalInfo.email,
+        phone: user.personalInfo.phone,
+        profileImage: user.personalInfo.profileImage,
+        role: user.role,
+        address: user.address,
+        ecoWallet: user.ecoWallet,
+        sustainabilityScore: user.sustainabilityScore
+      }
     });
   } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// Update user profile with image upload
+router.put('/profile/image', authenticate, upload.single('profileImage'), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Handle profile image upload
+    if (req.file) {
+      // Save the file path to the user's profile
+      user.personalInfo.profileImage = `/uploads/profile-images/${req.file.filename}`;
+    }
+
+    // Handle profile data updates
+    if (req.body.name) {
+      user.personalInfo.name = req.body.name;
+    }
+
+    if (req.body.email) {
+      user.personalInfo.email = req.body.email;
+    }
+
+    if (req.body.phone) {
+      user.personalInfo.phone = req.body.phone;
+    }
+
+    // Handle address fields sent as individual parameters (from form data)
+    const addressFields = ['street', 'city', 'state', 'zipCode', 'country'];
+    let hasAddressUpdate = false;
+
+    for (const field of addressFields) {
+      const formFieldName = `address[${field}]`;
+      if (req.body[formFieldName] && req.body[formFieldName].trim()) {
+        if (!user.address) user.address = {};
+        user.address[field] = req.body[formFieldName].trim();
+        hasAddressUpdate = true;
+      }
+    }
+
+    // Handle address updates as JSON (fallback)
+    if (!hasAddressUpdate && req.body.address) {
+      try {
+        const addressData = typeof req.body.address === 'string'
+          ? JSON.parse(req.body.address)
+          : req.body.address;
+
+        // Create clean address object with only valid values
+        const cleanAddressData = {};
+        const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
+
+        for (const [key, value] of Object.entries(addressData)) {
+          if (validAddressFields.includes(key) &&
+            value !== undefined && value !== null &&
+            typeof value === 'string' && value.trim() !== '') {
+            cleanAddressData[key] = value.trim();
+          }
+        }
+
+        // Never include location field to prevent validation errors
+        delete cleanAddressData.location;
+
+        if (Object.keys(cleanAddressData).length > 0) {
+          if (!user.address) {
+            user.address = {};
+          }
+
+          // Merge with existing address data, ensuring no undefined location
+          const mergedAddress = { ...user.address, ...cleanAddressData };
+
+          // Explicitly remove any undefined or null location field
+          if (mergedAddress.location === undefined || mergedAddress.location === null) {
+            delete mergedAddress.location;
+          }
+
+          user.address = mergedAddress;
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse address JSON:', parseError);
+      }
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        id: user._id,
+        userId: user.userId,
+        name: user.personalInfo.name,
+        email: user.personalInfo.email,
+        phone: user.personalInfo.phone,
+        profileImage: user.personalInfo.profileImage,
+        role: user.role,
+        address: user.address,
+        ecoWallet: user.ecoWallet,
+        sustainabilityScore: user.sustainabilityScore
+      }
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
     res.status(400).json({ success: false, message: error.message });
   }
 });
@@ -274,9 +463,9 @@ router.put('/change-password', authenticate, async (req, res) => {
     // Verify current password
     const isCurrentPasswordValid = await user.matchPassword(currentPassword);
     if (!isCurrentPasswordValid) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Current password is incorrect' 
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
       });
     }
 

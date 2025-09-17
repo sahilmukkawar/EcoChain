@@ -28,6 +28,7 @@ import Achievements from './pages/Achievements.tsx';
 import Wallet from './pages/Wallet.tsx';
 import Orders from './pages/Orders.tsx';
 import FactoryOrders from './pages/FactoryOrders.tsx';
+import Profile from './pages/Profile.tsx';
 
 function App() {
   const location = useLocation();
@@ -67,6 +68,7 @@ function App() {
                 <Route path="/orders" element={<ProtectedRoute element={<Orders />} allowedRoles={['user']} />} />
                 <Route path="/achievements" element={<Achievements />} />
                 <Route path="/wallet" element={<ProtectedRoute element={<Wallet />} allowedRoles={['user']} />} />
+                <Route path="/profile" element={<ProtectedRoute element={<Profile />} allowedRoles={['user', 'admin', 'factory', 'collector']} />} />
               </Routes>
             </AnimatePresence>
           </main>

@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const userController = require('../controllers/userController');
 
 // User registration
@@ -14,7 +15,7 @@ router.post('/login', userController.loginUser);
 router.get('/profile', authenticate, userController.getUserProfile);
 
 // Update user profile - protected route
-router.put('/profile', authenticate, userController.updateUserProfile);
+router.put('/profile', authenticate, upload.single('profileImage'), userController.updateUserProfile);
 
 // Get user wallet - protected route
 router.get('/wallet', authenticate, userController.getUserWallet);

@@ -58,6 +58,13 @@ const authAPI = {
   updateProfile: (userData: any) => {
     return api.put('/auth/profile', userData);
   },
+  updateProfileWithImage: (formData: FormData) => {
+    return api.put('/auth/profile/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
   changePassword: (passwordData: { currentPassword: string; newPassword: string }) => {
     return api.put('/auth/change-password', passwordData);
   },

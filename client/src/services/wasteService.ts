@@ -160,11 +160,22 @@ class WasteService {
         params.append('status', status);
       }
 
-      const response = await api.get(`${this.baseURL}?${params.toString()}`);
+      const response = await api.get(`${this.baseURL}/user?${params.toString()}`);
+      
+      // Validate response structure
+      if (!response || !response.data) {
+        throw new Error('Invalid response received from server');
+      }
+      
       return response.data;
     } catch (error: any) {
       console.error('Get submissions error:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch submissions');
+      const errorMessage = error.response?.data?.message || 
+                          (error.response?.status === 404 ? 'No submissions found' : 
+                           error.response?.status === 401 ? 'Authentication required' : 
+                           error.response?.status === 403 ? 'Not authorized to view submissions' : 
+                           'Failed to fetch submissions');
+      throw new Error(errorMessage);
     }
   }
 

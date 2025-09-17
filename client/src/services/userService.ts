@@ -5,6 +5,15 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  phone?: string;
+  profileImage?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +27,7 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
+  phone?: string;
 }
 
 export interface AuthResponse {

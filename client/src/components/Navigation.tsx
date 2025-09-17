@@ -24,6 +24,56 @@ import {
   Leaf
 } from "lucide-react";
 
+// Utility function for profile image URL handling
+const getProfileImageUrl = (imagePath?: string): string | null => {
+  if (!imagePath || typeof imagePath !== 'string') return null;
+
+  const cleanPath = imagePath.trim();
+  if (!cleanPath) return null;
+
+  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+    return cleanPath;
+  }
+
+  if (cleanPath.startsWith('/api/')) {
+    return cleanPath;
+  }
+
+  if (cleanPath.startsWith('/uploads/')) {
+    return `/api${cleanPath}`;
+  }
+
+  if (!cleanPath.includes('/')) {
+    return `/api/uploads/profile-images/${cleanPath}`;
+  }
+
+  return `/api${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+};
+
+// Extended User interface to include profile image
+interface ExtendedUser {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  phone?: string;
+  profileImage?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
+  ecoWallet?: {
+    currentBalance: number;
+    totalEarned: number;
+    totalSpent: number;
+  };
+  sustainabilityScore?: number;
+}
+
 const Navigation: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { cart } = useCart();
@@ -99,11 +149,11 @@ const Navigation: React.FC = () => {
   function getNavigationItems() {
     const commonItems = [
       { to: "/marketplace", label: "Marketplace", icon: ShoppingCart },
-      
+
     ];
-    
+
     if (!isAuthenticated) return commonItems;
-    
+
     switch (user?.role) {
       case "admin":
         return [
@@ -158,6 +208,12 @@ const Navigation: React.FC = () => {
     setIsProfileMenuOpen(false);
   };
 
+
+
+  // Type assertion to access extended properties
+  const extendedUser = user as ExtendedUser;
+  const profileImageUrl = getProfileImageUrl(extendedUser?.profileImage);
+
   // Cart Icon Button
   function CartButton() {
     const cartCount = cart.length;
@@ -180,6 +236,7 @@ const Navigation: React.FC = () => {
 
   // Profile/Wallet Dropdown Button
   function ProfileDropdown() {
+
     return (
       <div className="relative" ref={profileMenuRef}>
         <button
@@ -189,26 +246,57 @@ const Navigation: React.FC = () => {
           aria-expanded={isProfileMenuOpen}
           aria-haspopup="true"
         >
-          <User size={20} className="text-green-600" />
+          {profileImageUrl ? (
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-green-200 shadow-sm flex items-center justify-center bg-white">
+              <img
+                src={profileImageUrl}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to default user icon if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.parentElement!.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                }}
+              />
+            </div>
+          ) : (
+            <User size={20} className="text-green-600" />
+          )}
           <span className="hidden md:inline font-medium text-green-700 max-w-32 truncate">
             {user?.name}
           </span>
-          <ChevronDown 
-            size={16} 
-            className={`text-green-600 transition-transform duration-200 ${
-              isProfileMenuOpen ? "rotate-180" : ""
-            }`} 
+          <ChevronDown
+            size={16}
+            className={`text-green-600 transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""
+              }`}
           />
         </button>
-        
+
         {isProfileMenuOpen && (
           <div className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white border border-gray-200 z-50 py-1 animate-in slide-in-from-top-2 duration-200">
             {/* User Info */}
             <div className="px-4 py-3 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                  <User size={16} className="text-green-600" />
-                </div>
+                {profileImageUrl ? (
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-green-200 shadow-sm">
+                    <img
+                      src={profileImageUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to default user icon if image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement!.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                    <User size={16} className="text-green-600" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-green-700 text-sm truncate">
                     {user?.name}
@@ -219,7 +307,7 @@ const Navigation: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* EcoTokens Balance */}
             <div className="px-4 py-2 border-b border-gray-100">
               <div className="flex items-center gap-2 text-green-800">
@@ -229,7 +317,7 @@ const Navigation: React.FC = () => {
                 </span>
               </div>
             </div>
-            
+
             {/* Menu Items */}
             <div className="py-1">
               <Link
@@ -240,7 +328,7 @@ const Navigation: React.FC = () => {
                 <User size={16} />
                 <span>Profile</span>
               </Link>
-              
+
               <button
                 type="button"
                 onClick={handleLogout}
@@ -257,10 +345,9 @@ const Navigation: React.FC = () => {
   }
 
   return (
-    <nav 
-      className={`sticky top-0 z-50 w-full transition-all duration-300 border-b ${
-        scrolled ? "shadow-lg bg-white/95 backdrop-blur-sm border-gray-200" : "bg-white border-gray-100"
-      }`}
+    <nav
+      className={`sticky top-0 z-50 w-full transition-all duration-300 border-b ${scrolled ? "shadow-lg bg-white/95 backdrop-blur-sm border-gray-200" : "bg-white border-gray-100"
+        }`}
       role="navigation"
       aria-label="Main navigation"
     >
@@ -273,8 +360,8 @@ const Navigation: React.FC = () => {
             aria-label="EcoChain Home"
           >
             <div className="p-2 bg-green-100 rounded-lg">
-           <Leaf className="h-8 w-8 text-green-500" />
-             </div>
+              <Leaf className="h-8 w-8 text-green-500" />
+            </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-green-500 to-blue-400 text-transparent bg-clip-text">
               EcoChain
             </span>
@@ -285,17 +372,16 @@ const Navigation: React.FC = () => {
             {navigationItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = location.pathname === item.to;
-              
+
               return (
                 <Link
                   key={item.to}
                   to={item.to}
                   role="menuitem"
-                  className={`flex items-center gap-2 px-3 py-2 font-medium text-sm rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                    isActive
-                      ? "text-green-600 bg-green-100 shadow-sm"
-                      : "text-green-700 hover:text-green-600 hover:bg-green-50"
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2 font-medium text-sm rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${isActive
+                    ? "text-green-600 bg-green-100 shadow-sm"
+                    : "text-green-700 hover:text-green-600 hover:bg-green-50"
+                    }`}
                   onClick={handleLinkClick}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -358,9 +444,8 @@ const Navigation: React.FC = () => {
       <div
         ref={mobileMenuRef}
         id="mobile-menu"
-        className={`md:hidden fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
-          isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`md:hidden fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
         role="dialog"
         aria-modal="true"
         aria-label="Mobile navigation menu"
@@ -387,16 +472,15 @@ const Navigation: React.FC = () => {
             {navigationItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = location.pathname === item.to;
-              
+
               return (
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-lg transition-all ${
-                    isActive
-                      ? "bg-green-100 text-green-700 border-l-4 border-green-500"
-                      : "text-green-700 hover:bg-green-50"
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 text-base font-medium rounded-lg transition-all ${isActive
+                    ? "bg-green-100 text-green-700 border-l-4 border-green-500"
+                    : "text-green-700 hover:bg-green-50"
+                    }`}
                   onClick={handleLinkClick}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -413,9 +497,25 @@ const Navigation: React.FC = () => {
               <div className="space-y-4">
                 {/* User Info */}
                 <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-lg">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <User size={20} className="text-green-600" />
-                  </div>
+                  {profileImageUrl ? (
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-green-200 shadow-sm">
+                      <img
+                        src={profileImageUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to default user icon if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement!.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <User size={20} className="text-green-600" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="text-base font-medium text-green-800 truncate">
                       {user?.name}
@@ -433,6 +533,16 @@ const Navigation: React.FC = () => {
                     {user?.ecoWallet?.currentBalance || 0} EcoTokens
                   </span>
                 </div>
+
+                {/* Profile Link */}
+                <Link
+                  to="/profile"
+                  onClick={handleLinkClick}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-50 text-green-600 border border-green-200 rounded-lg hover:bg-green-100 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                >
+                  <User size={20} />
+                  <span>Profile Settings</span>
+                </Link>
 
                 {/* Logout Button */}
                 <button

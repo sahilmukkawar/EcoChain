@@ -140,6 +140,8 @@ const loginUser = async (req, res, next) => {
           userId: user.userId,
           name: user.personalInfo.name,
           email: user.personalInfo.email,
+          phone: user.personalInfo.phone,
+          profileImage: user.personalInfo.profileImage,
           role: user.role,
           ecoWallet: user.ecoWallet,
           sustainabilityScore: user.sustainabilityScore
@@ -176,6 +178,7 @@ const getUserProfile = async (req, res, next) => {
         name: user.personalInfo.name,
         email: user.personalInfo.email,
         phone: user.personalInfo.phone,
+        profileImage: user.personalInfo.profileImage,
         role: user.role,
         address: user.address,
         ecoWallet: user.ecoWallet,
@@ -204,16 +207,60 @@ const updateUserProfile = async (req, res, next) => {
       });
     }
     
-    const allowedUpdates = ['personalInfo', 'address', 'preferences'];
-    const updates = {};
+    // Handle profile image upload
+    if (req.file) {
+      // Save the file path to the user's profile
+      user.personalInfo.profileImage = `/uploads/profile-images/${req.file.filename}`;
+    }
     
-    allowedUpdates.forEach(field => {
-      if (req.body[field]) {
-        updates[field] = { ...user[field], ...req.body[field] };
+    // Handle profile data updates
+    if (req.body.name) {
+      user.personalInfo.name = req.body.name;
+    }
+    
+    if (req.body.email) {
+      user.personalInfo.email = req.body.email;
+    }
+    
+    if (req.body.phone) {
+      user.personalInfo.phone = req.body.phone;
+    }
+    
+    // Handle address updates
+    if (req.body.address) {
+      try {
+        const addressData = typeof req.body.address === 'string' 
+          ? JSON.parse(req.body.address) 
+          : req.body.address;
+          
+        user.address = { ...user.address, ...addressData };
+      } catch (parseError) {
+        // If it's not JSON, treat as individual fields
+        user.address = { ...user.address, ...req.body.address };
       }
-    });
+    }
     
-    Object.assign(user, updates);
+    // Also handle address fields sent as individual parameters (from form data)
+    if (req.body['address[street]']) {
+      user.address.street = req.body['address[street]'];
+    }
+    
+    if (req.body['address[city]']) {
+      user.address.city = req.body['address[city]'];
+    }
+    
+    if (req.body['address[state]']) {
+      user.address.state = req.body['address[state]'];
+    }
+    
+    if (req.body['address[zipCode]']) {
+      user.address.zipCode = req.body['address[zipCode]'];
+    }
+    
+    if (req.body['address[country]']) {
+      user.address.country = req.body['address[country]'];
+    }
+
     await user.save();
     
     res.json({
@@ -225,8 +272,11 @@ const updateUserProfile = async (req, res, next) => {
         name: user.personalInfo.name,
         email: user.personalInfo.email,
         phone: user.personalInfo.phone,
+        profileImage: user.personalInfo.profileImage,
         address: user.address,
-        role: user.role
+        role: user.role,
+        ecoWallet: user.ecoWallet,
+        sustainabilityScore: user.sustainabilityScore
       }
     });
   } catch (error) {

@@ -13,8 +13,14 @@ const ensureDirectoryExists = (dirPath) => {
 // Configure storage for different types of uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    // Check if it's a profile image upload
+    if (req.originalUrl && req.originalUrl.includes('/profile')) {
+      const uploadPath = 'public/uploads/profile-images/';
+      ensureDirectoryExists(uploadPath);
+      cb(null, uploadPath);
+    }
     // Check if it's a product image upload
-    if (req.originalUrl && req.originalUrl.includes('/marketplace')) {
+    else if (req.originalUrl && req.originalUrl.includes('/marketplace')) {
       const uploadPath = 'public/uploads/product-images/';
       ensureDirectoryExists(uploadPath);
       cb(null, uploadPath);
