@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProductForm from '../components/ProductForm.tsx';
 import marketplaceService, { MarketplaceItem, CreateMarketplaceItemData } from '../services/marketplaceService.ts';
+import { Leaf } from 'lucide-react';
 
 const FactoryProductManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -179,9 +180,7 @@ const FactoryProductManagement: React.FC = () => {
             <div className="flex items-center gap-4">
               {/* Product Count */}
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-eco-green-50 text-eco-green-700 border border-eco-green-200">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
+                <Leaf className="w-4 h-4" />
                 <span>{filteredProducts.length} Product{filteredProducts.length !== 1 ? 's' : ''}</span>
               </div>
 
@@ -205,9 +204,7 @@ const FactoryProductManagement: React.FC = () => {
                 className="flex items-center gap-2 bg-eco-green-500 hover:bg-eco-green-600 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-sm hover:shadow-md"
                 onClick={() => setShowForm(!showForm)}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+                <Leaf className="w-4 h-4" />
                 {showForm ? 'Cancel' : 'Add Product'}
               </button>
             </div>
@@ -413,9 +410,7 @@ const FactoryProductManagement: React.FC = () => {
                   className="inline-flex items-center gap-2 bg-eco-green-600 hover:bg-eco-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   onClick={() => setShowForm(true)}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
+                  <Leaf className="w-5 h-5" />
                   Create Your First Product
                 </button>
               )}
@@ -441,9 +436,7 @@ const FactoryProductManagement: React.FC = () => {
                         
                         {/* Sustainability Badge */}
                         <div className="absolute top-3 left-3 bg-eco-green-500 text-white text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                          </svg>
+                          <Leaf className="w-3 h-3" />
                           {product.sustainability.recycledMaterialPercentage}%
                         </div>
 
@@ -488,9 +481,7 @@ const FactoryProductManagement: React.FC = () => {
                               ₹{product.pricing.sellingPrice.toLocaleString()}
                             </div>
                             <div className="text-sm text-gray-500 flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                              </svg>
+                              <Leaf className="w-3 h-3" />
                               {product.pricing.ecoTokenDiscount} tokens
                             </div>
                           </div>
@@ -568,9 +559,7 @@ const FactoryProductManagement: React.FC = () => {
                                   {product.productInfo.category}
                                 </span>
                                 <div className="flex items-center gap-1 text-eco-green-600">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                                  </svg>
+                                  <Leaf className="w-4 h-4" />
                                   {product.sustainability.recycledMaterialPercentage}% eco
                                 </div>
                               </div>

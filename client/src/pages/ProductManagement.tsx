@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import ProductForm from '../components/ProductForm.tsx';
 import marketplaceService, { MarketplaceItem } from '../services/marketplaceService.ts';
+import { Leaf } from 'lucide-react';
 
 const ProductManagement: React.FC = () => {
   const { user } = useAuth();
@@ -133,15 +134,19 @@ const ProductManagement: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
-      <h1 className="text-2xl font-bold mb-6">Product Management {user && `- ${user.name}`}</h1>
+      <h1 className="text-2xl font-bold mb-6 flex items-center">
+        <Leaf className="mr-2 text-green-600" />
+        Product Management {user && `- ${user.name}`}
+      </h1>
       
       {/* Products Section */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold m-0">Your Products</h2>
         <button 
           onClick={handleAddProduct}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors flex items-center"
         >
+          <Leaf className="mr-2" size={16} />
           Add New Product
         </button>
       </div>
@@ -150,19 +155,26 @@ const ProductManagement: React.FC = () => {
         <div className="mb-8">
           <ProductForm 
             product={editingProduct ? {
-              ...editingProduct,
-              name: editingProduct.productInfo.name,
-              description: editingProduct.productInfo.description,
-              category: editingProduct.productInfo.category,
-              price: {
-                tokenAmount: editingProduct.pricing.sellingPrice,
-                fiatAmount: editingProduct.pricing.costPrice
+              _id: editingProduct._id,
+              productInfo: {
+                name: editingProduct.productInfo.name,
+                description: editingProduct.productInfo.description,
+                category: editingProduct.productInfo.category,
+                images: editingProduct.productInfo.images || []
+              },
+              pricing: {
+                costPrice: editingProduct.pricing.costPrice,
+                sellingPrice: editingProduct.pricing.sellingPrice
               },
               inventory: {
-                available: editingProduct.inventory.currentStock
+                currentStock: editingProduct.inventory.currentStock
               },
-              sustainabilityScore: editingProduct.sustainability.recycledMaterialPercentage,
-              status: editingProduct.availability.isActive ? 'active' : 'inactive'
+              sustainability: {
+                recycledMaterialPercentage: editingProduct.sustainability.recycledMaterialPercentage
+              },
+              availability: {
+                isActive: editingProduct.availability.isActive
+              }
             } : undefined}
             onSubmit={handleProductFormSubmit}
             onCancel={handleCancelForm}
@@ -177,8 +189,9 @@ const ProductManagement: React.FC = () => {
           <p className="text-gray-600 mb-4">You haven't added any products yet.</p>
           <button 
             onClick={handleAddProduct}
-            className="px-5 py-2.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+            className="px-5 py-2.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors flex items-center"
           >
+            <Leaf className="mr-2" size={16} />
             Add Your First Product
           </button>
         </div>
@@ -188,7 +201,7 @@ const ProductManagement: React.FC = () => {
             <div key={p._id} className="p-4 bg-white rounded-lg shadow flex flex-col">
               <div className="h-48 overflow-hidden mb-4 rounded">
                 <img 
-                  src={(p.productInfo.images && p.productInfo.images[0]) || '/logo192.png'} 
+                  src={(p.productInfo.images && p.productInfo.images[0]) || '/uploads/default-product.svg'} 
                   alt={p.productInfo.name} 
                   className="w-full h-full object-cover" 
                 />
@@ -198,14 +211,23 @@ const ProductManagement: React.FC = () => {
                 {p.productInfo.description}
               </p>
               <div className="flex justify-between items-center mb-3">
-                <strong className="text-lg">{p.pricing.sellingPrice} EcoTokens</strong>
+                <strong className="text-lg flex items-center">
+                  <Leaf className="mr-1" size={16} />
+                  {p.pricing.sellingPrice} EcoTokens
+                </strong>
                 <span className={getStatusStyle(p.availability.isActive)}>
                   {getProductStatus(p)}
                 </span>
               </div>
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm">Stock: {p.inventory.currentStock}</span>
-                <span className="text-sm">♻ {p.sustainability.recycledMaterialPercentage}%</span>
+                <span className="text-sm flex items-center">
+                  <Leaf className="mr-1" size={14} />
+                  Stock: {p.inventory.currentStock}
+                </span>
+                <span className="text-sm flex items-center">
+                  <Leaf className="mr-1" size={14} />
+                  {p.sustainability.recycledMaterialPercentage}%
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <button 
