@@ -168,8 +168,14 @@ userSchema.index({ accountStatus: 1 });
 userSchema.pre('validate', function (next) {
   // Clean up address data before validation to prevent "Cast to Object failed" errors
   if (this.address) {
-    // Handle the case where address.location is undefined
-    if (this.address.location === undefined || this.address.location === null || this.address.location === '') {
+    // Handle the case where address.location is undefined, null, or has invalid coordinates
+    if (this.address.location === undefined || 
+        this.address.location === null || 
+        this.address.location === '' ||
+        (this.address.location && (!this.address.location.coordinates || 
+         !Array.isArray(this.address.location.coordinates) ||
+         this.address.location.coordinates.length !== 2 ||
+         this.address.location.coordinates.some(coord => typeof coord !== 'number' || isNaN(coord))))) {
       delete this.address.location;
     }
 
@@ -241,7 +247,29 @@ userSchema.pre('save', function (next) {
 
 // Method to check if password matches
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+  console.log('Matching password for user:', this.personalInfo.email);
+  console.log('Entered password length:', enteredPassword ? enteredPassword.length : 'undefined');
+  console.log('Stored password hash exists:', !!this.password);
+  console.log('Stored password hash length:', this.password ? this.password.length : 'undefined');
+  
+  if (!this.password) {
+    console.log('No password hash found in user document');
+    return false;
+  }
+  
+  if (!enteredPassword) {
+    console.log('No password provided for comparison');
+    return false;
+  }
+  
+  try {
+    const result = await bcrypt.compare(enteredPassword, this.password);
+    console.log('Password comparison result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error during password comparison:', error);
+    return false;
+  }
 };
 
 // Method to generate JWT token

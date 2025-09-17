@@ -167,10 +167,10 @@ const Navigation: React.FC = () => {
         return [
           ...commonItems,
           { to: "/factory-dashboard", label: "Dashboard", icon: Factory },
+          { to: "/factory-orders", label: "Orders", icon: ShoppingCart },
           { to: "/factory-product-management", label: "Product Management", icon: Package },
           { to: "/materials", label: "Materials", icon: Recycle },
-          { to: "/production", label: "Production", icon: Settings },
-          { to: "/factory-orders", label: "Orders", icon: ShoppingCart },
+         
         ];
       case "collector":
         return [
@@ -214,9 +214,15 @@ const Navigation: React.FC = () => {
   const extendedUser = user as ExtendedUser;
   const profileImageUrl = getProfileImageUrl(extendedUser?.profileImage);
 
-  // Cart Icon Button
+  // Cart Icon Button - Only show for users with 'user' role
   function CartButton() {
     const cartCount = cart.length;
+    
+    // Only render cart button for users with 'user' role
+    if (user?.role !== 'user') {
+      return null;
+    }
+    
     return (
       <Link
         to="/cart"

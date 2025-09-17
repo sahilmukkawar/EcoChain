@@ -114,10 +114,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      console.log('Attempting login for:', email);
+      console.log('Current tokens before login:', {
+        accessToken: localStorage.getItem('accessToken'),
+        refreshToken: localStorage.getItem('refreshToken')
+      });
+      
       const response = await authAPI.login({ email, password });
       
       if (response.data.success) {
         const { user: userData, tokens } = response.data.data;
+        
+        console.log('Login successful, setting tokens:', {
+          accessToken: tokens.accessToken ? 'present' : 'missing',
+          refreshToken: tokens.refreshToken ? 'present' : 'missing'
+        });
         
         setUser(userData);
         setToken(tokens.accessToken);
@@ -131,6 +142,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error: any) {
       console.error('Login error:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        url: error.config?.url
+      });
+      
       let errorMessage = 'Login failed. Please try again.';
       
       if (error.response?.status === 401) {
@@ -199,8 +216,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Logout function
   const logout = () => {
     try {
-      // Call logout endpoint to invalidate refresh token
-      if (token) {
+      // Only call logout endpoint if we have a valid token
+      if (token && token !== 'null' && token !== 'undefined') {
         authAPI.logout().catch(error => {
           console.error('Logout API error:', error);
         });
@@ -208,10 +225,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear local storage and state
+      // Clear auth-related data from localStorage
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      
+      // Clear state
       setUser(null);
       setToken(null);
       setRefreshToken(null);

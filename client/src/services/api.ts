@@ -12,9 +12,16 @@ const api = axios.create({
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Don't add token to login and register requests
+    const isLoginRequest = config.url === '/auth/login';
+    const isRegisterRequest = config.url === '/auth/register';
+    const isAuthRequest = isLoginRequest || isRegisterRequest;
+    
+    if (!isAuthRequest) {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
