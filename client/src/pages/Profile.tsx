@@ -296,6 +296,16 @@ const Profile: React.FC = () => {
         return;
       }
 
+      console.log('Profile update data being sent:', {
+        hasSelectedFile: !!selectedFile,
+        profileData: {
+          name: profileData.name.trim(),
+          email: profileData.email.trim(),
+          phone: profileData.phone.trim(),
+          address: profileData.address
+        }
+      });
+
       // If a profile image is selected, use multipart form data
       if (selectedFile) {
         const formData = new FormData();
@@ -307,7 +317,8 @@ const Profile: React.FC = () => {
           formData.append('phone', profileData.phone.trim());
         }
 
-        // Add address fields individually to match backend expectations
+        // Add address fields individually to match backend expectations - only non-empty values
+        // IMPORTANT: Never include location field to prevent MongoDB validation errors
         if (profileData.address.street.trim()) {
           formData.append('address[street]', profileData.address.street.trim());
         }
@@ -341,7 +352,7 @@ const Profile: React.FC = () => {
           cleanProfileData.phone = profileData.phone.trim();
         }
 
-        // Add address only if at least one field has a value
+        // Create address object with only non-empty fields
         const addressFields = {
           street: profileData.address.street.trim(),
           city: profileData.address.city.trim(),
@@ -350,24 +361,42 @@ const Profile: React.FC = () => {
           country: profileData.address.country.trim()
         };
 
-        // Filter out empty address fields
+        // Filter out empty address fields and create clean address object
         const filteredAddress = Object.fromEntries(
           Object.entries(addressFields).filter(([_, value]) => value !== '')
         );
 
-        // Only include address if we have actual data, and never include location field
+        // Only include address if we have actual data
+        // IMPORTANT: Never include location field from frontend to prevent MongoDB validation errors
         if (Object.keys(filteredAddress).length > 0) {
-          // Ensure we never accidentally include a location field
-          delete filteredAddress.location;
           cleanProfileData.address = filteredAddress;
+          // Explicitly ensure no location field is included
+          delete cleanProfileData.address.location;
         }
 
+        console.log('Clean profile data being sent (JSON):', cleanProfileData);
         response = await authAPI.updateProfile(cleanProfileData);
       }
 
       if (response.data.success) {
         // Update user in context with the returned data
         updateUser(response.data.data);
+        
+        // Update local form state to reflect the changes immediately
+        const updatedUser = response.data.data as ExtendedUser;
+        setProfileData({
+          name: updatedUser.name || '',
+          email: updatedUser.email || '',
+          phone: updatedUser.phone || '',
+          address: {
+            street: updatedUser.address?.street || '',
+            city: updatedUser.address?.city || '',
+            state: updatedUser.address?.state || '',
+            zipCode: updatedUser.address?.zipCode || '',
+            country: updatedUser.address?.country || ''
+          }
+        });
+        
         showMessage('Profile updated successfully', 'success');
 
         // Update profile image state with proper URL and error handling
@@ -402,7 +431,22 @@ const Profile: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Profile update error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update profile';
+      console.error('Error response data:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      let errorMessage = 'Failed to update profile';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Handle specific validation errors
+      if (error.response?.status === 400 && error.response?.data?.message?.includes('location')) {
+        errorMessage = 'Address validation error. Please check your address information.';
+      }
+      
       showMessage(errorMessage, 'error');
     } finally {
       setLoading(false);
