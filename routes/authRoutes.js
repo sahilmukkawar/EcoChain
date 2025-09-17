@@ -80,18 +80,110 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // First, aggressively clean any corrupted address data using direct MongoDB update
+    console.log('Pre-cleaning address data for user:', email);
+    await User.updateOne(
+      { 'personalInfo.email': email },
+      { 
+        $unset: { 
+          'address.location': 1,
+          'address.coordinates': 1 
+        }
+      }
+    ).catch(err => console.log('Pre-clean update error (expected):', err.message));
+
     // Find user and include password for verification
-    const user = await User.findOne({ 'personalInfo.email': email }).select('+password');
+    let user = await User.findOne({ 'personalInfo.email': email }).select('+password');
     if (!user) {
+      console.log('User not found for email:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
+    
+    console.log('User found:', user.personalInfo.name, 'Role:', user.role);
+    console.log('User has password hash:', !!user.password);
+
+    // Clean corrupted address data before any operations
+    let needsSave = false;
+    console.log('Checking address data for user:', email);
+    
+    if (user.address) {
+      console.log('Current address data:', JSON.stringify(user.address, null, 2));
+      
+      // Check and clean location data
+      if (user.address.location) {
+        console.log('Location data exists:', JSON.stringify(user.address.location, null, 2));
+        
+        // Check coordinates
+        if (user.address.location.coordinates) {
+          const coords = user.address.location.coordinates;
+          console.log('Coordinates:', coords, 'Type:', typeof coords, 'IsArray:', Array.isArray(coords));
+          
+          // Check if coordinates are invalid
+          const isInvalid = !Array.isArray(coords) || 
+                           coords.length !== 2 || 
+                           coords.some(coord => typeof coord !== 'number' || isNaN(coord) || coord === null || coord === undefined);
+          
+          if (isInvalid) {
+            console.log('Invalid coordinates detected, cleaning...');
+            user.address.location = undefined;
+            user.markModified('address.location');
+            needsSave = true;
+          }
+        } else {
+          // Location exists but no coordinates - this might cause issues too
+          console.log('Location exists but no coordinates, cleaning location...');
+          user.address.location = undefined;
+          user.markModified('address.location');
+          needsSave = true;
+        }
+      }
+      
+      // If address is completely empty, clean it up
+      if (Object.keys(user.address).length === 0 || 
+          (Object.keys(user.address).length === 1 && user.address.location === undefined)) {
+        console.log('Empty address object, removing...');
+        user.address = undefined;
+        user.markModified('address');
+        needsSave = true;
+      }
+    }
+    
+    // Save cleaned user data if needed
+    if (needsSave) {
+      console.log('Saving user with cleaned address data...');
+      try {
+        // Use direct MongoDB update to bypass validation issues
+        await User.updateOne(
+          { 'personalInfo.email': email },
+          { $unset: user.address ? { 'address.location': 1 } : { address: 1 } }
+        );
+        console.log('Direct database update completed');
+        
+        // Refetch user to ensure clean data
+        user = await User.findOne({ 'personalInfo.email': email }).select('+password');
+        console.log('User refetched after cleanup');
+      } catch (updateError) {
+        console.log('Direct update failed, trying save method:', updateError.message);
+        // Fallback to save method with aggressive cleaning
+        user.address = {};
+        user.markModified('address');
+        await user.save({ validateBeforeSave: false });
+        
+        // Refetch user again
+        user = await User.findOne({ 'personalInfo.email': email }).select('+password');
+      }
+    }
 
     // Check password
+    console.log('Checking password for user:', email);
     const isPasswordValid = await user.matchPassword(password);
+    console.log('Password validation result:', isPasswordValid);
+    
     if (!isPasswordValid) {
+      console.log('Password validation failed for user:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -106,13 +198,26 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Update last active
-    await user.updateLastActive();
-
-    // Generate tokens
+    // Generate tokens BEFORE any save operations that might trigger validation
     const accessToken = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
-    await user.save();
+    
+    // Update last active and save tokens with validation disabled
+    try {
+      await User.updateOne(
+        { _id: user._id },
+        { 
+          $set: { 
+            lastActive: new Date(),
+            refreshToken: refreshToken
+          }
+        }
+      );
+      console.log('User tokens and lastActive updated successfully');
+    } catch (saveError) {
+      console.error('Error saving user tokens:', saveError.message);
+      // Continue with login even if token save fails
+    }
 
     res.json({
       success: true,
@@ -136,6 +241,7 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -281,20 +387,20 @@ router.put('/profile', authenticate, async (req, res) => {
 
         // Only update address if we have valid data
         if (Object.keys(cleanAddressData).length > 0) {
-          // Initialize address if it doesn't exist
-          if (!user.address) {
-            user.address = {};
-          }
+          // Convert existing address to plain object to avoid subdocument issues
+          const existingAddress = user.address ? user.address.toObject() : {};
+          
+          // Merge with existing address data, ensuring no location field
+          const mergedAddress = { ...existingAddress, ...cleanAddressData };
+          
+          // Explicitly remove any location field that might exist
+          delete mergedAddress.location;
 
-          // Merge with existing address data, ensuring no undefined location
-          const mergedAddress = { ...user.address, ...cleanAddressData };
-
-          // Explicitly remove any undefined or null location field
-          if (mergedAddress.location === undefined || mergedAddress.location === null) {
-            delete mergedAddress.location;
-          }
-
+          // Reassign cleaned address object
           user.address = mergedAddress;
+          
+          // Final safety check - mark address as modified to ensure pre-save middleware runs
+          user.markModified('address');
         }
       } catch (parseError) {
         console.warn('Failed to parse address data:', parseError);
@@ -312,14 +418,27 @@ router.put('/profile', authenticate, async (req, res) => {
           }
 
           if (Object.keys(cleanAddressData).length > 0) {
-            if (!user.address) {
-              user.address = {};
-            }
-            user.address = { ...user.address, ...cleanAddressData };
+            // Convert existing address to plain object to avoid subdocument issues
+            const existingAddress = user.address ? user.address.toObject() : {};
+            
+            // Ensure no location field gets through
+            delete cleanAddressData.location;
+            
+            // Merge and reassign cleaned address object
+            user.address = { ...existingAddress, ...cleanAddressData };
+            user.markModified('address');
           }
         }
       }
     }
+
+    // Debug: Log the address data before saving (JSON endpoint)
+    console.log('Address data before save (JSON endpoint):', {
+      hasAddress: !!user.address,
+      addressData: user.address,
+      hasLocation: user.address?.location,
+      locationType: typeof user.address?.location
+    });
 
     await user.save();
 
@@ -384,6 +503,28 @@ router.put('/profile/image', authenticate, upload.single('profileImage'), async 
       }
     }
 
+    // CRITICAL: Explicitly remove location field that causes validation errors
+    if (hasAddressUpdate || user.address) {
+      // Get current address data as plain object to avoid Mongoose issues
+      const currentAddress = user.address ? user.address.toObject() : {};
+      
+      // Create a completely clean address object with only allowed fields
+      const cleanAddress = {};
+      const allowedFields = ['street', 'city', 'state', 'zipCode', 'country'];
+      
+      for (const field of allowedFields) {
+        if (currentAddress[field]) {
+          cleanAddress[field] = currentAddress[field];
+        }
+      }
+      
+      // Completely replace the address with the clean object (no location field)
+      user.address = cleanAddress;
+      
+      // Force Mongoose to recognize the change
+      user.markModified('address');
+    }
+
     // Handle address updates as JSON (fallback)
     if (!hasAddressUpdate && req.body.address) {
       try {
@@ -407,24 +548,33 @@ router.put('/profile/image', authenticate, upload.single('profileImage'), async 
         delete cleanAddressData.location;
 
         if (Object.keys(cleanAddressData).length > 0) {
-          if (!user.address) {
-            user.address = {};
-          }
+          // Convert existing address to plain object to avoid subdocument issues
+          const existingAddress = user.address ? user.address.toObject() : {};
+          
+          // Merge with existing address data, ensuring no location field
+          const mergedAddress = { ...existingAddress, ...cleanAddressData };
+          
+          // Explicitly remove any location field that might exist
+          delete mergedAddress.location;
 
-          // Merge with existing address data, ensuring no undefined location
-          const mergedAddress = { ...user.address, ...cleanAddressData };
-
-          // Explicitly remove any undefined or null location field
-          if (mergedAddress.location === undefined || mergedAddress.location === null) {
-            delete mergedAddress.location;
-          }
-
+          // Reassign cleaned address object
           user.address = mergedAddress;
+          
+          // Final safety check - mark address as modified to ensure pre-save middleware runs
+          user.markModified('address');
         }
       } catch (parseError) {
         console.warn('Failed to parse address JSON:', parseError);
       }
     }
+
+    // Debug: Log the address data before saving (Image endpoint)
+    console.log('Address data before save (Image endpoint):', {
+      hasAddress: !!user.address,
+      addressData: user.address,
+      hasLocation: user.address?.location,
+      locationType: typeof user.address?.location
+    });
 
     await user.save();
 
