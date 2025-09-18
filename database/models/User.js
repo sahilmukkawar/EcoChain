@@ -69,6 +69,17 @@ const userSchema = new mongoose.Schema({
     default: 'user',
     required: true
   },
+  // Add approval status for factory and collector roles
+  approvalStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved', // Default to approved for regular users and admins
+    required: true
+  },
+  rejectionReason: {
+    type: String,
+    trim: true
+  },
   ecoWallet: {
     currentBalance: {
       type: Number,
@@ -176,11 +187,19 @@ userSchema.pre('validate', function (next) {
          !Array.isArray(this.address.location.coordinates) ||
          this.address.location.coordinates.length !== 2 ||
          this.address.location.coordinates.some(coord => typeof coord !== 'number' || isNaN(coord))))) {
-      delete this.address.location;
+      // Instead of deleting, set to undefined to avoid validation issues
+      if (this.address.location) {
+        this.address.location = undefined;
+      }
     }
 
-    // If address is an empty object, remove it
+    // If address is an empty object, set to undefined
     if (typeof this.address === 'object' && Object.keys(this.address).length === 0) {
+      this.address = undefined;
+    }
+    
+    // If address only has location field and it's undefined, remove the entire address
+    if (this.address && Object.keys(this.address).length === 1 && this.address.location === undefined) {
       this.address = undefined;
     }
   }

@@ -412,7 +412,7 @@ const Navigation: React.FC = () => {
                   Login
                 </Link>
                 <Link
-                  to="/register"
+                  to="/signup"
                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-blue-400 text-white shadow-sm hover:from-green-600 hover:to-blue-500 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 >
                   Sign Up
@@ -569,7 +569,7 @@ const Navigation: React.FC = () => {
                   Login
                 </Link>
                 <Link
-                  to="/register"
+                  to="/signup"
                   onClick={handleLinkClick}
                   className="block w-full px-4 py-3 text-center rounded-lg bg-gradient-to-r from-green-500 to-blue-400 text-white shadow-sm hover:from-green-600 hover:to-blue-500 font-medium transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 >

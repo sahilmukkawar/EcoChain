@@ -7,6 +7,8 @@ interface User {
   name: string;
   email: string;
   role: string;
+  approvalStatus?: string;
+  rejectionReason?: string;
   phone?: string;
   profileImage?: string;
   address?: {
@@ -31,7 +33,22 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, phone?: string, role?: string) => Promise<void>;
+  register: (userData: { 
+    name: string; 
+    email: string; 
+    phone?: string; 
+    password: string; 
+    role?: string; 
+    address?: any;
+    // Factory specific fields
+    factoryName?: string;
+    ownerName?: string;
+    gstNumber?: string;
+    // Collector specific fields
+    companyName?: string;
+    contactName?: string;
+    serviceArea?: string[];
+  } | string, email?: string, password?: string, phone?: string, role?: string) => Promise<void>;
   logout: () => void;
   refreshAccessToken: () => Promise<void>;
   updateUser: (userData: User) => void;
@@ -123,7 +140,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await authAPI.login({ email, password });
       
       if (response.data.success) {
-        const { user: userData, tokens } = response.data.data;
+        const { user: userData, tokens, pendingApproval } = response.data.data;
         
         console.log('Login successful, setting tokens:', {
           accessToken: tokens.accessToken ? 'present' : 'missing',
@@ -137,6 +154,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('accessToken', tokens.accessToken);
         localStorage.setItem('refreshToken', tokens.refreshToken);
         localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Return the full response for better handling in components
+        return response.data;
       } else {
         throw new Error(response.data.message || 'Login failed');
       }
@@ -169,10 +189,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Register function
-  const register = async (name: string, email: string, password: string, phone?: string, role: string = 'user') => {
+  const register = async (userData: { 
+    name: string; 
+    email: string; 
+    phone?: string; 
+    password: string; 
+    role?: string; 
+    address?: any;
+    // Factory specific fields
+    factoryName?: string;
+    ownerName?: string;
+    gstNumber?: string;
+    // Collector specific fields
+    companyName?: string;
+    contactName?: string;
+    serviceArea?: string[];
+  } | string, email?: string, password?: string, phone?: string, role?: string) => {
     setIsLoading(true);
     try {
-      const response = await authAPI.register({ name, email, password, phone, role });
+      // Handle both old and new parameter formats
+      let registerData: any;
+      
+      if (typeof userData === 'string') {
+        // Old format - backward compatibility
+        registerData = { 
+          name: userData, 
+          email: email || '', 
+          password: password || '', 
+          phone, 
+          role 
+        };
+      } else {
+        // New format
+        registerData = userData;
+      }
+      
+      const response = await authAPI.register(registerData);
       
       if (response.data.success) {
         const { user: userData, tokens } = response.data.data;
@@ -184,6 +236,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('accessToken', tokens.accessToken);
         localStorage.setItem('refreshToken', tokens.refreshToken);
         localStorage.setItem('user', JSON.stringify(userData));
+        
+        return response.data; // Return the full response for better handling
       } else {
         throw new Error(response.data.message || 'Registration failed');
       }
@@ -191,6 +245,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Registration error:', error);
       let errorMessage = 'Registration failed. Please try again.';
       
+      // Handle specific error cases
       if (error.response?.status === 409) {
         errorMessage = 'An account with this email already exists.';
       } else if (error.response?.status === 400) {

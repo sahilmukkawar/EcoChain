@@ -211,7 +211,7 @@ const EcoChainLanding = () => {
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link
-                  to="/register"
+                  to="/signup"
                   className="px-6 py-3 bg-eco-green hover:bg-eco-green-dark text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center"
                 >
                   Get Started

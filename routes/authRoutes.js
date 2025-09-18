@@ -3,7 +3,8 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../database/models');
+const { User, FactoryApplication, CollectorApplication } = require('../database/models');
+const { sendRegistrationConfirmation } = require('../utils/notificationService');
 const { authenticate } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
@@ -16,20 +17,98 @@ router.post('/register', async (req, res) => {
       password,
       phone,
       role = 'user',
-      address
+      address,
+      // Factory specific fields
+      factoryName,
+      ownerName,
+      gstNumber,
+      // Collector specific fields
+      companyName,
+      contactName,
+      serviceArea
     } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and password are required'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address'
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long'
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ 'personalInfo.email': email });
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         message: 'User with this email already exists'
       });
     }
 
+    // Validate role-specific fields
+    if (role === 'factory') {
+      if (!factoryName || !ownerName || !gstNumber) {
+        return res.status(400).json({
+          success: false,
+          message: 'Factory name, owner name, and GST number are required for factory registration'
+        });
+      }
+    } else if (role === 'collector') {
+      if (!companyName || !contactName || !serviceArea) {
+        return res.status(400).json({
+          success: false,
+          message: 'Company name, contact name, and service area are required for collector registration'
+        });
+      }
+    }
+
     // Generate unique userId
     const userId = 'USR' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+    // Set approval status based on role
+    let approvalStatus = 'approved'; // Default for regular users and admins
+    if (role === 'factory' || role === 'collector') {
+      approvalStatus = 'pending'; // Factories and collectors need approval
+    }
+
+    // Handle address for user creation
+    let userAddress = {};
+    if (address && typeof address === 'object') {
+      // Address is sent as an object (from frontend form)
+      userAddress = {
+        street: address.street || '',
+        city: address.city || '',
+        state: address.state || '',
+        zipCode: address.zipCode || '',
+        country: address.country || 'India'
+      };
+    } else {
+      // Address fields are sent individually (fallback)
+      userAddress = {
+        street: req.body['address[street]'] || '',
+        city: req.body['address[city]'] || '',
+        state: req.body['address[state]'] || '',
+        zipCode: req.body['address[zipCode]'] || '',
+        country: req.body['address[country]'] || 'India'
+      };
+    }
 
     // Create new user
     const user = new User({
@@ -41,10 +120,101 @@ router.post('/register', async (req, res) => {
       },
       password,
       role,
-      address: address || {}
+      approvalStatus,
+      address: userAddress
     });
 
     await user.save();
+
+    // If factory or collector, create application
+    if (role === 'factory') {
+      // Ensure address has all required fields for factory application
+      // Handle both flat address fields and nested address object
+      let street, city, state, zipCode, country;
+      
+      if (address && typeof address === 'object') {
+        // Address is sent as an object (from frontend form)
+        street = address.street || '';
+        city = address.city || '';
+        state = address.state || '';
+        zipCode = address.zipCode || '';
+        country = address.country || 'India';
+      } else {
+        // Address fields are sent individually (fallback)
+        street = req.body['address[street]'] || '';
+        city = req.body['address[city]'] || '';
+        state = req.body['address[state]'] || '';
+        zipCode = req.body['address[zipCode]'] || '';
+        country = req.body['address[country]'] || 'India';
+      }
+      
+      const factoryAddress = {
+        street,
+        city,
+        state,
+        zipCode,
+        country
+      };
+      
+      // Validate that required address fields are provided for factory registration
+      if (!factoryAddress.street || !factoryAddress.city || !factoryAddress.state || !factoryAddress.zipCode) {
+        // Clean up the user we just created since factory application failed
+        await User.findByIdAndDelete(user._id);
+        return res.status(400).json({
+          success: false,
+          message: 'Complete address (street, city, state, ZIP code) is required for factory registration'
+        });
+      }
+      
+      try {
+        const factoryApplication = new FactoryApplication({
+          userId: user._id,
+          factoryName,
+          ownerName,
+          email,
+          phone,
+          address: factoryAddress,
+          gstNumber
+        });
+        await factoryApplication.save();
+      } catch (factoryError) {
+        // Clean up the user we just created since factory application failed
+        await User.findByIdAndDelete(user._id);
+        console.error('Factory application error:', factoryError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to create factory application: ' + factoryError.message
+        });
+      }
+    } else if (role === 'collector') {
+      try {
+        const collectorApplication = new CollectorApplication({
+          userId: user._id,
+          companyName,
+          contactName,
+          email,
+          phone,
+          serviceArea: Array.isArray(serviceArea) ? serviceArea : serviceArea.split(',').map(area => area.trim()).filter(area => area)
+        });
+        await collectorApplication.save();
+      } catch (collectorError) {
+        // Clean up the user we just created since collector application failed
+        await User.findByIdAndDelete(user._id);
+        console.error('Collector application error:', collectorError);
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to create collector application: ' + collectorError.message
+        });
+      }
+    }
+
+    // Send registration confirmation email
+    try {
+      await sendRegistrationConfirmation(user);
+    } catch (emailError) {
+      console.error('Failed to send registration confirmation email:', emailError);
+      // Don't fail the registration if email fails
+    }
 
     // Generate tokens
     const accessToken = user.generateAuthToken();
@@ -53,7 +223,9 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: role === 'factory' || role === 'collector' 
+        ? 'Account created successfully. Waiting for admin approval.' 
+        : 'User registered successfully',
       data: {
         user: {
           id: user._id,
@@ -61,6 +233,7 @@ router.post('/register', async (req, res) => {
           name: user.personalInfo.name,
           email: user.personalInfo.email,
           role: user.role,
+          approvalStatus: user.approvalStatus,
           ecoWallet: user.ecoWallet,
           sustainabilityScore: user.sustainabilityScore
         },
@@ -71,7 +244,20 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    console.error('Registration error:', error);
+    // Provide more specific error messages
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: messages.join(', ') || 'Validation error during registration' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Internal server error during registration' 
+    });
   }
 });
 
@@ -198,6 +384,40 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Check approval status for factory and collector roles
+    if ((user.role === 'factory' || user.role === 'collector') && user.approvalStatus !== 'approved') {
+      // For pending users, still generate tokens but indicate pending status
+      const accessToken = user.generateAuthToken();
+      const refreshToken = user.generateRefreshToken();
+      
+      return res.status(200).json({
+        success: true,
+        message: user.approvalStatus === 'pending' 
+          ? 'Login successful. Account pending admin approval.' 
+          : `Login successful. Account ${user.approvalStatus}.`,
+        data: {
+          user: {
+            id: user._id,
+            userId: user.userId,
+            name: user.personalInfo.name,
+            email: user.personalInfo.email,
+            phone: user.personalInfo.phone,
+            profileImage: user.personalInfo.profileImage,
+            role: user.role,
+            approvalStatus: user.approvalStatus,
+            rejectionReason: user.rejectionReason,
+            ecoWallet: user.ecoWallet,
+            sustainabilityScore: user.sustainabilityScore
+          },
+          tokens: {
+            accessToken,
+            refreshToken
+          },
+          pendingApproval: user.approvalStatus === 'pending'
+        }
+      });
+    }
+
     // Generate tokens BEFORE any save operations that might trigger validation
     const accessToken = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
@@ -231,6 +451,7 @@ router.post('/login', async (req, res) => {
           phone: user.personalInfo.phone,
           profileImage: user.personalInfo.profileImage,
           role: user.role,
+          approvalStatus: user.approvalStatus,
           ecoWallet: user.ecoWallet,
           sustainabilityScore: user.sustainabilityScore
         },

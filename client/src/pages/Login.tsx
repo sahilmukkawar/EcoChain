@@ -7,33 +7,43 @@ import PageTransition from '../components/PageTransition.tsx';
 import { LogIn, User, Lock } from 'lucide-react';
 
 const Login: React.FC = () => {
-  const { login, isLoading, isAuthenticated } = useAuth();
+  const { login, isLoading, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      const role = getUserRole();
-      if (role === 'admin') navigate('/admin-dashboard');
-      else if (role === 'factory') navigate('/factory-dashboard');
-      else if (role === 'collector') navigate('/collector-dashboard');
-      else navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
-      await login(email, password);
-      // Navigation will be handled by the useEffect above
+      const response: any = await login(email, password);
+      // Navigation will be handled by the useEffect below
+      // But we can check the response for pending approval status
+      if (response?.data?.pendingApproval) {
+        // User logged in but needs approval - this will be handled by useEffect
+        console.log('User logged in but pending approval');
+      }
     } catch (e: any) {
-      setError(e?.response?.data?.message || 'Login failed');
+      setError(e?.message || e?.response?.data?.message || 'Login failed');
     }
   };
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Check if factory or collector with pending approval
+      if ((user.role === 'factory' || user.role === 'collector') && user.approvalStatus !== 'approved') {
+        navigate('/pending-approval');
+      } else {
+        // Regular navigation logic
+        if (user.role === 'admin') navigate('/admin-dashboard');
+        else if (user.role === 'factory') navigate('/factory-dashboard');
+        else if (user.role === 'collector') navigate('/collector-dashboard');
+        else navigate('/dashboard');
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const quickFill = (e: string, p: string) => { setEmail(e); setPassword(p); };
 
@@ -138,8 +148,8 @@ const Login: React.FC = () => {
               </motion.button>
               
               <div className="text-center text-sm">
-                <Link to="/register" className="text-eco-green hover:text-eco-green-dark transition">
-                  Don't have an account? Register here
+                <Link to="/signup" className="text-eco-green hover:text-eco-green-dark transition">
+                  Don't have an account? Sign Up here
                 </Link>
               </div>
             </form>

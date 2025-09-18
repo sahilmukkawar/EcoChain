@@ -1,5 +1,7 @@
 // controllers/marketplaceController.js
-const { Factory, Product } = require('../database/models');
+const mongoose = require('mongoose');
+const Product = require('../database/models/Product');
+const Factory = require('../database/models/Factory');
 const logger = require('../utils/logger');
 
 // Use the Product model directly
@@ -10,7 +12,7 @@ const logger = require('../utils/logger');
 const getAllListings = async (req, res) => {
   try {
     const listings = await Product.find({ 'availability.isActive': true })
-      .populate('factoryId', 'companyInfo.name location.city businessMetrics.sustainabilityRating');
+      .populate('factoryId', 'companyInfo.name location.city businessMetrics.sustainabilityRating', null, { strictPopulate: false });
     res.status(200).json({ success: true, message: 'Products fetched successfully', data: listings });
   } catch (error) {
     logger.error('Error fetching marketplace listings:', error);
@@ -24,7 +26,7 @@ const getAllListings = async (req, res) => {
 const getListingById = async (req, res) => {
   try {
     const listing = await Product.findById(req.params.id)
-      .populate('factoryId', 'companyInfo.name location.city businessMetrics.sustainabilityRating');
+      .populate('factoryId', 'companyInfo.name location.city businessMetrics.sustainabilityRating', null, { strictPopulate: false });
     
     if (!listing) {
       return res.status(404).json({ success: false, message: 'Product not found' });
@@ -317,9 +319,41 @@ const getFactoryProducts = async (req, res) => {
 
     // Find factory profile
     logger.info('Looking for factory with userId:', req.user.id);
-    const factory = await Factory.findOne({ userId: req.user.id });
+    logger.info('Type of userId:', typeof req.user.id);
+    logger.info('UserId value:', req.user.id);
+    
+    // Convert userId to ObjectId if it's a string
+    let userId = req.user.id;
+    if (typeof userId === 'string') {
+      try {
+        userId = new mongoose.Types.ObjectId(userId);
+        logger.info('Converted userId to ObjectId:', userId);
+      } catch (conversionError) {
+        logger.error('Failed to convert userId to ObjectId:', conversionError);
+        return res.status(500).json({ success: false, message: 'Invalid user ID format' });
+      }
+    }
+    
+    // Add additional debugging to see what's in the database
+    const allFactories = await Factory.find({});
+    logger.info('All factories in database:', allFactories.map(f => ({
+      id: f._id,
+      userId: f.userId,
+      factoryId: f.factoryId,
+      companyName: f.companyInfo?.name
+    })));
+    
+    const factory = await Factory.findOne({ userId: userId });
     if (!factory) {
       logger.warn('Factory profile not found for userId:', req.user.id);
+      // Additional debugging - check if there's any factory with a similar userId
+      const factoriesWithUserId = await Factory.find({ userId: { $exists: true } });
+      logger.info('Factories with userId field:', factoriesWithUserId.map(f => ({
+        id: f._id,
+        userId: f.userId,
+        type: typeof f.userId
+      })));
+      
       return res.status(404).json({ success: false, message: 'Factory profile not found' });
     }
     
@@ -365,7 +399,7 @@ const searchListings = async (req, res) => {
     }
     
     const listings = await Product.find(searchQuery)
-      .populate('factoryId', 'companyInfo.name location.city businessMetrics.sustainabilityRating');
+      .populate('factoryId', 'companyInfo.name location.city businessMetrics.sustainabilityRating', null, { strictPopulate: false });
     res.status(200).json({ success: true, message: 'Search completed successfully', data: listings });
   } catch (error) {
     logger.error('Error searching marketplace listings:', error);
@@ -378,7 +412,7 @@ const getActiveProducts = async (req, res) => {
   try {
     // Get all active products with populated factory information
     const products = await Product.find({ 'availability.isActive': true })
-      .populate('factoryId', 'companyInfo.name location.city businessMetrics.sustainabilityRating');
+      .populate('factoryId', 'companyInfo.name location.city businessMetrics.sustainabilityRating', null, { strictPopulate: false });
     
     res.status(200).json({ 
       success: true, 

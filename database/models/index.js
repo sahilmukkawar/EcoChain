@@ -1,27 +1,35 @@
 const User = require('./User');
 const GarbageCollection = require('./GarbageCollection');
-const Product = require('./Product');
+const Marketplace = require('./Marketplace');
 const Order = require('./Order');
+const Product = require('./Product');
+const ProductReview = require('./ProductReview');
+const Transaction = require('./Transaction');
 const EcoTokenTransaction = require('./EcoTokenTransaction');
 const Factory = require('./Factory');
-const ProductReview = require('./ProductReview');
 const SystemConfiguration = require('./SystemConfiguration');
-const Transaction = require('./Transaction');
+const MaterialRequest = require('./MaterialRequest');
 const Analytics = require('./Analytics');
 const AdminPayment = require('./AdminPayment');
+const VisionInference = require('./VisionInference');
+const FactoryApplication = require('./FactoryApplication');
+const CollectorApplication = require('./CollectorApplication');
 
 module.exports = {
   User,
   GarbageCollection,
-  Product,
+  Marketplace,
   Order,
+  Product,
+  ProductReview,
+  Transaction,
   EcoTokenTransaction,
   Factory,
-  ProductReview,
   SystemConfiguration,
-  Transaction,
+  MaterialRequest,
   Analytics,
-  AdminPayment
+  AdminPayment,
+  VisionInference,
+  FactoryApplication,
+  CollectorApplication
 };
-
-

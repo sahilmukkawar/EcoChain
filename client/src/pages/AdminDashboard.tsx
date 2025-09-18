@@ -11,6 +11,7 @@ import adminService, {
 } from '../services/adminService.ts';
 import websocketService from '../services/websocketService.ts';
 import Analytics from '../components/Analytics.tsx';
+import ApprovalManagement from '../components/ApprovalManagement.tsx';
 import {
   BarChart3,
   Users,
@@ -144,7 +145,7 @@ const AdminDashboard: React.FC = () => {
   const [collectionsForPayment, setCollectionsForPayment] = useState<CollectionForPayment[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [paymentStats, setPaymentStats] = useState<PaymentStatistics | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'history' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'history' | 'analytics' | 'approvals'>('overview');
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
 
@@ -682,6 +683,7 @@ const AdminDashboard: React.FC = () => {
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'payments', label: 'Pending Payments', icon: DollarSign, badge: collectionsForPayment.length },
               { id: 'history', label: 'Payment History', icon: Clock },
+              { id: 'approvals', label: 'Approvals', icon: CheckCircle, badge: 0 }, // We'll update this badge count later
               { id: 'analytics', label: 'Analytics', icon: BarChart3 }
             ].map(tab => {
               const Icon = tab.icon;
@@ -689,7 +691,7 @@ const AdminDashboard: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => {
-                    setActiveTab(tab.id as 'overview' | 'payments' | 'history' | 'analytics');
+                    setActiveTab(tab.id as 'overview' | 'payments' | 'history' | 'analytics' | 'approvals');
                     if (tab.id === 'overview') {
                       setTimeout(refreshAdminData, 100);
                     } else if (tab.id === 'payments') {
@@ -1250,6 +1252,11 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Approval Management Tab */}
+        {activeTab === 'approvals' && (
+          <ApprovalManagement />
         )}
 
         {/* Analytics Tab */}

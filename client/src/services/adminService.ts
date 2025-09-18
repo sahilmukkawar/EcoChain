@@ -183,6 +183,40 @@ export interface AnalyticsData {
   }>;
 }
 
+// New interface for approval applications
+export interface ApprovalApplication {
+  _id: string;
+  userId: {
+    _id: string;
+    personalInfo: {
+      name: string;
+      email: string;
+      phone: string;
+    };
+    role: string;
+  };
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  reviewedBy?: {
+    _id: string;
+    personalInfo: {
+      name: string;
+    };
+  };
+  reviewedAt?: string;
+  rejectionReason?: string;
+  // Factory specific fields
+  factoryName?: string;
+  ownerName?: string;
+  gstNumber?: string;
+  licenseDocumentUrl?: string;
+  // Collector specific fields
+  companyName?: string;
+  contactName?: string;
+  serviceArea?: string[];
+  idDocumentUrl?: string;
+}
+
 class AdminService {
   private readonly baseURL = '/admin';
 
@@ -343,6 +377,124 @@ class AdminService {
     } catch (error: any) {
       console.error('Error fetching analytics data:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch analytics data');
+    }
+  }
+
+  // Get pending factory applications
+  async getPendingFactories() {
+    try {
+      const response = await api.get(`${this.baseURL}/approval/factories/pending`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching pending factories:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch pending factories');
+    }
+  }
+
+  // Get pending collector applications
+  async getPendingCollectors() {
+    try {
+      const response = await api.get(`${this.baseURL}/approval/collectors/pending`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching pending collectors:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch pending collectors');
+    }
+  }
+
+  // Get all applications with filtering
+  async getAllApplications(filters: {
+    type?: 'factory' | 'collector';
+    status?: 'pending' | 'approved' | 'rejected';
+    page?: number;
+    limit?: number;
+  } = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add filters to query params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          // Handle different value types appropriately
+          if (typeof value === 'number') {
+            queryParams.append(key, value.toString());
+          } else if (typeof value === 'string') {
+            queryParams.append(key, value);
+          }
+        }
+      });
+      
+      const response = await api.get(`${this.baseURL}/approval/applications?${queryParams.toString()}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching applications:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch applications');
+    }
+  }
+
+  // Approve factory application
+  async approveFactoryApplication(applicationId: string) {
+    try {
+      const response = await api.put(`${this.baseURL}/approval/factories/${applicationId}/approve`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error approving factory application:', error);
+      throw new Error(error.response?.data?.message || 'Failed to approve factory application');
+    }
+  }
+
+  // Reject factory application
+  async rejectFactoryApplication(applicationId: string, rejectionReason: string) {
+    try {
+      const response = await api.put(`${this.baseURL}/approval/factories/${applicationId}/reject`, { rejectionReason });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error rejecting factory application:', error);
+      throw new Error(error.response?.data?.message || 'Failed to reject factory application');
+    }
+  }
+
+  // Approve collector application
+  async approveCollectorApplication(applicationId: string) {
+    try {
+      const response = await api.put(`${this.baseURL}/approval/collectors/${applicationId}/approve`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error approving collector application:', error);
+      throw new Error(error.response?.data?.message || 'Failed to approve collector application');
+    }
+  }
+
+  // Reject collector application
+  async rejectCollectorApplication(applicationId: string, rejectionReason: string) {
+    try {
+      const response = await api.put(`${this.baseURL}/approval/collectors/${applicationId}/reject`, { rejectionReason });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error rejecting collector application:', error);
+      throw new Error(error.response?.data?.message || 'Failed to reject collector application');
+    }
+  }
+
+  // Get specific factory application details
+  async getFactoryApplicationDetails(applicationId: string) {
+    try {
+      const response = await api.get(`${this.baseURL}/approval/factories/${applicationId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching factory application details:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch factory application details');
+    }
+  }
+
+  // Get specific collector application details
+  async getCollectorApplicationDetails(applicationId: string) {
+    try {
+      const response = await api.get(`${this.baseURL}/approval/collectors/${applicationId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching collector application details:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch collector application details');
     }
   }
 }

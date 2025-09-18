@@ -47,7 +47,22 @@ api.interceptors.response.use(
 
 // Authentication API endpoints
 const authAPI = {
-  register: (userData: { name: string; email: string; phone?: string; password: string; role?: string; address?: any }) => {
+  register: (userData: { 
+    name: string; 
+    email: string; 
+    phone?: string; 
+    password: string; 
+    role?: string; 
+    address?: any;
+    // Factory specific fields
+    factoryName?: string;
+    ownerName?: string;
+    gstNumber?: string;
+    // Collector specific fields
+    companyName?: string;
+    contactName?: string;
+    serviceArea?: string[];
+  }) => {
     return api.post('/auth/register', userData);
   },
   login: (credentials: { email: string; password: string }) => {

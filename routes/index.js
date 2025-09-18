@@ -12,10 +12,12 @@ const orderRoutes = require('./orderRoutes');
 const productRoutes = require('./productRoutes');
 const ecoTokenRoutes = require('./ecoTokenRoutes');
 const adminRoutes = require('./adminRoutes');
+const adminApprovalRoutes = require('./adminApprovalRoutes');
 
 // API routes
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
+router.use('/admin/approval', adminApprovalRoutes);
 router.use('/users', userRoutes);
 router.use('/collections', garbageCollectionRoutes);
 // Use marketplace routes for marketplace functionality

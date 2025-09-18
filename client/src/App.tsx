@@ -23,12 +23,13 @@ import OrderTracking from './pages/OrderTracking.tsx';
 import PickupScheduling from './pages/PickupScheduling.tsx';
 import CustomerHelpCenter from './pages/CustomerHelpCenter.tsx';
 import Login from './pages/Login.tsx';
-import Register from './pages/Register.tsx';
+import Signup from './pages/Signup.tsx';
 import Achievements from './pages/Achievements.tsx';
 import Wallet from './pages/Wallet.tsx';
 import Orders from './pages/Orders.tsx';
 import FactoryOrders from './pages/FactoryOrders.tsx';
 import Profile from './pages/Profile.tsx';
+import PendingApproval from './pages/PendingApproval.tsx';
 
 function App() {
   const location = useLocation();
@@ -49,7 +50,7 @@ function App() {
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                <Route path="/signup" element={<Signup />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/waste-submission" element={<WasteSubmission />} />
@@ -69,6 +70,7 @@ function App() {
                 <Route path="/achievements" element={<Achievements />} />
                 <Route path="/wallet" element={<ProtectedRoute element={<Wallet />} allowedRoles={['user']} />} />
                 <Route path="/profile" element={<ProtectedRoute element={<Profile />} allowedRoles={['user', 'admin', 'factory', 'collector']} />} />
+                <Route path="/pending-approval" element={<ProtectedRoute element={<PendingApproval />} allowedRoles={['factory', 'collector']} />} />
               </Routes>
             </AnimatePresence>
           </main>

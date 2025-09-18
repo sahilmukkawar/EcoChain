@@ -1,8 +1,13 @@
 // routes/factoryRoutes.js
 const express = require('express');
 const router = express.Router();
+const { authenticate } = require('../middleware/auth');
+const { checkApprovalStatus } = require('../middleware/approvalMiddleware');
 const { Factory, MaterialRequest, Product, User } = require('../database/models');
-const auth = require('../middleware/auth');
+
+// Apply approval middleware to all factory routes
+router.use(authenticate);
+router.use(checkApprovalStatus);
 
 // Register factory profile
 router.post('/register', auth, async (req, res) => {
