@@ -1,0 +1,466 @@
+[
+  {
+    "_id": "68c5519a764a64839952156b",
+    "productId": "PRD_1757761946273_ey46e7x0y",
+    "factoryId": "68c3eec331eb68b256355662",
+    "productInfo": {
+      "name": "Bamboo Wall Clock - Premium Edition",
+      "description": "A large wall clock made of (or styled like) bamboo with a map design. It’s artistic and decorative; good as a feature piece.",
+      "category": "home_decor",
+      "images": [
+        "/uploads/product-images/images-1757767004414-230549096.jpg"
+      ],
+      "specifications": {
+        "features": []
+      },
+      "dimensions": {
+        "unit": "cm"
+      },
+      "weight": {
+        "unit": "kg"
+      }
+    },
+    "sustainability": {
+      "recycledMaterialPercentage": 90,
+      "carbonFootprint": 0,
+      "sustainabilityCertificates": [],
+      "recycledFrom": []
+    },
+    "pricing": {
+      "costPrice": 399,
+      "sellingPrice": 399,
+      "ecoTokenDiscount": 150,
+      "discountPercentage": 0
+    },
+    "inventory": {
+      "currentStock": 18,
+      "minStockLevel": 10,
+      "maxStockLevel": 1000,
+      "reorderPoint": 20
+    },
+    "sales": {
+      "totalSold": 0,
+      "revenue": 0,
+      "averageRating": 0,
+      "totalReviews": 0
+    },
+    "availability": {
+      "isActive": true,
+      "availableRegions": [],
+      "estimatedDeliveryDays": 7
+    },
+    "seoData": {
+      "tags": [],
+      "searchKeywords": []
+    },
+    "createdAt": "2025-09-13T11:12:26.281Z",
+    "updatedAt": "2025-09-17T03:52:14.623Z",
+    "__v": 2
+  },
+  {
+    "_id": "68c8035b628884f3d9b75d86",
+    "productId": "PRD_1757938523875_ycpln62tj",
+    "factoryId": "68c3eec331eb68b256355662",
+    "productInfo": {
+      "name": "Upcycled Denim Tote Bag",
+      "description": "Stylish tote bag made from old jeans fabric. Durable, washable, and sustainable.",
+      "category": "accessories",
+      "images": [
+        "/uploads/product-images/images-1757938523112-792587198.jpg"
+      ],
+      "specifications": {
+        "features": []
+      },
+      "dimensions": {
+        "unit": "cm"
+      },
+      "weight": {
+        "unit": "kg"
+      }
+    },
+    "sustainability": {
+      "recycledMaterialPercentage": 95,
+      "carbonFootprint": 0,
+      "sustainabilityCertificates": [],
+      "recycledFrom": []
+    },
+    "pricing": {
+      "costPrice": 399,
+      "sellingPrice": 399,
+      "ecoTokenDiscount": 150,
+      "discountPercentage": 0
+    },
+    "inventory": {
+      "currentStock": 18,
+      "minStockLevel": 10,
+      "maxStockLevel": 1000,
+      "reorderPoint": 20
+    },
+    "sales": {
+      "totalSold": 0,
+      "revenue": 0,
+      "averageRating": 0,
+      "totalReviews": 0
+    },
+    "availability": {
+      "isActive": true,
+      "availableRegions": [],
+      "estimatedDeliveryDays": 7
+    },
+    "seoData": {
+      "tags": [],
+      "searchKeywords": []
+    },
+    "createdAt": "2025-09-15T12:15:23.882Z",
+    "updatedAt": "2025-09-17T03:52:14.743Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c80446628884f3d9b75d8b",
+    "productId": "PRD_1757938758808_ryv3curr9",
+    "factoryId": "68c3eec331eb68b256355662",
+    "productInfo": {
+      "name": "Recycled Paper Notebook – Handmade Edition ( Pack of 6 )",
+      "description": "Handcrafted notebook from 100% recycled paper. Eco-friendly covers. Perfect for journaling. pack of 6",
+      "category": "stationery",
+      "images": [
+        "/uploads/product-images/images-1757938758703-781484600.webp"
+      ],
+      "specifications": {
+        "features": []
+      },
+      "dimensions": {
+        "unit": "cm"
+      },
+      "weight": {
+        "unit": "kg"
+      }
+    },
+    "sustainability": {
+      "recycledMaterialPercentage": 90,
+      "carbonFootprint": 0,
+      "sustainabilityCertificates": [],
+      "recycledFrom": []
+    },
+    "pricing": {
+      "costPrice": 249,
+      "sellingPrice": 249,
+      "ecoTokenDiscount": 50,
+      "discountPercentage": 0
+    },
+    "inventory": {
+      "currentStock": 20,
+      "minStockLevel": 10,
+      "maxStockLevel": 1000,
+      "reorderPoint": 20
+    },
+    "sales": {
+      "totalSold": 0,
+      "revenue": 0,
+      "averageRating": 0,
+      "totalReviews": 0
+    },
+    "availability": {
+      "isActive": true,
+      "availableRegions": [],
+      "estimatedDeliveryDays": 7
+    },
+    "seoData": {
+      "tags": [],
+      "searchKeywords": []
+    },
+    "createdAt": "2025-09-15T12:19:18.810Z",
+    "updatedAt": "2025-09-15T12:32:08.205Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c80516628884f3d9b75d90",
+    "productId": "PRD_1757938966848_gn2nclkgf",
+    "factoryId": "68c3eec331eb68b256355662",
+    "productInfo": {
+      "name": "Bamboo Cutlery Set – Reusable Edition",
+      "description": "Fork, spoon, and chopsticks made from bamboo. A sustainable dining choice.\n",
+      "category": "other",
+      "images": [
+        "/uploads/product-images/images-1757938966156-895937910.webp"
+      ],
+      "specifications": {
+        "features": []
+      },
+      "dimensions": {
+        "unit": "cm"
+      },
+      "weight": {
+        "unit": "kg"
+      }
+    },
+    "sustainability": {
+      "recycledMaterialPercentage": 95,
+      "carbonFootprint": 0,
+      "sustainabilityCertificates": [],
+      "recycledFrom": []
+    },
+    "pricing": {
+      "costPrice": 399,
+      "sellingPrice": 399,
+      "ecoTokenDiscount": 100,
+      "discountPercentage": 0
+    },
+    "inventory": {
+      "currentStock": 20,
+      "minStockLevel": 10,
+      "maxStockLevel": 1000,
+      "reorderPoint": 20
+    },
+    "sales": {
+      "totalSold": 0,
+      "revenue": 0,
+      "averageRating": 0,
+      "totalReviews": 0
+    },
+    "availability": {
+      "isActive": true,
+      "availableRegions": [],
+      "estimatedDeliveryDays": 7
+    },
+    "seoData": {
+      "tags": [],
+      "searchKeywords": []
+    },
+    "createdAt": "2025-09-15T12:22:46.852Z",
+    "updatedAt": "2025-09-15T12:31:37.147Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c80618628884f3d9b75d95",
+    "productId": "PRD_1757939224426_c1o125n4e",
+    "factoryId": "68c3eec331eb68b256355662",
+    "productInfo": {
+      "name": "Coconut Shell Bowl – Natural Edition",
+      "description": "Bowl made from coconut shells. 100% natural, biodegradable.",
+      "category": "other",
+      "images": [
+        "/uploads/product-images/images-1757939224355-892752345.jpeg"
+      ],
+      "specifications": {
+        "features": []
+      },
+      "dimensions": {
+        "unit": "cm"
+      },
+      "weight": {
+        "unit": "kg"
+      }
+    },
+    "sustainability": {
+      "recycledMaterialPercentage": 96,
+      "carbonFootprint": 0,
+      "sustainabilityCertificates": [],
+      "recycledFrom": []
+    },
+    "pricing": {
+      "costPrice": 249,
+      "sellingPrice": 249,
+      "ecoTokenDiscount": 50,
+      "discountPercentage": 0
+    },
+    "inventory": {
+      "currentStock": 20,
+      "minStockLevel": 10,
+      "maxStockLevel": 1000,
+      "reorderPoint": 20
+    },
+    "sales": {
+      "totalSold": 0,
+      "revenue": 0,
+      "averageRating": 0,
+      "totalReviews": 0
+    },
+    "availability": {
+      "isActive": true,
+      "availableRegions": [],
+      "estimatedDeliveryDays": 7
+    },
+    "seoData": {
+      "tags": [],
+      "searchKeywords": []
+    },
+    "createdAt": "2025-09-15T12:27:04.430Z",
+    "updatedAt": "2025-09-15T12:31:18.176Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c806fc628884f3d9b75da4",
+    "productId": "PRD_1757939452093_ke79ewte6",
+    "factoryId": "68c3eec331eb68b256355662",
+    "productInfo": {
+      "name": "Recycled Cardboard Lamp – Artistic Edition",
+      "description": "A table lamp crafted from recycled cardboard sheets. Rustic charm.",
+      "category": "home_decor",
+      "images": [
+        "/uploads/product-images/images-1757939452023-785470065.jpg"
+      ],
+      "specifications": {
+        "features": []
+      },
+      "dimensions": {
+        "unit": "cm"
+      },
+      "weight": {
+        "unit": "kg"
+      }
+    },
+    "sustainability": {
+      "recycledMaterialPercentage": 90,
+      "carbonFootprint": 0,
+      "sustainabilityCertificates": [],
+      "recycledFrom": []
+    },
+    "pricing": {
+      "costPrice": 599,
+      "sellingPrice": 599,
+      "ecoTokenDiscount": 150,
+      "discountPercentage": 0
+    },
+    "inventory": {
+      "currentStock": 20,
+      "minStockLevel": 10,
+      "maxStockLevel": 1000,
+      "reorderPoint": 20
+    },
+    "sales": {
+      "totalSold": 0,
+      "revenue": 0,
+      "averageRating": 0,
+      "totalReviews": 0
+    },
+    "availability": {
+      "isActive": true,
+      "availableRegions": [],
+      "estimatedDeliveryDays": 7
+    },
+    "seoData": {
+      "tags": [],
+      "searchKeywords": []
+    },
+    "createdAt": "2025-09-15T12:30:52.097Z",
+    "updatedAt": "2025-09-15T12:30:52.097Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c809ef628884f3d9b75e2c",
+    "productId": "PRD_1757940207441_so93p32xc",
+    "factoryId": "68c3eec331eb68b256355662",
+    "productInfo": {
+      "name": "Upcycled Glass Jar Candle – Scented Edition",
+      "description": "Eco-friendly candles in repurposed glass jars. Available in lavender & sandalwood scents.",
+      "category": "other",
+      "images": [
+        "/uploads/product-images/images-1757940207335-269413962.jpg"
+      ],
+      "specifications": {
+        "features": []
+      },
+      "dimensions": {
+        "unit": "cm"
+      },
+      "weight": {
+        "unit": "kg"
+      }
+    },
+    "sustainability": {
+      "recycledMaterialPercentage": 93,
+      "carbonFootprint": 0,
+      "sustainabilityCertificates": [],
+      "recycledFrom": []
+    },
+    "pricing": {
+      "costPrice": 280,
+      "sellingPrice": 280,
+      "ecoTokenDiscount": 50,
+      "discountPercentage": 0
+    },
+    "inventory": {
+      "currentStock": 20,
+      "minStockLevel": 10,
+      "maxStockLevel": 1000,
+      "reorderPoint": 20
+    },
+    "sales": {
+      "totalSold": 0,
+      "revenue": 0,
+      "averageRating": 0,
+      "totalReviews": 0
+    },
+    "availability": {
+      "isActive": true,
+      "availableRegions": [],
+      "estimatedDeliveryDays": 7
+    },
+    "seoData": {
+      "tags": [],
+      "searchKeywords": []
+    },
+    "createdAt": "2025-09-15T12:43:27.443Z",
+    "updatedAt": "2025-09-15T12:43:27.443Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c80cd3628884f3d9b75e87",
+    "productId": "PRD_1757940947845_c86xn9h1q",
+    "factoryId": "68c3eec331eb68b256355662",
+    "productInfo": {
+      "name": "Recycled Metal Wall Art – Abstract Edition",
+      "description": "Wall art piece made from recycled scrap metal. Adds an industrial vibe.",
+      "category": "home_decor",
+      "images": [
+        "/uploads/product-images/images-1757940947771-595210325.jpeg"
+      ],
+      "specifications": {
+        "features": []
+      },
+      "dimensions": {
+        "unit": "cm"
+      },
+      "weight": {
+        "unit": "kg"
+      }
+    },
+    "sustainability": {
+      "recycledMaterialPercentage": 88,
+      "carbonFootprint": 0,
+      "sustainabilityCertificates": [],
+      "recycledFrom": []
+    },
+    "pricing": {
+      "costPrice": 5999,
+      "sellingPrice": 5999,
+      "ecoTokenDiscount": 300,
+      "discountPercentage": 0
+    },
+    "inventory": {
+      "currentStock": 20,
+      "minStockLevel": 10,
+      "maxStockLevel": 1000,
+      "reorderPoint": 20
+    },
+    "sales": {
+      "totalSold": 0,
+      "revenue": 0,
+      "averageRating": 0,
+      "totalReviews": 0
+    },
+    "availability": {
+      "isActive": true,
+      "availableRegions": [],
+      "estimatedDeliveryDays": 7
+    },
+    "seoData": {
+      "tags": [],
+      "searchKeywords": []
+    },
+    "createdAt": "2025-09-15T12:55:47.849Z",
+    "updatedAt": "2025-09-17T03:57:10.004Z",
+    "__v": 0
+  }
+]

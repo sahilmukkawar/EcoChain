@@ -1,0 +1,14 @@
+{
+  "totalProducts": 8,
+  "categories": {
+    "home_decor": 3,
+    "accessories": 1,
+    "stationery": 1,
+    "other": 3
+  },
+  "factories": [
+    "68c3eec331eb68b256355662"
+  ],
+  "timestamp": "2025-09-18T20:01:19.703Z",
+  "uniqueFactories": 1
+}
