@@ -183,6 +183,30 @@ export interface AnalyticsData {
   }>;
 }
 
+// New interface for approval applications
+export interface ApprovalApplication {
+  _id: string;
+  userId: {
+    _id: string;
+    personalInfo: {
+      name: string;
+      email: string;
+    };
+    role: string;
+  };
+  factoryName?: string;
+  gstNumber?: string;
+  companyName?: string;
+  serviceArea?: string[];
+  vehicleDetails?: string;
+  licenseNumber?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  submittedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+}
+
 class AdminService {
   private readonly baseURL = '/admin';
 
@@ -343,6 +367,88 @@ class AdminService {
     } catch (error: any) {
       console.error('Error fetching analytics data:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch analytics data');
+    }
+  }
+
+  // Get all applications (collectors and factories)
+  async getAllApplications(filters: {
+    status?: 'pending' | 'approved' | 'rejected';
+    type?: 'factory' | 'collector';
+  } = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add filters to query params
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, value.toString());
+        }
+      });
+      
+      console.log('Fetching applications with params:', queryParams.toString());
+      const response = await api.get(`${this.baseURL}/applications?${queryParams.toString()}`);
+      console.log('Applications response:', response);
+      
+      // Ensure we always return a proper structure
+      if (!response || !response.data) {
+        console.log('No response data, returning empty applications');
+        return {
+          success: true,
+          data: {
+            applications: []
+          }
+        };
+      }
+      
+      console.log('Returning applications data:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching applications:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch applications');
+    }
+  }
+
+  // Approve factory application
+  async approveFactoryApplication(applicationId: string) {
+    try {
+      const response = await api.post(`${this.baseURL}/applications/factory/${applicationId}/approve`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error approving factory application:', error);
+      throw new Error(error.response?.data?.message || 'Failed to approve factory application');
+    }
+  }
+
+  // Reject factory application
+  async rejectFactoryApplication(applicationId: string, reason: string) {
+    try {
+      const response = await api.post(`${this.baseURL}/applications/factory/${applicationId}/reject`, { reason });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error rejecting factory application:', error);
+      throw new Error(error.response?.data?.message || 'Failed to reject factory application');
+    }
+  }
+
+  // Approve collector application
+  async approveCollectorApplication(applicationId: string) {
+    try {
+      const response = await api.post(`${this.baseURL}/applications/collector/${applicationId}/approve`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error approving collector application:', error);
+      throw new Error(error.response?.data?.message || 'Failed to approve collector application');
+    }
+  }
+
+  // Reject collector application
+  async rejectCollectorApplication(applicationId: string, reason: string) {
+    try {
+      const response = await api.post(`${this.baseURL}/applications/collector/${applicationId}/reject`, { reason });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error rejecting collector application:', error);
+      throw new Error(error.response?.data?.message || 'Failed to reject collector application');
     }
   }
 }

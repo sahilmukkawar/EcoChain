@@ -98,7 +98,7 @@ cd client && npm start
 
 ### 🔐 Authentication Endpoints
 ```
-POST /api/auth/register     - Register new user (user/collector/factory/admin)
+POST /api/auth/register     - Sign up new user (user/collector/factory/admin)
 POST /api/auth/login        - User login with email/password
 POST /api/auth/logout       - Secure logout
 POST /api/auth/refresh      - Refresh JWT token
@@ -143,7 +143,7 @@ POST /api/tokens/calculate  - Calculate potential token earnings
 
 ### 🏭 Factory Management
 ```
-POST /api/factories/register - Register factory profile
+POST /api/factories/register - Sign up factory profile
 GET  /api/factories/profile  - Get factory profile
 PUT  /api/factories/profile  - Update factory profile
 GET  /api/factories          - Browse all factories

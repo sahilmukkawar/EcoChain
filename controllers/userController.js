@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../database/models/User');
 
 /**
- * Register a new user
+ * Sign up a new user
  */
 const registerUser = async (req, res, next) => {
   try {
@@ -60,7 +60,7 @@ const registerUser = async (req, res, next) => {
     
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'User signed up successfully',
       data: {
         user: {
           id: user._id,

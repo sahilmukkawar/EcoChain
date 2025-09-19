@@ -50,11 +50,17 @@ api.interceptors.response.use(
 
 // Authentication API endpoints
 const authAPI = {
-  register: (userData: { name: string; email: string; phone?: string; password: string; role?: string; address?: any }) => {
+  register: (userData: { name: string; email: string; phone?: string; password: string; role?: string; address?: any; collectorInfo?: any; factoryInfo?: any }) => {
     return api.post('/auth/register', userData);
   },
   login: (credentials: { email: string; password: string }) => {
     return api.post('/auth/login', credentials);
+  },
+  verifyOTP: (data: { email: string; otp: string }) => {
+    return api.post('/auth/verify-otp', data);
+  },
+  resendOTP: (data: { email: string }) => {
+    return api.post('/auth/resend-otp', data);
   },
   refreshToken: (refreshToken: string) => {
     return api.post('/auth/refresh', { refreshToken });
@@ -622,7 +628,7 @@ const notificationAPI = {
     return api.get('/notifications/preferences');
   },
   
-  // Register device for push notifications
+  // Sign up device for push notifications
   registerDevice: (deviceData: { token: string; platform: 'ios' | 'android' | 'web'; }) => {
     return api.post('/notifications/devices', deviceData);
   },

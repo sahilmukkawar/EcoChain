@@ -2,6 +2,8 @@
 const GarbageCollection = require('../database/models/GarbageCollection');
 const User = require('../database/models/User');
 const AdminPayment = require('../database/models/AdminPayment');
+const FactoryApplication = require('../database/models/FactoryApplication');
+const CollectorApplication = require('../database/models/CollectorApplication');
 const { calculateCollectorPayment } = require('../utils/paymentRates');
 const logger = require('../utils/logger');
 
@@ -1009,6 +1011,345 @@ const getAnalyticsData = async (req, res) => {
   }
 };
 
+/**
+ * Get all applications (collectors and factories)
+ */
+const getAllApplications = async (req, res) => {
+  try {
+    console.log('getAllApplications called with query:', req.query);
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      console.log('User role is not admin:', req.user.role);
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { status, type } = req.query;
+    console.log('Query parameters - status:', status, 'type:', type);
+    
+    // Build filters
+    const filters = {};
+    if (status) filters.status = status;
+    
+    let applications = [];
+    
+    // Get factory applications
+    if (!type || type === 'factory') {
+      console.log('Fetching factory applications with filters:', filters);
+      const factoryApplications = await FactoryApplication.find(filters)
+        .populate('userId', 'personalInfo.name personalInfo.email role')
+        .sort({ submittedAt: -1 });
+      console.log('Found factory applications:', factoryApplications.length);
+      
+      applications = applications.concat(factoryApplications.map(app => {
+        const appObj = app.toObject ? app.toObject() : app;
+        return {
+          ...appObj,
+          type: 'factory'
+        };
+      }));
+    }
+    
+    // Get collector applications
+    if (!type || type === 'collector') {
+      console.log('Fetching collector applications with filters:', filters);
+      const collectorApplications = await CollectorApplication.find(filters)
+        .populate('userId', 'personalInfo.name personalInfo.email role')
+        .sort({ submittedAt: -1 });
+      console.log('Found collector applications:', collectorApplications.length);
+      
+      applications = applications.concat(collectorApplications.map(app => {
+        const appObj = app.toObject ? app.toObject() : app;
+        return {
+          ...appObj,
+          type: 'collector'
+        };
+      }));
+    }
+    
+    console.log('Total applications before sorting:', applications.length);
+    
+    // Sort all applications by submitted date
+    applications.sort((a, b) => {
+      const dateA = a.submittedAt ? new Date(a.submittedAt) : new Date(0);
+      const dateB = b.submittedAt ? new Date(b.submittedAt) : new Date(0);
+      return dateB - dateA;
+    });
+    
+    console.log('Total applications after sorting:', applications.length);
+    
+    res.json({
+      success: true,
+      data: {
+        applications: applications || []
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    logger.error('Error fetching applications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch applications',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Approve factory application
+ */
+const approveFactoryApplication = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { applicationId } = req.params;
+    
+    // Find the factory application
+    const application = await FactoryApplication.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Factory application not found'
+      });
+    }
+    
+    // Check if already approved or rejected
+    if (application.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Application is already ${application.status}`
+      });
+    }
+    
+    // Update application status
+    application.status = 'approved';
+    application.reviewedAt = new Date();
+    application.reviewedBy = req.user.id;
+    await application.save();
+    
+    // Update user account status to active
+    const user = await User.findById(application.userId);
+    if (user) {
+      user.accountStatus = 'active';
+      // Update company info
+      user.companyInfo = {
+        name: application.factoryName,
+        gstNumber: application.gstNumber,
+        address: application.address,
+        contactPerson: application.contactPerson
+      };
+      await user.save();
+    }
+    
+    res.json({
+      success: true,
+      message: 'Factory application approved successfully',
+      data: {
+        application
+      }
+    });
+  } catch (error) {
+    logger.error('Error approving factory application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve factory application',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Reject factory application
+ */
+const rejectFactoryApplication = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { applicationId } = req.params;
+    const { reason } = req.body;
+    
+    // Find the factory application
+    const application = await FactoryApplication.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Factory application not found'
+      });
+    }
+    
+    // Check if already approved or rejected
+    if (application.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Application is already ${application.status}`
+      });
+    }
+    
+    // Update application status
+    application.status = 'rejected';
+    application.rejectionReason = reason;
+    application.reviewedAt = new Date();
+    application.reviewedBy = req.user.id;
+    await application.save();
+    
+    res.json({
+      success: true,
+      message: 'Factory application rejected successfully',
+      data: {
+        application
+      }
+    });
+  } catch (error) {
+    logger.error('Error rejecting factory application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject factory application',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Approve collector application
+ */
+const approveCollectorApplication = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { applicationId } = req.params;
+    
+    // Find the collector application
+    const application = await CollectorApplication.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collector application not found'
+      });
+    }
+    
+    // Check if already approved or rejected
+    if (application.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Application is already ${application.status}`
+      });
+    }
+    
+    // Update application status
+    application.status = 'approved';
+    application.reviewedAt = new Date();
+    application.reviewedBy = req.user.id;
+    await application.save();
+    
+    // Update user account status to active
+    const user = await User.findById(application.userId);
+    if (user) {
+      user.accountStatus = 'active';
+      // Update company info
+      user.companyInfo = {
+        name: application.companyName,
+        serviceArea: application.serviceArea,
+        vehicleDetails: application.vehicleDetails,
+        licenseNumber: application.licenseNumber,
+        contactPerson: application.contactPerson
+      };
+      await user.save();
+    }
+    
+    res.json({
+      success: true,
+      message: 'Collector application approved successfully',
+      data: {
+        application
+      }
+    });
+  } catch (error) {
+    logger.error('Error approving collector application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve collector application',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Reject collector application
+ */
+const rejectCollectorApplication = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { applicationId } = req.params;
+    const { reason } = req.body;
+    
+    // Find the collector application
+    const application = await CollectorApplication.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collector application not found'
+      });
+    }
+    
+    // Check if already approved or rejected
+    if (application.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Application is already ${application.status}`
+      });
+    }
+    
+    // Update application status
+    application.status = 'rejected';
+    application.rejectionReason = reason;
+    application.reviewedAt = new Date();
+    application.reviewedBy = req.user.id;
+    await application.save();
+    
+    res.json({
+      success: true,
+      message: 'Collector application rejected successfully',
+      data: {
+        application
+      }
+    });
+  } catch (error) {
+    logger.error('Error rejecting collector application:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject collector application',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getCollectionsForPayment,
   processCollectorPayment,
@@ -1019,5 +1360,10 @@ module.exports = {
   getPaymentHistory,
   getPaymentStatistics,
   debugPaymentHistory,
-  getAnalyticsData // Add this export
+  getAnalyticsData,
+  getAllApplications,
+  approveFactoryApplication,
+  rejectFactoryApplication,
+  approveCollectorApplication,
+  rejectCollectorApplication
 };

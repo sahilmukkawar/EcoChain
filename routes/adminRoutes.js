@@ -31,6 +31,21 @@ router.get('/payments/statistics', authenticate, adminController.getPaymentStati
 // Get analytics data
 router.get('/analytics', authenticate, adminController.getAnalyticsData);
 
+// Get all applications (collectors and factories)
+router.get('/applications', authenticate, adminController.getAllApplications);
+
+// Approve factory application
+router.post('/applications/factory/:applicationId/approve', authenticate, adminController.approveFactoryApplication);
+
+// Reject factory application
+router.post('/applications/factory/:applicationId/reject', authenticate, adminController.rejectFactoryApplication);
+
+// Approve collector application
+router.post('/applications/collector/:applicationId/approve', authenticate, adminController.approveCollectorApplication);
+
+// Reject collector application
+router.post('/applications/collector/:applicationId/reject', authenticate, adminController.rejectCollectorApplication);
+
 // Debug payment history (temporary)
 router.get('/debug/payment-history', authenticate, adminController.debugPaymentHistory);
 

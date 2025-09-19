@@ -155,6 +155,19 @@ const userSchema = new mongoose.Schema({
   refreshToken: {
     type: String,
     select: false
+  },
+  // Add OTP fields for email verification
+  otp: {
+    code: {
+      type: String
+    },
+    expiresAt: {
+      type: Date
+    }
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

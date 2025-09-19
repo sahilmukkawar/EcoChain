@@ -12,7 +12,7 @@
     "setup-db": "node setup-database.js",
     "init-db": "node database/init.js",
     "test-db": "node database/test-connection.js",
-    "repair-passwords": "node scripts/repair-passwords.js",
+    "repair-passwords": "node scripts/repairSeededPasswords.js",
     "cleanup-products": "node scripts/cleanup-static-products.js",
     "fix-pricing": "node scripts/fix-existing-product-pricing.js",
     "test-pricing": "node scripts/test-product-pricing.js",

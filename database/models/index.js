@@ -9,6 +9,8 @@ const SystemConfiguration = require('./SystemConfiguration');
 const Transaction = require('./Transaction');
 const Analytics = require('./Analytics');
 const AdminPayment = require('./AdminPayment');
+const FactoryApplication = require('./FactoryApplication');
+const CollectorApplication = require('./CollectorApplication');
 
 module.exports = {
   User,
@@ -21,7 +23,7 @@ module.exports = {
   SystemConfiguration,
   Transaction,
   Analytics,
-  AdminPayment
+  AdminPayment,
+  FactoryApplication,
+  CollectorApplication
 };
-
-

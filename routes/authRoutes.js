@@ -3,9 +3,15 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../database/models');
+const { User, FactoryApplication, CollectorApplication } = require('../database/models');
 const { authenticate } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { sendOTP, sendRegistrationConfirmation } = require('../client/src/utils/notificationService');
+
+// Generate a random 6-digit OTP
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -16,7 +22,10 @@ router.post('/register', async (req, res) => {
       password,
       phone,
       role = 'user',
-      address
+      address,
+      // Additional fields for collectors and factories
+      collectorInfo,
+      factoryInfo
     } = req.body;
 
     // Check if user already exists
@@ -55,6 +64,13 @@ router.post('/register', async (req, res) => {
       }
     }
 
+    // Generate OTP for email verification
+    const otp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+    // For factory and collector roles, set account status to inactive initially
+    const accountStatus = (role === 'factory' || role === 'collector') ? 'inactive' : 'active';
+
     // Create new user
     const user = new User({
       userId,
@@ -65,19 +81,75 @@ router.post('/register', async (req, res) => {
       },
       password,
       role,
-      address: cleanAddress
+      address: cleanAddress,
+      accountStatus, // Set account status based on role
+      otp: {
+        code: otp,
+        expiresAt: otpExpiry
+      },
+      isEmailVerified: false
     });
 
     await user.save();
 
-    // Generate tokens
-    const accessToken = user.generateAuthToken();
-    const refreshToken = user.generateRefreshToken();
-    await user.save(); // Save refresh token
+    // For factory and collector roles, create an application automatically if info is provided
+    if ((role === 'factory' || role === 'collector') && (collectorInfo || factoryInfo)) {
+      try {
+        if (role === 'collector' && collectorInfo) {
+          // Create collector application
+          const serviceArea = Array.isArray(collectorInfo.serviceArea) 
+            ? collectorInfo.serviceArea 
+            : collectorInfo.serviceArea ? [collectorInfo.serviceArea] : [];
+          
+          const collectorApplication = new CollectorApplication({
+            userId: user._id,
+            companyName: collectorInfo.companyName || '',
+            serviceArea: serviceArea,
+            vehicleDetails: collectorInfo.vehicleDetails || '',
+            licenseNumber: collectorInfo.licenseNumber || '',
+            contactPerson: {
+              name: collectorInfo.contactPerson?.name || name || '',
+              email: collectorInfo.contactPerson?.email || email || '',
+              phone: collectorInfo.contactPerson?.phone || phone || ''
+            },
+            businessDetails: collectorInfo.businessDetails || {}
+          });
+          
+          await collectorApplication.save();
+        } else if (role === 'factory' && factoryInfo) {
+          // Create factory application
+          const factoryApplication = new FactoryApplication({
+            userId: user._id,
+            factoryName: factoryInfo.factoryName || '',
+            gstNumber: factoryInfo.gstNumber || '',
+            address: factoryInfo.address || {},
+            contactPerson: {
+              name: factoryInfo.contactPerson?.name || name || '',
+              email: factoryInfo.contactPerson?.email || email || '',
+              phone: factoryInfo.contactPerson?.phone || phone || ''
+            },
+            businessDetails: factoryInfo.businessDetails || {}
+          });
+          
+          await factoryApplication.save();
+        }
+      } catch (appError) {
+        console.error('Failed to create application:', appError);
+        // Don't fail registration if application creation fails, but log the error
+      }
+    }
+
+    // Send OTP email
+    try {
+      await sendOTP(user, otp);
+    } catch (emailError) {
+      console.error('Failed to send OTP email:', emailError);
+      // Don't fail registration if email fails, but log the error
+    }
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'User signed up successfully. Please check your email for verification code.',
       data: {
         user: {
           id: user._id,
@@ -85,13 +157,122 @@ router.post('/register', async (req, res) => {
           name: user.personalInfo.name,
           email: user.personalInfo.email,
           role: user.role,
-          ecoWallet: user.ecoWallet,
-          sustainabilityScore: user.sustainabilityScore
+          isEmailVerified: user.isEmailVerified
         },
-        tokens: {
-          accessToken,
-          refreshToken
-        }
+        requiresEmailVerification: true,
+        requiresApplication: (role === 'factory' || role === 'collector')
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// Submit factory application
+router.post('/factory-application', authenticate, async (req, res) => {
+  try {
+    // Check if user is a factory
+    if (req.user.role !== 'factory') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only factory users can submit factory applications'
+      });
+    }
+
+    const {
+      factoryName,
+      gstNumber,
+      address,
+      contactPerson,
+      businessDetails,
+      documents
+    } = req.body;
+
+    // Check if application already exists for this user
+    const existingApplication = await FactoryApplication.findOne({ userId: req.user.id });
+    if (existingApplication) {
+      return res.status(400).json({
+        success: false,
+        message: 'Factory application already exists for this user'
+      });
+    }
+
+    // Create factory application
+    const factoryApplication = new FactoryApplication({
+      userId: req.user.id,
+      factoryName,
+      gstNumber,
+      address,
+      contactPerson,
+      businessDetails,
+      documents,
+      status: 'pending'
+    });
+
+    await factoryApplication.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Factory application submitted successfully. Awaiting admin approval.',
+      data: {
+        application: factoryApplication
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// Submit collector application
+router.post('/collector-application', authenticate, async (req, res) => {
+  try {
+    // Check if user is a collector
+    if (req.user.role !== 'collector') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only collector users can submit collector applications'
+      });
+    }
+
+    const {
+      companyName,
+      serviceArea,
+      vehicleDetails,
+      licenseNumber,
+      contactPerson,
+      businessDetails,
+      documents
+    } = req.body;
+
+    // Check if application already exists for this user
+    const existingApplication = await CollectorApplication.findOne({ userId: req.user.id });
+    if (existingApplication) {
+      return res.status(400).json({
+        success: false,
+        message: 'Collector application already exists for this user'
+      });
+    }
+
+    // Create collector application
+    const collectorApplication = new CollectorApplication({
+      userId: req.user.id,
+      companyName,
+      serviceArea,
+      vehicleDetails,
+      licenseNumber,
+      contactPerson,
+      businessDetails,
+      documents,
+      status: 'pending'
+    });
+
+    await collectorApplication.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Collector application submitted successfully. Awaiting admin approval.',
+      data: {
+        application: collectorApplication
       }
     });
   } catch (error) {
@@ -124,10 +305,18 @@ router.post('/login', async (req, res) => {
 
     // Check account status
     if (user.accountStatus !== 'active') {
-      return res.status(403).json({
-        success: false,
-        message: 'Account is suspended or inactive'
-      });
+      // For factory and collector users, provide a specific message about approval
+      if (user.role === 'factory' || user.role === 'collector') {
+        return res.status(403).json({
+          success: false,
+          message: 'Your application is pending admin approval. You will receive a notification once approved.'
+        });
+      } else {
+        return res.status(403).json({
+          success: false,
+          message: 'Account is suspended or inactive'
+        });
+      }
     }
 
     // Update last active
@@ -459,6 +648,142 @@ router.put('/change-password', authenticate, async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// Verify OTP
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ 'personalInfo.email': email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if OTP exists and is valid
+    if (!user.otp || !user.otp.code || !user.otp.expiresAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'No OTP found for this user'
+      });
+    }
+
+    // Check if OTP is expired
+    if (user.otp.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please request a new one.'
+      });
+    }
+
+    // Check if OTP matches
+    if (user.otp.code !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP'
+      });
+    }
+
+    // OTP is valid, mark email as verified
+    user.isEmailVerified = true;
+    user.otp = undefined; // Clear OTP after successful verification
+    await user.save();
+
+    // Send welcome email
+    try {
+      await sendRegistrationConfirmation(user);
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail the response if email fails
+    }
+
+    // Generate tokens for regular users
+    let tokens = null;
+    if (user.role !== 'factory' && user.role !== 'collector') {
+      const accessToken = user.generateAuthToken();
+      const refreshToken = user.generateRefreshToken();
+      await user.save(); // Save refresh token
+      
+      tokens = {
+        accessToken,
+        refreshToken
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully',
+      data: {
+        user: {
+          id: user._id,
+          userId: user.userId,
+          name: user.personalInfo.name,
+          email: user.personalInfo.email,
+          role: user.role,
+          ecoWallet: user.ecoWallet,
+          sustainabilityScore: user.sustainabilityScore,
+          isEmailVerified: user.isEmailVerified
+        },
+        tokens: tokens
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Resend OTP
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ 'personalInfo.email': email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if email is already verified
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate new OTP
+    const otp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+    // Update user with new OTP
+    user.otp = {
+      code: otp,
+      expiresAt: otpExpiry
+    };
+    await user.save();
+
+    // Send OTP email
+    try {
+      await sendOTP(user, otp);
+    } catch (emailError) {
+      console.error('Failed to send OTP email:', emailError);
+      // Don't fail the response if email fails
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP resent successfully. Please check your email.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

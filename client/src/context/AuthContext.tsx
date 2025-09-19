@@ -22,6 +22,7 @@ interface User {
     totalSpent: number;
   };
   sustainabilityScore?: number;
+  isEmailVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -31,7 +32,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, phone?: string, role?: string) => Promise<void>;
+  register: (name: string, email: string, password: string, phone?: string, role?: string, additionalInfo?: any) => Promise<{requiresEmailVerification?: boolean, requiresApplication?: boolean}>;
+  verifyOTP: (email: string, otp: string) => Promise<void>;
+  resendOTP: (email: string) => Promise<void>;
   logout: () => void;
   refreshAccessToken: () => Promise<void>;
   updateUser: (userData: User) => void;
@@ -151,34 +154,131 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Register function
-  const register = async (name: string, email: string, password: string, phone?: string, role: string = 'user') => {
+  // Sign up function
+  const register = async (name: string, email: string, password: string, phone?: string, role: string = 'user', additionalInfo?: any) => {
     setIsLoading(true);
     try {
-      const response = await authAPI.register({ name, email, password, phone, role });
+      // Prepare the registration data
+      const registrationData: any = { name, email, password, phone, role };
+      
+      // Add additional information for collectors and factories
+      if (role === 'collector' && additionalInfo?.collectorData) {
+        registrationData.collectorInfo = additionalInfo.collectorData;
+      } else if (role === 'factory' && additionalInfo?.factoryData) {
+        registrationData.factoryInfo = additionalInfo.factoryData;
+      }
+      
+      const response = await authAPI.register(registrationData);
+      
+      if (response.data.success) {
+        // For sign up that requires email verification
+        if (response.data.data.requiresEmailVerification) {
+          // Don't set user/token yet, they need to verify email first
+          return { requiresEmailVerification: true };
+        } else {
+          // For immediate login (if any)
+          const { user: userData, tokens } = response.data.data;
+          
+          setUser(userData);
+          setToken(tokens.accessToken);
+          setRefreshToken(tokens.refreshToken);
+          
+          localStorage.setItem('accessToken', tokens.accessToken);
+          localStorage.setItem('refreshToken', tokens.refreshToken);
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          return { requiresEmailVerification: false };
+        }
+      } else {
+        throw new Error(response.data.message || 'Sign up failed');
+      }
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      let errorMessage = 'Sign up failed. Please try again.';
+      
+      if (error.response?.status === 409) {
+        errorMessage = 'An account with this email already exists.';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.message || 'Invalid sign up data. Please check your information.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Verify OTP function
+  const verifyOTP = async (email: string, otp: string) => {
+    setIsLoading(true);
+    try {
+      const response = await authAPI.verifyOTP({ email, otp });
       
       if (response.data.success) {
         const { user: userData, tokens } = response.data.data;
         
         setUser(userData);
-        setToken(tokens.accessToken);
-        setRefreshToken(tokens.refreshToken);
         
-        localStorage.setItem('accessToken', tokens.accessToken);
-        localStorage.setItem('refreshToken', tokens.refreshToken);
+        // Set tokens if they exist (for regular users)
+        if (tokens) {
+          setToken(tokens.accessToken);
+          setRefreshToken(tokens.refreshToken);
+          
+          localStorage.setItem('accessToken', tokens.accessToken);
+          localStorage.setItem('refreshToken', tokens.refreshToken);
+        }
+        
         localStorage.setItem('user', JSON.stringify(userData));
+        
+        // For factory and collector users, redirect to application form
+        if ((userData.role === 'factory' || userData.role === 'collector') && !tokens) {
+          // These users need to submit an application after email verification
+          setTimeout(() => {
+            window.location.href = userData.role === 'factory' 
+              ? '/factory-application' 
+              : '/collector-application';
+          }, 100);
+        }
       } else {
-        throw new Error(response.data.message || 'Registration failed');
+        throw new Error(response.data.message || 'OTP verification failed');
       }
     } catch (error: any) {
-      console.error('Registration error:', error);
-      let errorMessage = 'Registration failed. Please try again.';
+      console.error('OTP verification error:', error);
+      let errorMessage = 'OTP verification failed. Please try again.';
       
-      if (error.response?.status === 409) {
-        errorMessage = 'An account with this email already exists.';
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response?.data?.message || 'Invalid registration data. Please check your information.';
-      } else if (error.response?.data?.message) {
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Resend OTP function
+  const resendOTP = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const response = await authAPI.resendOTP({ email });
+      
+      if (response.data.success) {
+        // OTP resent successfully
+        return;
+      } else {
+        throw new Error(response.data.message || 'Failed to resend OTP');
+      }
+    } catch (error: any) {
+      console.error('Resend OTP error:', error);
+      let errorMessage = 'Failed to resend OTP. Please try again.';
+      
+      if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
@@ -228,6 +328,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading,
         login,
         register,
+        verifyOTP,
+        resendOTP,
         logout,
         refreshAccessToken,
         updateUser,

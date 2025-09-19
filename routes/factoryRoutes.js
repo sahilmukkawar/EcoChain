@@ -4,7 +4,7 @@ const router = express.Router();
 const { Factory, MaterialRequest, Product, User } = require('../database/models');
 const auth = require('../middleware/auth');
 
-// Register factory profile
+// Sign up factory profile
 router.post('/register', auth, async (req, res) => {
   try {
     if (req.user.role !== 'factory') {

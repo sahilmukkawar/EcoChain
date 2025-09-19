@@ -149,7 +149,6 @@ const Navigation: React.FC = () => {
   function getNavigationItems() {
     const commonItems = [
       { to: "/marketplace", label: "Marketplace", icon: ShoppingCart },
-
     ];
 
     if (!isAuthenticated) return commonItems;
@@ -167,7 +166,7 @@ const Navigation: React.FC = () => {
         return [
           ...commonItems,
           { to: "/factory-dashboard", label: "Dashboard", icon: Factory },
-          { to: "/factory-product-management", label: "Product Management", icon: Package },
+          { to: "/factory-product-management", label: "Products", icon: Package },
           { to: "/materials", label: "Materials", icon: Recycle },
           { to: "/production", label: "Production", icon: Settings },
           { to: "/factory-orders", label: "Orders", icon: ShoppingCart },
@@ -179,6 +178,7 @@ const Navigation: React.FC = () => {
           { to: "/routes", label: "Routes", icon: Truck },
           { to: "/earnings", label: "Earnings", icon: DollarSign },
         ];
+      case "user":
       default:
         return [
           ...commonItems,
@@ -222,12 +222,14 @@ const Navigation: React.FC = () => {
         title={`Shopping Cart (${cartCount} items)`}
         aria-label={`Shopping Cart with ${cartCount} items`}
       >
-        <ShoppingCart size={20} />
-        {cartCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold min-w-[20px]">
-            {cartCount > 99 ? "99+" : cartCount}
-          </span>
-        )}
+        <div className="relative">
+          <ShoppingCart size={20} />
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold min-w-[20px]">
+              {cartCount > 99 ? "99+" : cartCount}
+            </span>
+          )}
+        </div>
       </Link>
     );
   }
@@ -408,7 +410,7 @@ const Navigation: React.FC = () => {
                   Login
                 </Link>
                 <Link
-                  to="/register"
+                  to="/signup"
                   className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-blue-400 text-white shadow-sm hover:from-green-600 hover:to-blue-500 font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 >
                   Sign Up
@@ -567,7 +569,7 @@ const Navigation: React.FC = () => {
                   Login
                 </Link>
                 <Link
-                  to="/register"
+                  to="/signup"
                   onClick={handleLinkClick}
                   className="block w-full px-4 py-3 text-center rounded-lg bg-gradient-to-r from-green-500 to-blue-400 text-white shadow-sm hover:from-green-600 hover:to-blue-500 font-medium transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                 >

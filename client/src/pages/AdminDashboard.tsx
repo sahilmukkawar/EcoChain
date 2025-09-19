@@ -11,6 +11,7 @@ import adminService, {
 } from '../services/adminService.ts';
 import websocketService from '../services/websocketService.ts';
 import Analytics from '../components/Analytics.tsx';
+import ApprovalManagement from '../services/ApprovalManagement.tsx';
 import {
   BarChart3,
   Users,
@@ -144,7 +145,8 @@ const AdminDashboard: React.FC = () => {
   const [collectionsForPayment, setCollectionsForPayment] = useState<CollectionForPayment[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [paymentStats, setPaymentStats] = useState<PaymentStatistics | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'history' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'approvals' | 'payments' | 'history' | 'analytics'>('overview');
+  const [activeUserTab, setActiveUserTab] = useState<'users' | 'collectors' | 'factories'>('users');
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
 
@@ -680,6 +682,8 @@ const AdminDashboard: React.FC = () => {
           <div className="flex space-x-8">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'users', label: 'User Management', icon: Users },
+              { id: 'approvals', label: 'Approvals', icon: CheckCircle },
               { id: 'payments', label: 'Pending Payments', icon: DollarSign, badge: collectionsForPayment.length },
               { id: 'history', label: 'Payment History', icon: Clock },
               { id: 'analytics', label: 'Analytics', icon: BarChart3 }
@@ -1008,6 +1012,269 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">User Management</h2>
+              <button
+                onClick={refreshAdminData}
+                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+              >
+                <RefreshCw size={16} />
+                Refresh
+              </button>
+            </div>
+
+            {/* Users, Collectors, and Factories Tabs */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="border-b border-gray-200">
+                <nav className="flex -mb-px">
+                  <button
+                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+                      activeUserTab === 'users'
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                    onClick={() => setActiveUserTab('users')}
+                  >
+                    Regular Users
+                  </button>
+                  <button
+                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+                      activeUserTab === 'collectors'
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                    onClick={() => setActiveUserTab('collectors')}
+                  >
+                    Collectors
+                  </button>
+                  <button
+                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${
+                      activeUserTab === 'factories'
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                    onClick={() => setActiveUserTab('factories')}
+                  >
+                    Factories
+                  </button>
+                </nav>
+              </div>
+
+              <div className="p-6">
+                {activeUserTab === 'users' && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            User
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Contact
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Stats
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Joined
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {users.map((user) => (
+                          <tr key={user._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                    <span className="text-green-800 font-medium">
+                                      {user.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                  <div className="text-sm text-gray-500">ID: {user._id.slice(-6)}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{user.email}</div>
+                              <div className="text-sm text-gray-500">{user.phone}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{user.completedCollections} collections</div>
+                              <div className="text-sm text-green-600">{user.ecoTokens} tokens</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                user.accountStatus === 'active' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {user.accountStatus}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(user.joinedDate).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {activeUserTab === 'collectors' && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Collector
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Contact
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Performance
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Joined
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {collectors.map((collector) => (
+                          <tr key={collector._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <span className="text-blue-800 font-medium">
+                                      {collector.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{collector.name}</div>
+                                  <div className="text-sm text-gray-500">ID: {collector._id.slice(-6)}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{collector.email}</div>
+                              <div className="text-sm text-gray-500">{collector.phone}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{collector.completedCollections} collections</div>
+                              <div className="text-sm text-green-600">₹{collector.totalEarnings} earned</div>
+                              <div className="text-sm text-gray-500">Rating: {collector.rating} ({collector.completionRate}%)</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                collector.accountStatus === 'active' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {collector.accountStatus}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(collector.joinedDate).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {activeUserTab === 'factories' && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Factory
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Contact
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Stats
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Joined
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {factories.map((factory) => (
+                          <tr key={factory._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                    <span className="text-purple-800 font-medium">
+                                      {factory.name.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{factory.name}</div>
+                                  <div className="text-sm text-gray-500">ID: {factory._id.slice(-6)}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{factory.email}</div>
+                              <div className="text-sm text-gray-500">{factory.phone}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{factory.materialsProcessed} kg processed</div>
+                              <div className="text-sm text-green-600">{factory.productsListed} products</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                factory.accountStatus === 'active' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {factory.accountStatus}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(factory.joinedDate).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Approvals Tab */}
+        {activeTab === 'approvals' && (
+          <ApprovalManagement />
         )}
 
         {/* Payments Tab */}

@@ -138,8 +138,8 @@ const Login: React.FC = () => {
               </motion.button>
               
               <div className="text-center text-sm">
-                <Link to="/register" className="text-eco-green hover:text-eco-green-dark transition">
-                  Don't have an account? Register here
+                <Link to="/signup" className="text-eco-green hover:text-eco-green-dark transition">
+                  Don't have an account? Sign Up here
                 </Link>
               </div>
             </form>

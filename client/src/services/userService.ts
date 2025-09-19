@@ -45,13 +45,13 @@ const userService = {
     throw new Error(response.data.message || 'Login failed');
   },
 
-  // Register new user
+  // Sign up new user
   register: async (userData: RegisterData): Promise<AuthResponse> => {
     const response = await api.post('/auth/register', userData);
     if (response.data.success) {
       return response.data.data;
     }
-    throw new Error(response.data.message || 'Registration failed');
+    throw new Error(response.data.message || 'Sign up failed');
   },
 
   // Get current user profile

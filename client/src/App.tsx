@@ -23,13 +23,15 @@ import OrderTracking from './pages/OrderTracking.tsx';
 import PickupScheduling from './pages/PickupScheduling.tsx';
 import CustomerHelpCenter from './pages/CustomerHelpCenter.tsx';
 import Login from './pages/Login.tsx';
-import Register from './pages/Register.tsx';
 import Signup from './pages/Signup.tsx';
 import Achievements from './pages/Achievements.tsx';
 import Wallet from './pages/Wallet.tsx';
 import Orders from './pages/Orders.tsx';
 import FactoryOrders from './pages/FactoryOrders.tsx';
 import Profile from './pages/Profile.tsx';
+import PendingApproval from './pages/PendingApproval.tsx';
+import FactoryApplicationForm from './pages/FactoryApplicationForm.tsx';
+import CollectorApplicationForm from './pages/CollectorApplicationForm.tsx';
 
 function App() {
   const location = useLocation();
@@ -43,15 +45,16 @@ function App() {
     <AuthProvider>
       <EcoChainProvider>
         <CartProvider>
-
           <Navigation />
-          <main className="flex-grow "> {/* Add padding-top to account for fixed navbar */}
+          <main className="flex-grow">
             <AnimatePresence mode="wait">
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/pending-approval" element={<ProtectedRoute element={<PendingApproval />} allowedRoles={['factory', 'collector']} />} />
+                <Route path="/factory-application" element={<ProtectedRoute element={<FactoryApplicationForm />} allowedRoles={['factory']} />} />
+                <Route path="/collector-application" element={<ProtectedRoute element={<CollectorApplicationForm />} allowedRoles={['collector']} />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/waste-submission" element={<WasteSubmission />} />
@@ -75,7 +78,6 @@ function App() {
             </AnimatePresence>
           </main>
           <Footer />
-
         </CartProvider>
       </EcoChainProvider>
     </AuthProvider>
