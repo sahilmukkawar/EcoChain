@@ -249,7 +249,18 @@ The platform is production-ready with:
      - `JWT_REFRESH_SECRET` - Your JWT refresh secret key
      - Any other environment variables from `.env.example`
 
-### Frontend Deployment (Render)
+### Frontend Deployment (Netlify)
+
+1. Create a new site on Netlify
+2. Connect your GitHub repository
+3. Set the following configuration:
+   - **Base directory**: `client`
+   - **Build command**: `npm run build`
+   - **Publish directory**: `build`
+4. Add environment variables if needed:
+   - `REACT_APP_API_URL` - Your backend API URL (https://ecochain-j1nj.onrender.com/api)
+
+### Frontend Deployment (Render Alternative)
 
 1. Create a new Static Site on Render
 2. Connect your GitHub repository
@@ -260,7 +271,7 @@ The platform is production-ready with:
 
 ### Environment Variables
 
-For security, never commit your `.env` file to version control. Instead, configure environment variables directly in the Render dashboard.
+For security, never commit your `.env` file to version control. Instead, configure environment variables directly in the deployment platform dashboard.
 
 Create a `.env` file in your local development environment with the following variables:
 ```bash
@@ -275,7 +286,7 @@ JWT_REFRESH_SECRET=your_refresh_token_secret_here
 1. **Set up MongoDB Atlas** cluster
 2. **Configure environment variables** with real values
 3. **Set up payment gateway** (Stripe/Razorpay)
-4. **Deploy to cloud** (AWS/Heroku/Vercel)
+4. **Deploy to cloud** (AWS/Heroku/Vercel/Netlify)
 5. **Set up CI/CD pipeline**
 6. **Configure monitoring** and analytics
 7. **Add SSL certificates**
