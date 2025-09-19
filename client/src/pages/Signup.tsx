@@ -13,7 +13,7 @@ const Signup: React.FC = () => {
     e.preventDefault();
     setError(null);
     try {
-      await register(name, email, password);
+      await register(name, email, password, undefined, role);
       window.location.href = '/dashboard';
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Signup failed');

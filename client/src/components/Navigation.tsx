@@ -31,23 +31,23 @@ const getProfileImageUrl = (imagePath?: string): string | null => {
   const cleanPath = imagePath.trim();
   if (!cleanPath) return null;
 
+  // If it's already a full URL, return as is
   if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
     return cleanPath;
   }
 
-  if (cleanPath.startsWith('/api/')) {
+  // If it already starts with /uploads/, it's correctly formatted for static serving
+  if (cleanPath.startsWith('/uploads/')) {
     return cleanPath;
   }
 
-  if (cleanPath.startsWith('/uploads/')) {
-    return `/api${cleanPath}`;
+  // If it doesn't contain any path separators, it's a filename only
+  if (!cleanPath.includes('/') && !cleanPath.includes('\\')) {
+    return `/uploads/profile-images/${cleanPath}`;
   }
 
-  if (!cleanPath.includes('/')) {
-    return `/api/uploads/profile-images/${cleanPath}`;
-  }
-
-  return `/api${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+  // For any other path that doesn't start with /uploads/, prepend /uploads/
+  return `/uploads${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
 };
 
 // Extended User interface to include profile image
@@ -208,8 +208,6 @@ const Navigation: React.FC = () => {
     setIsProfileMenuOpen(false);
   };
 
-
-
   // Type assertion to access extended properties
   const extendedUser = user as ExtendedUser;
   const profileImageUrl = getProfileImageUrl(extendedUser?.profileImage);
@@ -256,7 +254,9 @@ const Navigation: React.FC = () => {
                   // Fallback to default user icon if image fails to load
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
-                  target.parentElement!.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                  if (target.parentElement) {
+                    target.parentElement.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                  }
                 }}
               />
             </div>
@@ -288,7 +288,9 @@ const Navigation: React.FC = () => {
                         // Fallback to default user icon if image fails to load
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
-                        target.parentElement!.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                        if (target.parentElement) {
+                          target.parentElement.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                        }
                       }}
                     />
                   </div>
@@ -507,7 +509,9 @@ const Navigation: React.FC = () => {
                           // Fallback to default user icon if image fails to load
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
-                          target.parentElement!.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                          if (target.parentElement) {
+                            target.parentElement.innerHTML = '<div class="w-full h-full rounded-full bg-green-100 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>';
+                          }
                         }}
                       />
                     </div>

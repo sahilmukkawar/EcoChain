@@ -340,19 +340,30 @@ const updateCollectionStatus = async (req, res) => {
     await collection.updateStatus(status, notes);
     
     // Token awarding logic based on status
-    if (status === 'completed' && (!collection.tokenCalculation || !collection.tokenCalculation.totalTokensIssued)) {
-      // Only award tokens if they haven't been awarded yet (for cases where tokens weren't awarded on 'scheduled')
-      const tokensEarned = collection.calculateTokens();
+    if (status === 'completed') {
+      // Check if tokens were already awarded
+      const tokensAlreadyAwarded = collection.tokenCalculation && collection.tokenCalculation.totalTokensIssued > 0;
       
-      // Update user's token balance using the User model method
-      const user = await User.findById(collection.userId);
-      if (user) {
-        await user.addTokens(tokensEarned, `Waste collection completed: ${collection.collectionId}`);
+      if (!tokensAlreadyAwarded) {
+        // Award tokens if they haven't been awarded yet
+        const tokensEarned = collection.calculateTokens();
         
-        collection.tokenCalculation.totalTokensIssued = tokensEarned;
-        await collection.save();
-        
-        console.log(`Completion tokens awarded: ${tokensEarned} to user ${user.personalInfo.name} for collection ${collection.collectionId}`);
+        // Update user's token balance using the User model method
+        const user = await User.findById(collection.userId);
+        if (user) {
+          await user.addTokens(tokensEarned, `Waste collection completed: ${collection.collectionId}`);
+          
+          // Update the collection with token calculation
+          if (!collection.tokenCalculation) {
+            collection.tokenCalculation = {};
+          }
+          collection.tokenCalculation.totalTokensIssued = tokensEarned;
+          await collection.save();
+          
+          console.log(`Completion tokens awarded: ${tokensEarned} to user ${user.personalInfo.name} for collection ${collection.collectionId}`);
+        }
+      } else {
+        console.log(`Tokens already awarded for collection ${collection.collectionId}: ${collection.tokenCalculation.totalTokensIssued}`);
       }
     } else if (status === 'collected') {
       // When collection is marked as collected, we can add a small bonus if desired
@@ -461,6 +472,9 @@ const assignCollector = async (req, res) => {
       await user.addTokens(tokensEarned, `Waste collection accepted by collector: ${collection.collectionId}`);
       
       // Update the collection with token calculation
+      if (!collection.tokenCalculation) {
+        collection.tokenCalculation = {};
+      }
       collection.tokenCalculation.totalTokensIssued = tokensEarned;
       await collection.save();
       

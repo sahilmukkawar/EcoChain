@@ -24,6 +24,7 @@ import PickupScheduling from './pages/PickupScheduling.tsx';
 import CustomerHelpCenter from './pages/CustomerHelpCenter.tsx';
 import Login from './pages/Login.tsx';
 import Register from './pages/Register.tsx';
+import Signup from './pages/Signup.tsx';
 import Achievements from './pages/Achievements.tsx';
 import Wallet from './pages/Wallet.tsx';
 import Orders from './pages/Orders.tsx';
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/signup" element={<Signup />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/waste-submission" element={<WasteSubmission />} />

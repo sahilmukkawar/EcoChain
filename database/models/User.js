@@ -55,11 +55,14 @@ const userSchema = new mongoose.Schema({
           validator: function (v) {
             // Allow null/undefined values but validate array format when present
             if (!v || v === undefined || v === null) return true;
+            // Also allow empty arrays (but we'll clean them up in pre-save hooks)
+            if (Array.isArray(v) && v.length === 0) return true;
             return Array.isArray(v) && v.length === 2 &&
               typeof v[0] === 'number' && typeof v[1] === 'number';
           },
           message: props => `${props.value} is not a valid coordinate array!`
-        }
+        },
+        default: undefined
       }
     }
   },
@@ -168,13 +171,43 @@ userSchema.index({ accountStatus: 1 });
 userSchema.pre('validate', function (next) {
   // Clean up address data before validation to prevent "Cast to Object failed" errors
   if (this.address) {
-    // Handle the case where address.location is undefined
-    if (this.address.location === undefined || this.address.location === null || this.address.location === '') {
-      delete this.address.location;
-    }
+    // Convert to plain object to avoid Mongoose subdocument issues
+    const addressObj = this.address.toObject ? this.address.toObject() : this.address;
+    
+    // Check if addressObj exists before accessing its properties
+    if (addressObj) {
+      // Handle the case where address.location is undefined, null, empty, or invalid
+      if (addressObj.location === undefined || 
+          addressObj.location === null || 
+          addressObj.location === '' ||
+          (Array.isArray(addressObj.location.coordinates) && addressObj.location.coordinates.length === 0) ||
+          (typeof addressObj.location === 'object' && Object.keys(addressObj.location).length === 0)) {
+        delete addressObj.location;
+      }
 
-    // If address is an empty object, remove it
-    if (typeof this.address === 'object' && Object.keys(this.address).length === 0) {
+      // If address is an empty object, remove it entirely
+      if (typeof addressObj === 'object' && Object.keys(addressObj).length === 0) {
+        this.address = undefined;
+      }
+      // If address only has location and it's been deleted, remove the entire address
+      else if (Object.keys(addressObj).length === 0) {
+        this.address = undefined;
+      }
+      // Otherwise, set the cleaned address object
+      else if (Object.keys(addressObj).length > 0) {
+        // Ensure we never have an undefined location field
+        if (addressObj.location === undefined) {
+          delete addressObj.location;
+        }
+        
+        this.address = addressObj;
+      }
+      // If no valid address data, remove it entirely
+      else {
+        this.address = undefined;
+      }
+    } else {
+      // If addressObj is undefined, remove the address entirely
       this.address = undefined;
     }
   }
@@ -204,14 +237,20 @@ userSchema.pre('save', function (next) {
     // Convert address to plain object to avoid Mongoose subdocument issues
     const addressObj = this.address.toObject ? this.address.toObject() : this.address;
 
-    // Remove undefined, null, or empty location field that causes "Cast to Object failed" error
-    if (addressObj.location === undefined || addressObj.location === null || addressObj.location === '') {
+    // Handle the case where address.location is undefined, null, empty, or invalid
+    if (addressObj && 
+        (addressObj.location === undefined || 
+         addressObj.location === null || 
+         addressObj.location === '' ||
+         (Array.isArray(addressObj.location.coordinates) && addressObj.location.coordinates.length === 0) ||
+         (typeof addressObj.location === 'object' && Object.keys(addressObj.location).length === 0))) {
       delete addressObj.location;
     }
 
     // Clean up location coordinates if they're invalid
-    if (addressObj.location && addressObj.location.coordinates) {
+    if (addressObj && addressObj.location && addressObj.location.coordinates) {
       const coords = addressObj.location.coordinates;
+      // Check if coordinates is a valid array with 2 numeric values
       if (!Array.isArray(coords) || coords.length !== 2 ||
         coords.some(coord => typeof coord !== 'number' || isNaN(coord))) {
         delete addressObj.location;
@@ -219,20 +258,27 @@ userSchema.pre('save', function (next) {
     }
 
     // Remove empty string values from address fields
-    Object.keys(addressObj).forEach(key => {
-      if (key !== 'location' && (addressObj[key] === '' || addressObj[key] === null || addressObj[key] === undefined)) {
-        delete addressObj[key];
-      }
-    });
+    if (addressObj) {
+      Object.keys(addressObj).forEach(key => {
+        if (key !== 'location' && (addressObj[key] === '' || addressObj[key] === null || addressObj[key] === undefined)) {
+          delete addressObj[key];
+        }
+      });
 
-    // If address object is empty or only has empty location, remove it entirely
-    const addressKeys = Object.keys(addressObj);
-    if (addressKeys.length === 0 ||
-      (addressKeys.length === 1 && addressKeys[0] === 'location' && !addressObj.location)) {
-      this.address = undefined;
-    } else {
-      // Reassign the cleaned address object
-      this.address = addressObj;
+      // If address object is empty or only has empty location, remove it entirely
+      const addressKeys = Object.keys(addressObj);
+      if (addressKeys.length === 0 ||
+        (addressKeys.length === 1 && addressKeys[0] === 'location' && (!addressObj.location || Object.keys(addressObj.location).length === 0))) {
+        this.address = undefined;
+      } else {
+        // Ensure we never have an undefined location field
+        if (addressObj.location === undefined) {
+          delete addressObj.location;
+        }
+        
+        // Reassign the cleaned address object
+        this.address = addressObj;
+      }
     }
   }
 
@@ -268,6 +314,47 @@ userSchema.methods.generateRefreshToken = function () {
 // Method to update user's last active timestamp
 userSchema.methods.updateLastActive = async function () {
   this.lastActive = Date.now();
+  
+  // Fix any address issues before saving
+  if (this.address) {
+    const addressObj = this.address.toObject ? this.address.toObject() : this.address;
+    
+    // Check if addressObj exists before accessing its properties
+    if (addressObj) {
+      // Remove invalid location data
+      if (addressObj.location) {
+        // Handle case where location is an empty object
+        if (typeof addressObj.location === 'object' && 
+            !Array.isArray(addressObj.location) && 
+            Object.keys(addressObj.location).length === 0) {
+          delete addressObj.location;
+        }
+        // Handle other location validation cases
+        else if (Array.isArray(addressObj.location.coordinates) && addressObj.location.coordinates.length === 0) {
+          delete addressObj.location;
+        } else if (addressObj.location === null || addressObj.location === undefined || addressObj.location === '') {
+          delete addressObj.location;
+        } else if (addressObj.location.coordinates) {
+          const coords = addressObj.location.coordinates;
+          if (!Array.isArray(coords) || coords.length !== 2 ||
+              coords.some(coord => typeof coord !== 'number' || isNaN(coord))) {
+            delete addressObj.location;
+          }
+        }
+      }
+      
+      // Remove empty fields
+      Object.keys(addressObj).forEach(key => {
+        if (addressObj[key] === '' || addressObj[key] === null || addressObj[key] === undefined) {
+          delete addressObj[key];
+        }
+      });
+    
+      // Set cleaned address
+      this.address = Object.keys(addressObj).length > 0 ? addressObj : undefined;
+    }
+  }
+  
   await this.save();
 };
 

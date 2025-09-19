@@ -150,15 +150,14 @@ garbageCollectionSchema.methods.calculateTokens = function() {
   const bonusTokens = 0; // This would be calculated based on business rules
 
   // Calculate total tokens
-  const totalTokens = baseTokens * qualityMultiplier + bonusTokens;
+  const totalTokens = Math.max(0, baseTokens * qualityMultiplier + bonusTokens);
 
   // Update token calculation fields
-  this.tokenCalculation = {
-    baseRate: baseRate,
-    qualityMultiplier: qualityMultiplier,
-    bonusTokens: bonusTokens,
-    totalTokensIssued: totalTokens
-  };
+  this.tokenCalculation = this.tokenCalculation || {};
+  this.tokenCalculation.baseRate = baseRate;
+  this.tokenCalculation.qualityMultiplier = qualityMultiplier;
+  this.tokenCalculation.bonusTokens = bonusTokens;
+  this.tokenCalculation.totalTokensIssued = totalTokens;
 
   return totalTokens;
 };

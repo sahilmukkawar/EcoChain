@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext.tsx';
 import { getUserRole } from '../utils/auth.ts';
 import PageTransition from '../components/PageTransition.tsx';
-import { LogIn, User, Lock } from 'lucide-react';
+import { LogIn, User, Lock, Leaf } from 'lucide-react';
 
 const Login: React.FC = () => {
   const { login, isLoading, isAuthenticated } = useAuth();
@@ -151,32 +151,36 @@ const Login: React.FC = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={()=>quickFill('admin@ecochain.com','Admin@123')} 
-                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30"
+                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30 flex items-center justify-center gap-1"
                 >
+                  <Leaf className="h-3 w-3 text-eco-green" />
                   Admin
                 </motion.button>
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={()=>quickFill('factory@ecochain.com','Factory@123')} 
-                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30"
+                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30 flex items-center justify-center gap-1"
                 >
+                  <Leaf className="h-3 w-3 text-eco-green" />
                   Factory
                 </motion.button>
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={()=>quickFill('collector@ecochain.com','Collector@123')} 
-                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30"
+                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30 flex items-center justify-center gap-1"
                 >
+                  <Leaf className="h-3 w-3 text-eco-green" />
                   Collector
                 </motion.button>
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={()=>quickFill('user@ecochain.com','User@123')} 
-                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30"
+                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30 flex items-center justify-center gap-1"
                 >
+                  <Leaf className="h-3 w-3 text-eco-green" />
                   User
                 </motion.button>
               </div>

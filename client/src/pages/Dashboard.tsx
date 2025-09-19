@@ -296,7 +296,7 @@ const Dashboard: React.FC = () => {
                 <div className="flex justify-between items-center p-3 bg-eco-green-50 rounded-lg">
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 104 0 2 2 0 012-2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 104 0 2 2 0 012-2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span className="text-sm font-medium text-gray-900">CO2 Saved</span>
                   </div>
@@ -454,7 +454,20 @@ const Dashboard: React.FC = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {wasteRequests.slice(0, 5).map(request => {
-                        const estimatedTokens = request.tokenCalculation?.totalTokensIssued || 0;
+                        // For requested collections, show estimated tokens
+                        // For completed collections, show actual awarded tokens
+                        let displayTokens;
+                        if (request.status === 'requested') {
+                          // Calculate estimated tokens for requested collections
+                          displayTokens = wasteService.calculateEstimatedTokens(
+                            request.collectionDetails?.type || '',
+                            request.collectionDetails?.weight || 0,
+                            request.collectionDetails?.quality || 'fair'
+                          );
+                        } else {
+                          // For other statuses, show actual awarded tokens
+                          displayTokens = request.tokenCalculation?.totalTokensIssued || 0;
+                        }
                         
                         return (
                           <tr key={request._id} className="hover:bg-gray-50">
@@ -478,7 +491,7 @@ const Dashboard: React.FC = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-eco-green-600">
-                              {estimatedTokens}
+                              {displayTokens}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                               {request.status === 'completed' && (

@@ -31,6 +31,30 @@ router.post('/register', async (req, res) => {
     // Generate unique userId
     const userId = 'USR' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
 
+    // Process address data to prevent validation errors
+    let cleanAddress = undefined;
+    if (address) {
+      // Create clean address object with only valid values
+      cleanAddress = {};
+      const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
+
+      for (const [key, value] of Object.entries(address)) {
+        if (validAddressFields.includes(key) &&
+          value !== undefined && value !== null &&
+          typeof value === 'string' && value.trim() !== '') {
+          cleanAddress[key] = value.trim();
+        }
+      }
+
+      // NEVER include location field to prevent validation errors
+      delete cleanAddress.location;
+
+      // If no valid address data, explicitly set to undefined
+      if (Object.keys(cleanAddress).length === 0) {
+        cleanAddress = undefined;
+      }
+    }
+
     // Create new user
     const user = new User({
       userId,
@@ -41,7 +65,7 @@ router.post('/register', async (req, res) => {
       },
       password,
       role,
-      address: address || {}
+      address: cleanAddress
     });
 
     await user.save();
@@ -112,6 +136,7 @@ router.post('/login', async (req, res) => {
     // Generate tokens
     const accessToken = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
+    
     await user.save();
 
     res.json({
@@ -235,7 +260,7 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
-// Update user profile - for JSON data only
+// Update user profile
 router.put('/profile', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -243,82 +268,40 @@ router.put('/profile', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Handle profile data updates
-    if (req.body.name) {
-      user.personalInfo.name = req.body.name;
-    }
+    const { name, email, phone, address } = req.body;
 
-    if (req.body.email) {
-      user.personalInfo.email = req.body.email;
-    }
+    // Update personal info
+    if (name) user.personalInfo.name = name;
+    if (email) user.personalInfo.email = email;
+    if (phone !== undefined) user.personalInfo.phone = phone;
 
-    if (req.body.phone) {
-      user.personalInfo.phone = req.body.phone;
-    }
+    // Process address data to prevent validation errors
+    if (address) {
+      // Create clean address object with only valid values
+      const cleanAddressData = {};
+      const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
 
-    // Handle address updates - Enhanced validation error prevention
-    if (req.body.address) {
-      try {
-        const addressData = typeof req.body.address === 'string'
-          ? JSON.parse(req.body.address)
-          : req.body.address;
-
-        // Create clean address object with only valid values
-        const cleanAddressData = {};
-        const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
-
-        for (const [key, value] of Object.entries(addressData)) {
-          // Only include valid address fields with non-empty values
-          if (validAddressFields.includes(key) &&
-            value !== undefined && value !== null &&
-            typeof value === 'string' && value.trim() !== '') {
-            cleanAddressData[key] = value.trim();
-          }
-        }
-
-        // Never include location field from client data to prevent validation errors
-        delete cleanAddressData.location;
-
-        // Only update address if we have valid data
-        if (Object.keys(cleanAddressData).length > 0) {
-          // Initialize address if it doesn't exist
-          if (!user.address) {
-            user.address = {};
-          }
-
-          // Merge with existing address data, ensuring no undefined location
-          const mergedAddress = { ...user.address, ...cleanAddressData };
-
-          // Explicitly remove any undefined or null location field
-          if (mergedAddress.location === undefined || mergedAddress.location === null) {
-            delete mergedAddress.location;
-          }
-
-          user.address = mergedAddress;
-        }
-      } catch (parseError) {
-        console.warn('Failed to parse address data:', parseError);
-        // If parsing fails, try to handle as individual fields
-        if (typeof req.body.address === 'object') {
-          const cleanAddressData = {};
-          const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
-
-          for (const [key, value] of Object.entries(req.body.address)) {
-            if (validAddressFields.includes(key) &&
-              value !== undefined && value !== null &&
-              typeof value === 'string' && value.trim() !== '') {
-              cleanAddressData[key] = value.trim();
-            }
-          }
-
-          if (Object.keys(cleanAddressData).length > 0) {
-            if (!user.address) {
-              user.address = {};
-            }
-            user.address = { ...user.address, ...cleanAddressData };
-          }
+      for (const [key, value] of Object.entries(address)) {
+        if (validAddressFields.includes(key) &&
+          value !== undefined && value !== null &&
+          typeof value === 'string' && value.trim() !== '') {
+          cleanAddressData[key] = value.trim();
         }
       }
+
+      // NEVER include location field to prevent validation errors
+      delete cleanAddressData.location;
+
+      // Only update address if we have valid data
+      if (Object.keys(cleanAddressData).length > 0) {
+        user.address = cleanAddressData;
+      } else {
+        // If no valid address data, explicitly set to undefined
+        user.address = undefined;
+      }
+    } else {
+      // If no address data provided, explicitly set to undefined
+      user.address = undefined;
     }
 
     await user.save();
@@ -340,6 +323,7 @@ router.put('/profile', authenticate, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Profile update error:', error);
     res.status(400).json({ success: false, message: error.message });
   }
 });
@@ -373,57 +357,53 @@ router.put('/profile/image', authenticate, upload.single('profileImage'), async 
 
     // Handle address fields sent as individual parameters (from form data)
     const addressFields = ['street', 'city', 'state', 'zipCode', 'country'];
-    let hasAddressUpdate = false;
+    let addressData = {};
 
     for (const field of addressFields) {
       const formFieldName = `address[${field}]`;
       if (req.body[formFieldName] && req.body[formFieldName].trim()) {
-        if (!user.address) user.address = {};
-        user.address[field] = req.body[formFieldName].trim();
-        hasAddressUpdate = true;
+        addressData[field] = req.body[formFieldName].trim();
       }
     }
 
     // Handle address updates as JSON (fallback)
-    if (!hasAddressUpdate && req.body.address) {
+    if (Object.keys(addressData).length === 0 && req.body.address) {
       try {
-        const addressData = typeof req.body.address === 'string'
+        addressData = typeof req.body.address === 'string'
           ? JSON.parse(req.body.address)
           : req.body.address;
-
-        // Create clean address object with only valid values
-        const cleanAddressData = {};
-        const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
-
-        for (const [key, value] of Object.entries(addressData)) {
-          if (validAddressFields.includes(key) &&
-            value !== undefined && value !== null &&
-            typeof value === 'string' && value.trim() !== '') {
-            cleanAddressData[key] = value.trim();
-          }
-        }
-
-        // Never include location field to prevent validation errors
-        delete cleanAddressData.location;
-
-        if (Object.keys(cleanAddressData).length > 0) {
-          if (!user.address) {
-            user.address = {};
-          }
-
-          // Merge with existing address data, ensuring no undefined location
-          const mergedAddress = { ...user.address, ...cleanAddressData };
-
-          // Explicitly remove any undefined or null location field
-          if (mergedAddress.location === undefined || mergedAddress.location === null) {
-            delete mergedAddress.location;
-          }
-
-          user.address = mergedAddress;
-        }
       } catch (parseError) {
         console.warn('Failed to parse address JSON:', parseError);
       }
+    }
+
+    // Process address data to prevent validation errors
+    if (Object.keys(addressData).length > 0) {
+      // Create clean address object with only valid values
+      const cleanAddressData = {};
+      const validAddressFields = ['street', 'city', 'state', 'zipCode', 'country'];
+
+      for (const [key, value] of Object.entries(addressData)) {
+        if (validAddressFields.includes(key) &&
+          value !== undefined && value !== null &&
+          typeof value === 'string' && value.trim() !== '') {
+          cleanAddressData[key] = value.trim();
+        }
+      }
+
+      // NEVER include location field to prevent validation errors
+      delete cleanAddressData.location;
+
+      // Only update address if we have valid data
+      if (Object.keys(cleanAddressData).length > 0) {
+        user.address = cleanAddressData;
+      } else {
+        // If no valid address data, explicitly set to undefined
+        user.address = undefined;
+      }
+    } else {
+      // If no address data provided, explicitly set to undefined
+      user.address = undefined;
     }
 
     await user.save();

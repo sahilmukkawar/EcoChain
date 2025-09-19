@@ -18,7 +18,7 @@ process.env.JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d'
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 4001; // Changed from 4000 to 4001 to avoid conflicts
+const PORT = process.env.PORT || 4002; // Changed from 4001 to 4002 to avoid conflicts
 
 // Create HTTP server
 const server = http.createServer(app);

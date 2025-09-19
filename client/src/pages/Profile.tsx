@@ -11,23 +11,23 @@ const getProfileImageUrl = (imagePath?: string): string | null => {
   const cleanPath = imagePath.trim();
   if (!cleanPath) return null;
 
+  // If it's already a full URL, return as is
   if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
     return cleanPath;
   }
 
-  if (cleanPath.startsWith('/api/')) {
+  // If it already starts with /uploads/, it's correctly formatted for static serving
+  if (cleanPath.startsWith('/uploads/')) {
     return cleanPath;
   }
 
-  if (cleanPath.startsWith('/uploads/')) {
-    return `/api${cleanPath}`;
+  // If it doesn't contain any path separators, it's a filename only
+  if (!cleanPath.includes('/') && !cleanPath.includes('\\')) {
+    return `/uploads/profile-images/${cleanPath}`;
   }
 
-  if (!cleanPath.includes('/')) {
-    return `/api/uploads/profile-images/${cleanPath}`;
-  }
-
-  return `/api${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+  // For any other path that doesn't start with /uploads/, prepend /uploads/
+  return `/uploads${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
 };
 
 const validateImageFile = (file: File): { isValid: boolean; error?: string } => {
@@ -169,8 +169,6 @@ const Profile: React.FC = () => {
       }
     }
   }, [user]);
-
-
 
   // Handle profile data changes
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -383,7 +381,7 @@ const Profile: React.FC = () => {
               })
               .catch(() => {
                 console.warn('Profile image failed to load after upload:', imageUrl);
-                showMessage('Profile updated but image may not display correctly', 'warning');
+                showMessage('Profile updated but image may not display correctly. Please refresh the page.', 'warning');
               });
           }
         }
@@ -516,11 +514,21 @@ const Profile: React.FC = () => {
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           console.warn('Profile image failed to load:', profileImage);
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.nextElementSibling;
-                          if (fallback) {
-                            (fallback as HTMLElement).style.display = 'flex';
+                          // Hide the image and show the fallback
+                          const imageElement = e.currentTarget;
+                          imageElement.style.display = 'none';
+                          
+                          // Use parent to find the fallback element more reliably
+                          const parentElement = imageElement.parentElement;
+                          if (parentElement) {
+                            const fallbackElement = parentElement.querySelector('.absolute.inset-0');
+                            if (fallbackElement) {
+                              (fallbackElement as HTMLElement).style.display = 'flex';
+                            }
                           }
+                          
+                          // Show a warning message
+                          showMessage('Profile image failed to load. Please try uploading again.', 'warning');
                         }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center hidden">

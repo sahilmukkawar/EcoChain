@@ -82,12 +82,25 @@ router.post('/', authenticate, async (req, res) => {
     for (const item of items) {
       // Use the correct Product model from database/models
       const { Product } = require('../database/models');
-      const product = await Product.findById(item.productId);
+      
+      // Handle both ObjectId and string _id formats
+      let product;
+      if (mongoose.Types.ObjectId.isValid(item.productId)) {
+        // Try to find by ObjectId first
+        product = await Product.findById(item.productId);
+        if (!product) {
+          // If not found, try to find by string _id (fallback for legacy data)
+          product = await Product.findOne({ _id: item.productId.toString() });
+        }
+      } else {
+        // If productId is not a valid ObjectId, try to find by string _id
+        product = await Product.findOne({ _id: item.productId });
+      }
       
       if (!product || !product.isInStock()) {
         return res.status(400).json({ 
           success: false, 
-          message: `Product ${product?.productInfo.name || 'unknown'} is not available` 
+          message: `Product ${product?.productInfo.name || item.productId} is not available` 
         });
       }
 

@@ -61,30 +61,31 @@ class WasteService {
 
   // Calculate estimated tokens based on waste type and quantity (matches database model logic)
   calculateEstimatedTokens(wasteType: string, quantity: number, quality: string = 'fair'): number {
-    // Base rates matching database model
+    // Base rates matching database model - THESE MUST MATCH THE BACKEND .env VALUES!
     const tokenRates: { [key: string]: number } = {
-      'plastic': 10,
-      'paper': 5, 
-      'metal': 15,
-      'glass': 8,
+      'plastic': 10,   // matches BASE_REWARD_PLASTIC=10
+      'paper': 5,      // matches BASE_REWARD_PAPER=5
+      'metal': 15,     // matches BASE_REWARD_METAL=15
+      'glass': 8,      // matches BASE_REWARD_GLASS=8
       'electronic': 20,
       'organic': 3,
       'other': 2
     };
 
-    // Quality multipliers matching database model
+    // Quality multipliers matching database model - THESE MUST MATCH THE BACKEND .env VALUES!
     const qualityMultipliers: { [key: string]: number } = {
-      'excellent': 1.5,
-      'good': 1.2,
-      'fair': 1.0,
-      'poor': 0.7
+      'excellent': 1.5,  // matches QUALITY_MULTIPLIER_EXCELLENT=1.5
+      'good': 1.2,       // matches QUALITY_MULTIPLIER_GOOD=1.2
+      'fair': 1.0,       // matches QUALITY_MULTIPLIER_FAIR=1.0
+      'poor': 0.7        // matches QUALITY_MULTIPLIER_POOR=0.7
     };
 
     const baseRate = tokenRates[wasteType] || tokenRates['other'];
     const qualityMultiplier = qualityMultipliers[quality] || qualityMultipliers['fair'];
     const baseTokens = baseRate * quantity;
     
-    return Math.round(baseTokens * qualityMultiplier);
+    // Ensure we return a non-negative number
+    return Math.max(0, Math.round(baseTokens * qualityMultiplier));
   }
 
   // Create a new waste submission

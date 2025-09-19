@@ -12,6 +12,7 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<'user'|'collector'|'factory'>('user');
   const [error, setError] = useState<string | null>(null);
 
   // Redirect if already authenticated
@@ -31,7 +32,7 @@ const Register: React.FC = () => {
     }
     
     try {
-      await register(name, email, password);
+      await register(name, email, password, undefined, role);
       // Navigation will be handled by the useEffect above
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Registration failed');
@@ -155,6 +156,21 @@ const Register: React.FC = () => {
                 />
               </div>
               
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <select 
+                  value={role} 
+                  onChange={e => setRole(e.target.value as any)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green outline-none transition bg-gray-50 appearance-none"
+                >
+                  <option value="user">User</option>
+                  <option value="collector">Collector</option>
+                  <option value="factory">Factory</option>
+                </select>
+              </div>
+              
               <motion.button 
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -162,7 +178,7 @@ const Register: React.FC = () => {
                 disabled={isLoading}
                 className="w-full bg-gradient-to-r from-eco-green-dark to-eco-green text-white font-bold py-3 px-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 disabled:opacity-50"
               >
-                {isLoading ? 'Creating Account...' : 'Register'}
+                {isLoading ? 'Creating Account...' : 'Sign Up'}
               </motion.button>
             </form>
             
