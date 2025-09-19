@@ -29,4 +29,23 @@ router.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'API is running' });
 });
 
+// API root endpoint with available routes information
+router.get('/', (req, res) => {
+  res.status(200).json({ 
+    message: 'Welcome to EcoChain API',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      users: '/api/users',
+      collections: '/api/collections',
+      marketplace: '/api/marketplace',
+      orders: '/api/orders',
+      transactions: '/api/general-transactions',
+      ecoToken: '/api/eco-token',
+      admin: '/api/admin',
+      health: '/api/health'
+    }
+  });
+});
+
 module.exports = router;

@@ -234,6 +234,53 @@ The platform is production-ready with:
 - **WebSocket** real-time updates
 - **Scalable architecture**
 
+## 🌐 Deployment Instructions
+
+### Backend Deployment (Render)
+
+1. Create a new Web Service on Render
+2. Connect your GitHub repository
+3. Set the following configuration:
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Environment Variables**:
+     - `MONGODB_URI` - Your MongoDB connection string
+     - `JWT_SECRET` - Your JWT secret key
+     - `JWT_REFRESH_SECRET` - Your JWT refresh secret key
+     - Any other environment variables from `.env.example`
+
+### Frontend Deployment (Render)
+
+1. Create a new Static Site on Render
+2. Connect your GitHub repository
+3. Set the following configuration:
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `client/build`
+   - **Root Directory**: `client`
+
+### Environment Variables
+
+For security, never commit your `.env` file to version control. Instead, configure environment variables directly in the Render dashboard.
+
+Create a `.env` file in your local development environment with the following variables:
+```bash
+MONGODB_URI=your_mongodb_connection_string_here
+JWT_SECRET=your_jwt_secret_here
+JWT_REFRESH_SECRET=your_refresh_token_secret_here
+# ... other variables from .env.example
+```
+
+## 📈 Next Steps for Production
+
+1. **Set up MongoDB Atlas** cluster
+2. **Configure environment variables** with real values
+3. **Set up payment gateway** (Stripe/Razorpay)
+4. **Deploy to cloud** (AWS/Heroku/Vercel)
+5. **Set up CI/CD pipeline**
+6. **Configure monitoring** and analytics
+7. **Add SSL certificates**
+8. **Set up backup strategies**
+
 ## 🔧 Development Commands
 
 ```bash
@@ -250,17 +297,6 @@ npm start            # Development server
 npm run build        # Production build
 npm test             # Run tests
 ```
-
-## 📈 Next Steps for Production
-
-1. **Set up MongoDB Atlas** cluster
-2. **Configure environment variables** with real values
-3. **Set up payment gateway** (Stripe/Razorpay)
-4. **Deploy to cloud** (AWS/Heroku/Vercel)
-5. **Set up CI/CD pipeline**
-6. **Configure monitoring** and analytics
-7. **Add SSL certificates**
-8. **Set up backup strategies**
 
 ## 🤝 Contributing
 

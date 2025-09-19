@@ -1,8 +1,18 @@
 import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
+// Determine the base URL based on the environment
+const getBaseURL = () => {
+  // For production, use the deployed backend URL
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://ecochain-j1nj.onrender.com/api';
+  }
+  // For development, use the proxy setting
+  return '/api';
+};
+
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: '/api', // This will use the proxy setting in package.json
+  baseURL: getBaseURL(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
