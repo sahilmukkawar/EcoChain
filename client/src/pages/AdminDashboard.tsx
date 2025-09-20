@@ -12,10 +12,11 @@ import adminService, {
 import websocketService from '../services/websocketService.ts';
 import Analytics from '../components/Analytics.tsx';
 import ApprovalManagement from '../services/ApprovalManagement.tsx';
+import FactoryManagement from '../components/FactoryManagement.tsx';
 import {
   BarChart3,
   Users,
-  Factory,
+  Factory as FactoryIcon,
   Recycle,
   DollarSign,
   AlertCircle,
@@ -145,7 +146,7 @@ const AdminDashboard: React.FC = () => {
   const [collectionsForPayment, setCollectionsForPayment] = useState<CollectionForPayment[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [paymentStats, setPaymentStats] = useState<PaymentStatistics | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'approvals' | 'payments' | 'history' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'approvals' | 'payments' | 'history' | 'analytics' | 'factory'>('overview');
   const [activeUserTab, setActiveUserTab] = useState<'users' | 'collectors' | 'factories'>('users');
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const [notifications, setNotifications] = useState<string[]>([]);
@@ -686,6 +687,7 @@ const AdminDashboard: React.FC = () => {
               { id: 'approvals', label: 'Approvals', icon: CheckCircle },
               { id: 'payments', label: 'Pending Payments', icon: DollarSign, badge: collectionsForPayment.length },
               { id: 'history', label: 'Payment History', icon: Clock },
+              { id: 'factory', label: 'Factory Management', icon: FactoryIcon },
               { id: 'analytics', label: 'Analytics', icon: BarChart3 }
             ].map(tab => {
               const Icon = tab.icon;
@@ -693,7 +695,7 @@ const AdminDashboard: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => {
-                    setActiveTab(tab.id as 'overview' | 'payments' | 'history' | 'analytics');
+                    setActiveTab(tab.id as 'overview' | 'users' | 'approvals' | 'payments' | 'history' | 'analytics' | 'factory');
                     if (tab.id === 'overview') {
                       setTimeout(refreshAdminData, 100);
                     } else if (tab.id === 'payments') {
@@ -765,7 +767,7 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-3xl font-bold text-gray-900 mt-2">{systemStats.totalFactories}</p>
                   </div>
                   <div className="h-12 w-12 bg-purple-50 rounded-lg flex items-center justify-center">
-                    <Factory className="text-purple-600" size={24} />
+                    <FactoryIcon className="text-purple-600" size={24} />
                   </div>
                 </div>
               </div>
@@ -912,7 +914,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900">Factory Partners</h3>
-                    <Factory className="text-gray-400" size={20} />
+                    <FactoryIcon className="text-gray-400" size={20} />
                   </div>
                 </div>
                 <div className="p-6">
@@ -1523,6 +1525,9 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'analytics' && (
           <Analytics />
         )}
+
+        {/* Factory Management Tab */}
+        {activeTab === 'factory' && <FactoryManagement />}
       </div>
     </div>
   );

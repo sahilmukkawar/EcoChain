@@ -13,6 +13,7 @@ const productRoutes = require('./productRoutes');
 const ecoTokenRoutes = require('./ecoTokenRoutes');
 const adminRoutes = require('./adminRoutes');
 const adminApprovalRoutes = require('./adminApprovalRoutes');
+const factoryRoutes = require('./factoryRoutes'); // Add this line
 
 // API routes
 router.use('/auth', authRoutes);
@@ -25,6 +26,7 @@ router.use('/marketplace', marketplaceRoutes);
 router.use('/orders', orderRoutes);
 router.use('/general-transactions', transactionRoutes);
 router.use('/eco-token', ecoTokenRoutes);
+router.use('/factory', factoryRoutes); // Add this line
 
 // Health check route
 router.get('/health', (req, res) => {
@@ -46,6 +48,7 @@ router.get('/', (req, res) => {
       ecoToken: '/api/eco-token',
       admin: '/api/admin',
       adminApproval: '/api/admin-approval',
+      factory: '/api/factory', // Add this line
       health: '/api/health'
     }
   });

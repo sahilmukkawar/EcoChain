@@ -11,6 +11,7 @@ const Analytics = require('./Analytics');
 const AdminPayment = require('./AdminPayment');
 const FactoryApplication = require('./FactoryApplication');
 const CollectorApplication = require('./CollectorApplication');
+const MaterialRequest = require('./MaterialRequest');
 
 module.exports = {
   User,
@@ -25,5 +26,6 @@ module.exports = {
   Analytics,
   AdminPayment,
   FactoryApplication,
-  CollectorApplication
+  CollectorApplication,
+  MaterialRequest
 };

@@ -49,4 +49,17 @@ router.post('/applications/collector/:applicationId/reject', authenticate, admin
 // Debug payment history (temporary)
 router.get('/debug/payment-history', authenticate, adminController.debugPaymentHistory);
 
+// Material requests routes
+// Get all material requests
+router.get('/material-requests', authenticate, adminController.getMaterialRequests);
+
+// Get collected waste
+router.get('/waste/collected', authenticate, adminController.getCollectedWaste);
+
+// Fulfill a material request
+router.post('/material-requests/:requestId/fulfill', authenticate, adminController.fulfillMaterialRequest);
+
+// Update material request status
+router.put('/material-requests/:requestId/status', authenticate, adminController.updateMaterialRequestStatus);
+
 module.exports = router;

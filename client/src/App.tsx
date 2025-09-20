@@ -13,6 +13,7 @@ import WasteSubmission from './pages/WasteSubmission.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import AdminDashboard from './pages/AdminDashboard.tsx';
 import Analytics from './components/Analytics.tsx';
+import FactoryManagement from './components/FactoryManagement.tsx';
 import FactoryDashboard from './pages/FactoryDashboard.tsx';
 import FactoryProductManagement from './pages/FactoryProductManagement.tsx';
 import CollectorDashboard from './pages/CollectorDashboard.tsx';
@@ -32,6 +33,7 @@ import Profile from './pages/Profile.tsx';
 import PendingApproval from './pages/PendingApproval.tsx';
 import FactoryApplicationForm from './pages/FactoryApplicationForm.tsx';
 import CollectorApplicationForm from './pages/CollectorApplicationForm.tsx';
+import Materials from './pages/Materials.tsx';
 
 function App() {
   const location = useLocation();
@@ -61,9 +63,11 @@ function App() {
                 <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['user']} />} />
                 <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
                 <Route path="/admin-dashboard/analytics" element={<ProtectedRoute element={<Analytics />} allowedRoles={['admin']} />} />
+                <Route path="/admin-dashboard/factory" element={<ProtectedRoute element={<FactoryManagement />} allowedRoles={['admin']} />} />
                 <Route path="/factory-dashboard" element={<ProtectedRoute element={<FactoryDashboard />} allowedRoles={['factory']} />} />
                 <Route path="/factory-product-management" element={<ProtectedRoute element={<FactoryProductManagement />} allowedRoles={['factory']} />} />
                 <Route path="/factory-orders" element={<ProtectedRoute element={<FactoryOrders />} allowedRoles={['factory']} />} />
+                <Route path="/materials" element={<ProtectedRoute element={<Materials />} allowedRoles={['factory']} />} />
                 <Route path="/collector-dashboard" element={<ProtectedRoute element={<CollectorDashboard />} allowedRoles={['collector']} />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />

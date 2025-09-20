@@ -28,6 +28,56 @@ export interface FactoryCollection {
   updatedAt: string;
 }
 
+export interface MaterialRequest {
+  _id: string;
+  requestId: string;
+  factoryId: {
+    _id: string;
+    name: string;
+    email: string;
+    companyInfo?: {
+      name: string;
+    };
+  };
+  materialSpecs: {
+    materialType: string;
+    subType?: string;
+    quantity: number;
+    qualityRequirements: string;
+    specifications?: {
+      purity?: number;
+      color?: string;
+      size?: string;
+      additionalRequirements?: string[];
+    };
+  };
+  timeline: {
+    requestDate: string;
+    requiredBy: string;
+    flexibilityDays: number;
+  };
+  pricing: {
+    budgetPerKg: number;
+    totalBudget: number;
+    paymentTerms: string;
+  };
+  logistics: {
+    deliveryAddress: string;
+    transportationMode: string;
+    specialHandling?: string;
+  };
+  status: 'open' | 'partially_filled' | 'fulfilled' | 'expired' | 'cancelled';
+  matchedCollections: Array<{
+    collectionId: string;
+    quantity: number;
+    agreedPrice: number;
+    status: 'pending' | 'confirmed' | 'delivered';
+  }>;
+  priority: 'high' | 'medium' | 'low';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CollectionPagination {
   currentPage: number;
   totalPages: number;
@@ -35,6 +85,28 @@ export interface CollectionPagination {
 }
 
 const factoryService = {
+  // Get material requests for factory
+  getMaterialRequests: async (): Promise<{ success: boolean; data: MaterialRequest[] }> => {
+    try {
+      const response = await api.get('/factory/material-requests');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching material requests:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch material requests');
+    }
+  },
+
+  // Create a new material request
+  createMaterialRequest: async (requestData: any): Promise<any> => {
+    try {
+      const response = await api.post('/factory/material-requests', requestData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating material request:', error);
+      throw new Error(error.response?.data?.message || 'Failed to create material request');
+    }
+  },
+
   // Get factory's collections
   getFactoryCollections: async (filters: {
     status?: string;

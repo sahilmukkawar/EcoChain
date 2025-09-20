@@ -1350,6 +1350,220 @@ const rejectCollectorApplication = async (req, res) => {
   }
 };
 
+// Get all material requests for admin
+// Get all material requests for admin
+const getMaterialRequests = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { page = 1, limit = 20, status } = req.query;
+    
+    const query = {};
+    if (status) query.status = status;
+    
+    const MaterialRequest = require('../database/models/MaterialRequest');
+    
+    const requests = await MaterialRequest.find(query)
+      .populate('factoryId', 'name email companyInfo')
+      .populate('matchedCollections.collectionId', 'collectionDetails location')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const count = await MaterialRequest.countDocuments(query);
+    
+    res.json({
+      success: true,
+      data: {
+        requests,
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          pages: Math.ceil(count / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching material requests:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch material requests',
+      error: error.message
+    });
+  }
+};
+
+// Get collected waste for factory management
+const getCollectedWaste = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { page = 1, limit = 20, type, quality } = req.query;
+    
+    // Query for collected waste
+    const query = { status: { $in: ['collected', 'delivered', 'verified'] } };
+    if (type) query['collectionDetails.type'] = type;
+    if (quality) query['collectionDetails.quality'] = quality;
+    
+    const GarbageCollection = require('../database/models/GarbageCollection');
+    
+    const collections = await GarbageCollection.find(query)
+      .populate('userId', 'personalInfo.name personalInfo.email')
+      .populate('collectorId', 'personalInfo.name personalInfo.email')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const count = await GarbageCollection.countDocuments(query);
+    
+    res.json({
+      success: true,
+      data: {
+        collections,
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          pages: Math.ceil(count / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching collected waste:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch collected waste',
+      error: error.message
+    });
+  }
+};
+
+// Fulfill a material request
+const fulfillMaterialRequest = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { requestId } = req.params;
+    const { collectionId, quantity, agreedPrice } = req.body;
+    
+    const MaterialRequest = require('../database/models/MaterialRequest');
+    
+    // Find the material request
+    const request = await MaterialRequest.findById(requestId);
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Material request not found'
+      });
+    }
+    
+    // Find the collection
+    const collection = await GarbageCollection.findById(collectionId);
+    if (!collection) {
+      return res.status(404).json({
+        success: false,
+        message: 'Collection not found'
+      });
+    }
+    
+    // Add matched collection
+    request.matchedCollections.push({
+      collectionId,
+      quantity,
+      agreedPrice,
+      status: 'pending'
+    });
+    
+    // Update status based on fulfillment
+    const totalMatched = request.matchedCollections.reduce((sum, match) => sum + match.quantity, 0);
+    if (totalMatched >= request.materialSpecs.quantity) {
+      request.status = 'fulfilled';
+    } else {
+      request.status = 'partially_filled';
+    }
+    
+    await request.save();
+    
+    res.json({
+      success: true,
+      message: 'Material request fulfilled successfully',
+      data: {
+        request
+      }
+    });
+  } catch (error) {
+    logger.error('Error fulfilling material request:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fulfill material request',
+      error: error.message
+    });
+  }
+};
+
+// Update material request status
+const updateMaterialRequestStatus = async (req, res) => {
+  try {
+    // Only admin can access this
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    const { requestId } = req.params;
+    const { status } = req.body;
+    
+    const MaterialRequest = require('../database/models/MaterialRequest');
+    
+    // Find the material request
+    const request = await MaterialRequest.findById(requestId);
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Material request not found'
+      });
+    }
+    
+    // Update status
+    request.status = status;
+    await request.save();
+    
+    res.json({
+      success: true,
+      message: 'Material request status updated successfully',
+      data: {
+        request
+      }
+    });
+  } catch (error) {
+    logger.error('Error updating material request status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update material request status',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getCollectionsForPayment,
   processCollectorPayment,
@@ -1365,5 +1579,9 @@ module.exports = {
   approveFactoryApplication,
   rejectFactoryApplication,
   approveCollectorApplication,
-  rejectCollectorApplication
+  rejectCollectorApplication,
+  getMaterialRequests,
+  getCollectedWaste,
+  fulfillMaterialRequest,
+  updateMaterialRequestStatus
 };

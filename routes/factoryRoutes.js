@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { Factory, MaterialRequest, Product, User } = require('../database/models');
-const auth = require('../middleware/auth');
+const { authenticate: auth } = require('../middleware/auth');
 
 // Sign up factory profile
 router.post('/register', auth, async (req, res) => {
@@ -125,11 +125,16 @@ router.post('/material-requests', auth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Factory profile not found' });
     }
 
-    const materialRequest = new MaterialRequest({
-      ...req.body,
-      factoryId: factory._id
-    });
+    // Generate requestId explicitly
+    const requestId = 'MR' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
 
+    const materialRequestData = {
+      ...req.body,
+      requestId: requestId,
+      factoryId: factory._id
+    };
+
+    const materialRequest = new MaterialRequest(materialRequestData);
     await materialRequest.save();
 
     res.status(201).json({

@@ -159,6 +159,7 @@ const Navigation: React.FC = () => {
           ...commonItems,
           { to: "/admin-dashboard", label: "Dashboard", icon: LayoutDashboard },
           { to: "/admin-dashboard/analytics", label: "Analytics", icon: BarChart3 },
+          { to: "/admin-dashboard/factory", label: "Factory Management", icon: Factory },
           { to: "/users", label: "Manage Users", icon: Users },
           { to: "/system-config", label: "System Config", icon: Settings },
         ];
