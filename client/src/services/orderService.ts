@@ -1,4 +1,4 @@
-import api from './api.ts';
+import api from './api';
 import { CartItem } from '../contexts/CartContext';
 
 export interface OrderItem {

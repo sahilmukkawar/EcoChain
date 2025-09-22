@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../context/AuthContext.tsx';
-import { getUserRole } from '../utils/auth.ts';
-import PageTransition from '../components/PageTransition.tsx';
+import { useAuth } from '../context/AuthContext';
+import { getUserRole } from '../utils/auth';
+import PageTransition from '../components/PageTransition';
 import { LogIn, User, Lock, Leaf, Eye, EyeOff } from 'lucide-react';
 
 const Login: React.FC = () => {

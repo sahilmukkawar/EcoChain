@@ -1,5 +1,5 @@
 // services/wasteService.ts
-import api from './api.ts';
+import api from './api';
 
 // Interface matching the database schema exactly
 export interface CreateWasteSubmissionData {

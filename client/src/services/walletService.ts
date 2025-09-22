@@ -1,4 +1,4 @@
-import { walletAPI } from './api.ts';
+import { walletAPI } from './api';
 
 export interface WalletInfo {
   currentBalance: number;

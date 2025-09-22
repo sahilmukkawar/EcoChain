@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
-import ProductForm from '../components/ProductForm.tsx';
-import marketplaceService, { MarketplaceItem } from '../services/marketplaceService.ts';
+import { useAuth } from '../context/AuthContext';
+import ProductForm from '../components/ProductForm';
+import marketplaceService, { MarketplaceItem } from '../services/marketplaceService';
 
 const ProductManagement: React.FC = () => {
   const { user } = useAuth();
@@ -163,7 +163,7 @@ const ProductManagement: React.FC = () => {
               },
               sustainabilityScore: editingProduct.sustainability.recycledMaterialPercentage,
               status: editingProduct.availability.isActive ? 'active' : 'inactive'
-            } : undefined}
+            } as any : undefined}
             onSubmit={handleProductFormSubmit}
             onCancel={handleCancelForm}
             loading={formLoading}

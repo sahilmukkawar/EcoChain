@@ -263,11 +263,11 @@ class SyncService {
           if (options.onProgress) {
             options.onProgress(progress, entityType);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error(`Error syncing ${entityType}:`, error);
           result.syncedEntities[entityType].errors++;
           result.success = false;
-          result.error = `Error syncing ${entityType}: ${error.message}`;
+          result.error = `Error syncing ${entityType}: ${error.message || error}`;
         }
       }
       

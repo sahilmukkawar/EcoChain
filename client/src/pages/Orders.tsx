@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { orderService, Order } from '../services/orderService.ts';
+import { orderService, Order } from '../services/orderService';
 
 // Helper function to get CSS classes for order status
 const getOrderStatusClass = (status: Order['status'] | 'completed') => {

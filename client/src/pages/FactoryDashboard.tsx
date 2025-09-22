@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.tsx';
-import ProductForm from '../components/ProductForm.tsx';
-import marketplaceService, { MarketplaceItem } from '../services/marketplaceService.ts';
+import { useAuth } from '../context/AuthContext';
+import ProductForm from '../components/ProductForm';
+import marketplaceService, { MarketplaceItem } from '../services/marketplaceService';
 
 const FactoryDashboard: React.FC = () => {
   const { user } = useAuth();

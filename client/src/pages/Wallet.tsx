@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
-import walletService, { WalletInfo, WalletTransaction } from '../services/walletService.ts';
+import { useAuth } from '../context/AuthContext';
+import walletService, { WalletInfo, WalletTransaction } from '../services/walletService';
 
 const Wallet: React.FC = () => {
   const { user } = useAuth();

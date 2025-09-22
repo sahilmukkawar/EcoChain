@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useCart } from '../contexts/CartContext.tsx';
+import { useCart } from '../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
-import { useEcoChain } from '../contexts/EcoChainContext.tsx';
+import { useEcoChain } from '../contexts/EcoChainContext';
 
 const Cart: React.FC = () => {
   const { cart, removeFromCart, updateQuantity, clearCart, cartTotal, tokenTotal } = useCart();

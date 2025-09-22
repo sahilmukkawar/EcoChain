@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const FactoryApplicationForm: React.FC = () => {
@@ -39,7 +39,7 @@ const FactoryApplicationForm: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof typeof formData],
+          ...(prev[parent as keyof typeof formData] as any),
           [child]: value
         }
       }));

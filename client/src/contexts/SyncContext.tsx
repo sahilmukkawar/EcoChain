@@ -1,8 +1,8 @@
 // client/src/contexts/SyncContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import syncService from '../services/syncService.ts';
-import { isAuthenticated } from '../utils/auth.ts';
-import websocketService, { SyncMessage, NotificationMessage } from '../services/websocketService.ts';
+import syncService from '../services/syncService';
+import { isAuthenticated } from '../utils/auth';
+import websocketService, { SyncMessage, NotificationMessage } from '../services/websocketService';
 
 // Define the context shape
 interface SyncContextType {
@@ -86,7 +86,7 @@ const connectWebSocket = async () => {
     websocketService.subscribe(['users', 'collections', 'marketplace', 'transactions']);
     
     // Set up handler for sync messages
-    websocketService.on('sync', (message: SyncMessage) => {
+    websocketService.on('sync', (message: any) => {
       console.log('Received sync update:', message);
       
       // Update last sync time to reflect we have the latest data
@@ -97,7 +97,7 @@ const connectWebSocket = async () => {
     });
     
     // Set up handler for notifications
-    websocketService.on('notification', (message: NotificationMessage) => {
+    websocketService.on('notification', (message: any) => {
       // Handle notifications (could be expanded)
       console.log('Received notification:', message);
     });
@@ -143,7 +143,7 @@ const connectWebSocket = async () => {
       }
       
       return result;
-    } catch (error) {
+    } catch (error: any) {
       setSyncError(error.message || 'Sync failed');
       throw error;
     } finally {

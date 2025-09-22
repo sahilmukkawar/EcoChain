@@ -32,11 +32,12 @@ module.exports = {
         ...twColors,
         
         // Updated color names to match Tailwind CSS v3.0+
-        // lightBlue -> sky
-        // warmGray -> stone
-        // trueGray -> neutral
-        // coolGray -> gray
-        // blueGray -> slate
+        // Replacing deprecated color names with their new equivalents
+        lightBlue: twColors.sky,
+        warmGray: twColors.stone,
+        trueGray: twColors.neutral,
+        coolGray: twColors.gray,
+        blueGray: twColors.slate,
         
         // New eco-friendly color palette
         'eco-green': {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
-import adminService from '../services/adminService.ts';
-import factoryService, { MaterialRequest } from '../services/factoryService.ts';
+import { useAuth } from '../context/AuthContext';
+import adminService from '../services/adminService';
+import factoryService, { MaterialRequest } from '../services/factoryService';
 import { Loader2, CheckCircle, AlertCircle, Clock, Package, Factory, Recycle } from 'lucide-react';
 
 interface WasteCollection {

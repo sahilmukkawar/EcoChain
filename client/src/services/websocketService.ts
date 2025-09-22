@@ -1,5 +1,5 @@
 // client/src/services/websocketService.ts
-import { getAuthToken } from '../utils/auth.ts';
+import { getAuthToken } from '../utils/auth';
 
 export interface WebSocketMessage {
   type: string;
@@ -134,11 +134,13 @@ class WebSocketService {
    */
   public subscribe(entityTypes: string[]): void {
     if (!this.isConnected || !this.socket) {
-      this.entitySubscriptions = [...new Set([...this.entitySubscriptions, ...entityTypes])];
+      const combined = [...this.entitySubscriptions, ...entityTypes];
+      this.entitySubscriptions = Array.from(new Set(combined));
       return;
     }
     
-    this.entitySubscriptions = [...new Set([...this.entitySubscriptions, ...entityTypes])];
+    const combined = [...this.entitySubscriptions, ...entityTypes];
+    this.entitySubscriptions = Array.from(new Set(combined));
     
     this.socket.send(JSON.stringify({
       type: 'subscribe',

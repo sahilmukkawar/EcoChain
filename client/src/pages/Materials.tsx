@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth } from '../context/AuthContext';
 import { Leaf, Recycle, Factory, AlertCircle, CheckCircle, Clock, Plus, Search } from 'lucide-react';
-import factoryService from '../services/factoryService.ts';
+import factoryService from '../services/factoryService';
 
-import { MaterialRequest } from '../services/factoryService.ts';
+import { MaterialRequest } from '../services/factoryService';
 
 const Materials: React.FC = () => {
   const { user } = useAuth();

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { marketplaceAPI } from '../services/api.ts';
-import { useAuth } from '../context/AuthContext.tsx';
-import websocketService, { WebSocketMessage } from '../services/websocketService.ts';
-import api from '../services/api.ts';
+import { marketplaceAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import websocketService, { WebSocketMessage } from '../services/websocketService';
+import api from '../services/api';
 
 interface OrderItem {
   productId: {

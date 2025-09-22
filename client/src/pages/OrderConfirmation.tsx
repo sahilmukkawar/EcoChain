@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { marketplaceAPI } from '../services/api.ts';
+import { marketplaceAPI } from '../services/api';
 
 interface OrderItem {
   productId: {

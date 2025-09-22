@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.tsx';
-import { useEcoChain } from '../contexts/EcoChainContext.tsx';
-import wasteService, { WasteSubmission } from '../services/wasteService.ts';
-import { authAPI } from '../services/api.ts';
+import { useAuth } from '../context/AuthContext';
+import { useEcoChain } from '../contexts/EcoChainContext';
+import wasteService, { WasteSubmission } from '../services/wasteService';
+import { authAPI } from '../services/api';
 
 // Helper function to get CSS classes for waste request status
 const getWasteRequestStatusClass = (status: string) => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.tsx';
-import { useCart } from '../contexts/CartContext.tsx';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../contexts/CartContext';
 
 const NavBar: React.FC = () => {
   const { user } = useAuth();

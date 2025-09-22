@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth } from '../context/AuthContext';
 import adminService, {
   CollectionForPayment,
   AdminStats,
@@ -8,11 +8,11 @@ import adminService, {
   FactoryData,
   PaymentHistoryItem,
   PaymentStatistics
-} from '../services/adminService.ts';
-import websocketService from '../services/websocketService.ts';
-import Analytics from '../components/Analytics.tsx';
-import ApprovalManagement from '../services/ApprovalManagement.tsx';
-import FactoryManagement from '../components/FactoryManagement.tsx';
+} from '../services/adminService';
+import websocketService from '../services/websocketService';
+import Analytics from '../components/Analytics';
+import ApprovalManagement from '../services/ApprovalManagement';
+import FactoryManagement from '../components/FactoryManagement';
 import {
   BarChart3,
   Users,

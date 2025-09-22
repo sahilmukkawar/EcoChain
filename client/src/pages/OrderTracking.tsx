@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { marketplaceAPI } from '../services/api.ts';
-import websocketService, { WebSocketMessage } from '../services/websocketService.ts';
+import { marketplaceAPI } from '../services/api';
+import websocketService, { WebSocketMessage } from '../services/websocketService';
 
 interface OrderItem {
   productId: {

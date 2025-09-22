@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '../contexts/CartContext.tsx';
-import { useAuth } from '../context/AuthContext.tsx';
-import { useEcoChain } from '../contexts/EcoChainContext.tsx';
-import { marketplaceAPI } from '../services/api.ts';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useEcoChain } from '../contexts/EcoChainContext';
+import { marketplaceAPI } from '../services/api';
 
 interface ShippingInfo {
   fullName: string;

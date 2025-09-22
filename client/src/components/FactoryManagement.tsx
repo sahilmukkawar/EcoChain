@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Leaf, Recycle, Factory, AlertCircle, CheckCircle, Clock, Search, Filter, Plus, Truck, RefreshCw, BarChart, PieChart } from 'lucide-react';
-import adminService, { MaterialRequest, CollectedWaste } from '../services/adminService.ts';
+import adminService, { MaterialRequest, CollectedWaste } from '../services/adminService';
 
 interface GarbageCollection {
   _id: string;

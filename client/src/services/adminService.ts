@@ -1,5 +1,5 @@
 // services/adminService.ts
-import api from './api.ts';
+import api from './api';
 
 export interface CollectionForPayment {
   _id: string;

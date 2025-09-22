@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
-import wasteService, { WasteSubmission } from '../services/wasteService.ts';
+import { useAuth } from '../context/AuthContext';
+import wasteService, { WasteSubmission } from '../services/wasteService';
 
 interface PickupRequest {
   _id: string;
@@ -214,7 +214,7 @@ const CollectorDashboard: React.FC = () => {
         console.log('=== COLLECTOR DASHBOARD DEBUG ===');
         console.log('Assigned collections fetched:', assignedCollections.length);
         console.log('Sample assigned collection:', assignedCollections[0]);
-        console.log('All assigned collections statuses:', assignedCollections.map(c => ({ id: c.collectionId, status: c.status })));
+        console.log('All assigned collections statuses:', assignedCollections.map((c: any) => ({ id: c.collectionId, status: c.status })));
         console.log('================================');
         
         // Set assigned collections state
@@ -293,7 +293,7 @@ const CollectorDashboard: React.FC = () => {
           (collection: WasteSubmission) => collection.status === 'collected'
         );
         
-        const pendingPaymentsINR = collectedCollections.reduce((sum, item) => {
+        const pendingPaymentsINR = collectedCollections.reduce((sum: number, item: any) => {
           return sum + calculatePaymentINR(
             item.collectionDetails.type,
             item.collectionDetails.weight,
@@ -312,7 +312,7 @@ const CollectorDashboard: React.FC = () => {
         });
         
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching collector data:', error);
         console.error('Error details:', error.response?.data || error.message);
         setError('Failed to load collector data: ' + (error.message || 'Unknown error'));
@@ -378,11 +378,9 @@ const CollectorDashboard: React.FC = () => {
     try {
       console.log(`Updating collection ${collectionId} to status: ${newStatus}`);
       
-      let response;
-      
       // Use specific endpoint for marking as collected
       if (newStatus === 'collected') {
-        response = await wasteService.markAsCollected(collectionId);
+        await wasteService.markAsCollected(collectionId);
         
         // Calculate expected payment to show to collector
         const collection = assignedCollections.find(c => c._id === collectionId);
@@ -397,7 +395,7 @@ const CollectorDashboard: React.FC = () => {
           alert('Collection marked as collected! This will now be sent to admin for processing collector payment.');
         }
       } else {
-        response = await wasteService.updateCollectionStatus(collectionId, newStatus);
+        await wasteService.updateCollectionStatus(collectionId, newStatus);
         alert('Status updated successfully!');
       }
       
@@ -442,7 +440,7 @@ const CollectorDashboard: React.FC = () => {
       
       console.log('=== REFRESH COLLECTOR DEBUG ===');
       console.log('Refresh - Assigned collections fetched:', assignedCollections.length);
-      console.log('Refresh - All assigned collections:', assignedCollections.map(c => ({ 
+      console.log('Refresh - All assigned collections:', assignedCollections.map((c: any) => ({ 
         id: c.collectionId, 
         status: c.status,
         scheduledDate: c.scheduling?.scheduledDate 
@@ -522,7 +520,7 @@ const CollectorDashboard: React.FC = () => {
         (collection: WasteSubmission) => collection.status === 'collected'
       );
       
-      const pendingPaymentsINR = collectedCollections.reduce((sum, item) => {
+      const pendingPaymentsINR = collectedCollections.reduce((sum: number, item: any) => {
         return sum + calculatePaymentINR(
           item.collectionDetails.type,
           item.collectionDetails.weight,

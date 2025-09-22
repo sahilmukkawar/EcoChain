@@ -34,8 +34,8 @@ import {
   ArrowDown,
   ShoppingBag
 } from 'lucide-react';
-import marketplaceService, { PopulatedMarketplaceItem } from '../services/marketplaceService.ts';
-import { useCart, Product as CartProduct } from '../contexts/CartContext.tsx';
+import marketplaceService, { PopulatedMarketplaceItem } from '../services/marketplaceService';
+import { useCart, Product as CartProduct } from '../contexts/CartContext';
 
 // Extended product interface for Home page display
 interface ExtendedProduct extends CartProduct {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
-import { useEcoChain } from '../contexts/EcoChainContext.tsx';
+import { useAuth } from '../context/AuthContext';
+import { useEcoChain } from '../contexts/EcoChainContext';
 
 interface Achievement {
   id: string;

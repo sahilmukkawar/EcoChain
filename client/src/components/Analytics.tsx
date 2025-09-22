@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import adminService, { AnalyticsData } from '../services/adminService.ts';
+import adminService, { AnalyticsData } from '../services/adminService';
 
 const Analytics: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
-import { authAPI } from '../services/api.ts';
+import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { Camera, User, Lock, Save, Eye, EyeOff, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 

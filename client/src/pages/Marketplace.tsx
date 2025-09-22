@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useCart } from '../contexts/CartContext.tsx';
-import { useAuth } from '../context/AuthContext.tsx';
-import marketplaceService, { PopulatedMarketplaceItem } from '../services/marketplaceService.ts';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../context/AuthContext';
+import marketplaceService, { PopulatedMarketplaceItem } from '../services/marketplaceService';
 import {
   Search,
   Filter,
@@ -117,7 +117,8 @@ const Marketplace: React.FC = () => {
   }, [computed]);
 
   // Get unique categories from products
-  const categories = ['all', ...new Set(products.map(product => product.category || 'uncategorized'))];
+  const categorySet = new Set(products.map((product: any) => product.category || 'uncategorized'));
+  const categories = ['all', ...Array.from(categorySet)];
   const totalPages = Math.max(1, Math.ceil(computed.total / pageSize));
 
 
@@ -660,8 +661,8 @@ const Marketplace: React.FC = () => {
 
                   {/* Page Numbers */}
                   <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber;
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i: number) => {
+                      let pageNumber: number;
                       if (totalPages <= 5) {
                         pageNumber = i + 1;
                       } else if (page <= 3) {

@@ -1,6 +1,6 @@
 //admin approval
 import React, { useState, useEffect, useCallback } from 'react';
-import adminService, { ApprovalApplication } from '../services/adminService.ts';
+import adminService, { ApprovalApplication } from '../services/adminService';
 import { CheckCircle, XCircle, Clock, FileText, User, Building, Truck } from 'lucide-react';
 
 const ApprovalManagement: React.FC = () => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.tsx";
-import { useCart } from "../contexts/CartContext.tsx";
+import { useAuth } from "../context/AuthContext";
+import { useCart } from "../contexts/CartContext";
 import {
   User,
   Wallet,

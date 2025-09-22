@@ -1,4 +1,4 @@
-import api from './api.ts';
+import api from './api';
 
 // Updated interface to match the new Product model structure
 export interface MarketplaceItem {

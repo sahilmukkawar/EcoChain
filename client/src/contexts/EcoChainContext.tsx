@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
-import wasteService, { WasteSubmission } from '../services/wasteService.ts';
-import userService, { User } from '../services/userService.ts';
+import { useAuth } from '../context/AuthContext';
+import wasteService, { WasteSubmission } from '../services/wasteService';
+import userService, { User } from '../services/userService';
 
 interface EnvironmentalImpact {
   co2Saved: number;

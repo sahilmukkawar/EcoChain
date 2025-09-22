@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import ProductForm from '../components/ProductForm.tsx';
-import marketplaceService, { MarketplaceItem, CreateMarketplaceItemData } from '../services/marketplaceService.ts';
+import ProductForm from '../components/ProductForm';
+import marketplaceService, { MarketplaceItem, CreateMarketplaceItemData } from '../services/marketplaceService';
 
 const FactoryProductManagement: React.FC = () => {
-  const navigate = useNavigate();
   const [products, setProducts] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -128,7 +126,8 @@ const FactoryProductManagement: React.FC = () => {
   });
 
   // Get unique categories
-  const categories = [...new Set(products.map(p => p.productInfo.category))];
+  const categorySet = new Set(products.map((p: any) => p.productInfo.category));
+  const categories = Array.from(categorySet);
 
   if (loading) {
     return (

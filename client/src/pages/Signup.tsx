@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext.tsx';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import PageTransition from '../components/PageTransition.tsx';
+import PageTransition from '../components/PageTransition';
 import { UserPlus, User, Mail, Lock, Truck, Factory as FactoryIcon, BadgeCheck, Leaf, ChevronLeft, ChevronRight, X, Eye, EyeOff } from 'lucide-react';
 
 const Signup: React.FC = () => {
