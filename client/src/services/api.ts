@@ -2,6 +2,10 @@ import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'ax
 
 // Determine the base URL based on the environment
 const getBaseURL = () => {
+  // Check for environment variable first
+  if (process.env.REACT_APP_API_BASE_URL) {
+    return process.env.REACT_APP_API_BASE_URL;
+  }
   // For production, use the deployed backend URL
   if (process.env.NODE_ENV === 'production') {
     return 'https://ecochain-j1nj.onrender.com/api';
