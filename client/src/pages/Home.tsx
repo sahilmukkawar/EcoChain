@@ -97,13 +97,6 @@ const mockProducts: ExtendedProduct[] = [
   }
 ];
 
-const mockCompanyLogos = [
-  { name: 'TechCorp', logo: '🏢' },
-  { name: 'GreenInc', logo: '🌱' },
-  { name: 'EcoSystems', logo: '♻' },
-  { name: 'CleanTech', logo: '🔋' },
-  { name: 'SustainCo', logo: '🌍' }
-];
 
 interface Dashboard {
   title: string;
@@ -536,36 +529,6 @@ const EcoChainLanding = () => {
             <ArrowDown className="h-4 w-4" />
           </motion.div>
         </motion.div>
-      </section>
-
-      {/* Trust Indicators - Company Logos */}
-      <section className="py-12 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <p className="text-gray-600 mb-8">Trusted by industry leaders worldwide</p>
-            <div className="flex justify-center items-center space-x-12 opacity-60">
-              {mockCompanyLogos.map((company, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1, duration: 0.3 }}
-                  viewport={{ once: true }}
-                  className="flex flex-col items-center gap-2 hover:opacity-100 transition-opacity cursor-pointer"
-                >
-                  <div className="text-4xl">{company.logo}</div>
-                  <span className="text-xs font-medium text-gray-500">{company.name}</span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
       </section>
 
       {/* How It Works Section */}

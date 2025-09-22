@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext.tsx';
 import { getUserRole } from '../utils/auth.ts';
 import PageTransition from '../components/PageTransition.tsx';
-import { LogIn, User, Lock, Leaf } from 'lucide-react';
+import { LogIn, User, Lock, Leaf, Eye, EyeOff } from 'lucide-react';
 
 const Login: React.FC = () => {
   const { login, isLoading, isAuthenticated } = useAuth();
@@ -12,8 +12,8 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       const role = getUserRole();
@@ -29,9 +29,34 @@ const Login: React.FC = () => {
     setError(null);
     try {
       await login(email, password);
-      // Navigation will be handled by the useEffect above
     } catch (e: any) {
-      setError(e?.response?.data?.message || 'Login failed');
+      // More specific error messages for login
+      if (e?.response?.status === 401) {
+        setError('Invalid email or password. Please try again.');
+      } else if (e?.response?.status === 403) {
+        setError('Your account is not authorized. Please contact support.');
+      } else if (e?.response?.status === 429) {
+        setError('Too many login attempts. Please try again later.');
+      } else if (e?.response?.status === 400) {
+        const backendMessage = e?.response?.data?.message;
+        if (backendMessage) {
+          if (backendMessage.toLowerCase().includes('email')) {
+            setError('Please enter a valid email address');
+          } else if (backendMessage.toLowerCase().includes('password')) {
+            setError('Password must be at least 6 characters long');
+          } else {
+            setError(backendMessage);
+          }
+        } else {
+          setError('Invalid login credentials. Please check your information.');
+        }
+      } else if (e?.response?.data?.message) {
+        setError(e.response.data.message);
+      } else if (e?.message) {
+        setError(e.message);
+      } else {
+        setError('Login failed. Please check your connection and try again.');
+      }
     }
   };
 
@@ -39,150 +64,191 @@ const Login: React.FC = () => {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-eco-beige flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
-          {/* Illustration Side */}
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="hidden md:flex flex-col items-center justify-center"
+      <div className="min-h-screen grid md:grid-cols-2 bg-eco-beige">
+        {/* Left: Hero with blob and tokens */}
+        <div className="relative hidden md:block overflow-hidden">
+          {/* subtle emerald grid using your color */}
+          <div className="absolute inset-0 [background-image:linear-gradient(#16a34a14_1px,transparent_1px),linear-gradient(90deg,#16a34a14_1px,transparent_1px)] [background-size:28px_28px]" />
+
+          {/* soft emerald blob (your green tones only) - positioned on the left */}
+          <motion.svg
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            viewBox="0 0 600 600"
+            className="absolute -left-24 -top-24 w-[750px] h-[750px]"
           >
-            <div className="relative w-full max-w-md">
-              <svg className="w-full h-auto" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-                <path d="M416.1,143.3c-12.7-12.7-30.8-18.6-48.9-15.8c-18.1,2.8-33.7,14.5-41.5,31.4c-7.8,16.9-6.3,36.2,4,51.8 c10.3,15.6,28.2,24.4,47,23.2c18.8-1.2,35.3-12.5,43.7-29.9C428.8,186.6,428.8,156,416.1,143.3z" fill="#22c55e" />
-                <path d="M278.5,218.5c-17.8,0-34.8,7.1-47.3,19.6c-12.5,12.5-19.6,29.5-19.6,47.3c0,17.8,7.1,34.8,19.6,47.3 c12.5,12.5,29.5,19.6,47.3,19.6c17.8,0,34.8-7.1,47.3-19.6c12.5-12.5,19.6-29.5,19.6-47.3c0-17.8-7.1-34.8-19.6-47.3 C313.3,225.6,296.3,218.5,278.5,218.5z" fill="#16a34a" />
-                <path d="M160.7,143.3c-12.7,12.7-12.7,43.3-4.3,60.7c8.4,17.4,24.9,28.7,43.7,29.9c18.8,1.2,36.7-7.6,47-23.2 c10.3-15.6,11.8-34.9,4-51.8c-7.8-16.9-23.4-28.6-41.5-31.4C191.5,124.7,173.4,130.6,160.7,143.3z" fill="#facc15" />
-                <path d="M278.5,68.1c-17.8,0-34.8,7.1-47.3,19.6c-12.5,12.5-19.6,29.5-19.6,47.3c0,17.8,7.1,34.8,19.6,47.3 c12.5,12.5,29.5,19.6,47.3,19.6c17.8,0,34.8-7.1,47.3-19.6c12.5-12.5,19.6-29.5,19.6-47.3c0-17.8-7.1-34.8-19.6-47.3 C313.3,75.2,296.3,68.1,278.5,68.1z" fill="#22c55e" />
-                <path d="M278.5,368.9c-17.8,0-34.8,7.1-47.3,19.6c-12.5,12.5-19.6,29.5-19.6,47.3c0,17.8,7.1,34.8,19.6,47.3 c12.5,12.5,29.5,19.6,47.3,19.6c17.8,0,34.8-7.1,47.3-19.6c12.5-12.5,19.6-29.5,19.6-47.3c0-17.8-7.1-34.8-19.6-47.3 C313.3,376,296.3,368.9,278.5,368.9z" fill="#16a34a" />
-                <path d="M160.7,368.9c-12.7-12.7-30.8-18.6-48.9-15.8c-18.1,2.8-33.7,14.5-41.5,31.4c-7.8,16.9-6.3,36.2,4,51.8 c10.3,15.6,28.2,24.4,47,23.2c18.8-1.2,35.3-12.5,43.7-29.9C173.4,412.2,173.4,381.6,160.7,368.9z" fill="#22c55e" />
-                <path d="M84.1,218.5c-17.8,0-34.8,7.1-47.3,19.6c-12.5,12.5-19.6,29.5-19.6,47.3c0,17.8,7.1,34.8,19.6,47.3 c12.5,12.5,29.5,19.6,47.3,19.6c17.8,0,34.8-7.1,47.3-19.6c12.5-12.5,19.6-29.5,19.6-47.3c0-17.8-7.1-34.8-19.6-47.3 C118.9,225.6,101.9,218.5,84.1,218.5z" fill="#facc15" />
-                <path d="M278.5,218.5l-47.3,47.3l47.3,47.3l47.3-47.3L278.5,218.5z" fill="#ffffff" />
-                <path d="M278.5,68.1l-47.3,47.3l47.3,47.3l47.3-47.3L278.5,68.1z" fill="#ffffff" />
-                <path d="M278.5,368.9l-47.3,47.3l47.3,47.3l47.3-47.3L278.5,368.9z" fill="#ffffff" />
-                <path d="M84.1,218.5l-47.3,47.3l47.3,47.3l47.3-47.3L84.1,218.5z" fill="#ffffff" />
-              </svg>
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                className="absolute inset-0 flex flex-col items-center justify-center text-center p-6"
+            <defs>
+              <linearGradient id="ecoGrad" x1="0" x2="1">
+                <stop offset="0%" stopColor="#22c55e" />
+                <stop offset="100%" stopColor="#16a34a" />
+              </linearGradient>
+            </defs>
+            <motion.path
+              d="M423 115c54 32 96 101 86 165s-78 118-150 164-151 82-204 56-78-109-60-182 79-131 147-168 127-66 181-35z"
+              fill="url(#ecoGrad)"
+              opacity="0.16"
+              animate={{
+                d: [
+                  'M423 115c54 32 96 101 86 165s-78 118-150 164-151 82-204 56-78-109-60-182 79-131 147-168 127-66 181-35z',
+                  'M410 130c70 40 115 119 95 179s-92 106-162 145-152 60-205 30-73-114-45-184 101-121 173-160 142-50 144-10z',
+                  'M423 115c54 32 96 101 86 165s-78 118-150 164-151 82-204 56-78-109-60-182 79-131 147-168 127-66 181-35z'
+                ]
+              }}
+              transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </motion.svg>
+
+          {/* headline + token cluster - positioned in the center of the left side */}
+          <div className="relative h-full flex items-center justify-center px-12">
+            <div className="max-w-md">
+              <div className="inline-flex items-center gap-2 rounded-full border border-eco-green-light/50 bg-eco-green-light/20 px-3 py-1 mb-4">
+                <Leaf className="h-4 w-4 text-eco-green" />
+                <span className="text-eco-green-dark text-xs font-medium">EcoChain</span>
+              </div>
+              <h2 className="text-4xl font-semibold tracking-tight text-eco-green-dark">
+                Welcome back
+              </h2>
+              <p className="mt-3 text-eco-green">
+                Sign in to your account to continue your eco journey.
+              </p>
+
+              {/* Original tokens reintroduced, arranged lightly */}
+              <motion.svg
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+                viewBox="0 0 500 160"
+                className="mt-8 w-full h-auto"
               >
-                <h2 className="text-2xl font-bold text-eco-green-dark mb-2">Welcome to EcoChain</h2>
-                <p className="text-sm text-eco-green">Join our community and help build a sustainable future through recycling.</p>
-              </motion.div>
+                {/* soft background dots in your palette */}
+                <circle cx="60" cy="40" r="12" fill="#22c55e" opacity="0.25" />
+                <circle cx="460" cy="30" r="10" fill="#facc15" opacity="0.45" />
+                <circle cx="420" cy="120" r="14" fill="#16a34a" opacity="0.25" />
+
+                {/* token row: circle with white rotated square */}
+                {[
+                  { x: 110, y: 90, r: 24, c: '#22c55e' },
+                  { x: 170, y: 110, r: 22, c: '#16a34a' },
+                  { x: 230, y: 95, r: 24, c: '#facc15' },
+                  { x: 290, y: 110, r: 22, c: '#22c55e' },
+                  { x: 350, y: 95, r: 24, c: '#16a34a' },
+                ].map((t, i) => (
+                  <g key={i}>
+                    <circle cx={t.x} cy={t.y} r={t.r} fill={t.c} />
+                    <rect
+                      x={t.x - (t.r * 0.55)}
+                      y={t.y - (t.r * 0.55)}
+                      width={t.r * 1.1}
+                      height={t.r * 1.1}
+                      fill="white"
+                      transform={`rotate(45 ${t.x} ${t.y})`}
+                    />
+                  </g>
+                ))}
+              </motion.svg>
             </div>
-          </motion.div>
-          
-          {/* Login Form Side */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 w-full max-w-md mx-auto"
+          </div>
+        </div>
+
+        {/* Right: Form (unchanged logic, colors constrained to your palette) */}
+        <div className="flex items-center justify-center px-4 py-12">
+          <motion.div
+            initial={{ y: 16, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.45 }}
+            className="w-full max-w-md"
           >
-            <div className="flex justify-center mb-6">
-              <div className="h-16 w-16 rounded-full bg-eco-green-light/20 flex items-center justify-center">
-                <LogIn className="h-8 w-8 text-eco-green" />
-              </div>
-            </div>
-            <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">Welcome back</h1>
-            <p className="text-gray-600 text-center mb-8">Sign in to your EcoChain account</p>
-            
-            <form onSubmit={onSubmit} className="space-y-6">
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded-lg"
-                >
-                  {error}
-                </motion.div>
-              )}
-              
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+              <div className="flex justify-center mb-6">
+                <div className="h-14 w-14 rounded-xl bg-eco-green-light/30 flex items-center justify-center ring-1 ring-eco-green-light/50">
+                  <LogIn className="h-7 w-7 text-eco-green" />
                 </div>
-                <input 
-                  placeholder="Email" 
-                  value={email} 
-                  onChange={e=>setEmail(e.target.value)} 
-                  required 
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green outline-none transition bg-gray-50"
-                />
               </div>
-              
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+
+              <h1 className="text-[28px] font-semibold text-center text-gray-900">Welcome back</h1>
+              <p className="text-center text-gray-600 mt-1">Sign in to your EcoChain account</p>
+
+              <form onSubmit={onSubmit} className="space-y-5 mt-7">
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-eco-red/10 border border-eco-red text-eco-red-dark px-4 py-3 rounded-lg"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+
+                <div className="relative">
+                  <User className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-3 py-3.5 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-eco-green focus:border-eco-green outline-none transition"
+                  />
                 </div>
-                <input 
-                  placeholder="Password" 
-                  type="password" 
-                  value={password} 
-                  onChange={e=>setPassword(e.target.value)} 
-                  required 
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-eco-green focus:border-eco-green outline-none transition bg-gray-50"
-                />
-              </div>
-              
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-eco-green-dark to-eco-green text-white font-bold py-3 px-4 rounded-lg shadow hover:shadow-lg transition-all duration-300 disabled:opacity-50" 
-                type="submit" 
-                disabled={isLoading}
-              >
-                {isLoading ? 'Logging in...' : 'Login'}
-              </motion.button>
-              
-              <div className="text-center text-sm">
-                <Link to="/signup" className="text-eco-green hover:text-eco-green-dark transition">
-                  Don't have an account? Sign Up here
-                </Link>
-              </div>
-            </form>
-            
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="text-sm text-gray-600 mb-3 font-medium">Quick Accounts:</div>
-              <div className="grid grid-cols-2 gap-2">
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={()=>quickFill('admin@ecochain.com','Admin@123')} 
-                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30 flex items-center justify-center gap-1"
+
+                <div className="relative">
+                  <Lock className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    placeholder="Password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-10 py-3.5 rounded-lg border border-gray-300 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-eco-green focus:border-eco-green outline-none transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+
+                <motion.button
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 rounded-lg text-white font-semibold bg-eco-green-dark hover:brightness-105 transition shadow-lg disabled:opacity-60"
                 >
-                  <Leaf className="h-3 w-3 text-eco-green" />
-                  Admin
+                  {isLoading ? 'Logging in...' : 'Login'}
                 </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={()=>quickFill('factory@ecochain.com','Factory@123')} 
-                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30 flex items-center justify-center gap-1"
-                >
-                  <Leaf className="h-3 w-3 text-eco-green" />
-                  Factory
-                </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={()=>quickFill('collector@ecochain.com','Collector@123')} 
-                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30 flex items-center justify-center gap-1"
-                >
-                  <Leaf className="h-3 w-3 text-eco-green" />
-                  Collector
-                </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={()=>quickFill('user@ecochain.com','User@123')} 
-                  className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg transition border border-eco-green-light/30 flex items-center justify-center gap-1"
-                >
-                  <Leaf className="h-3 w-3 text-eco-green" />
-                  User
-                </motion.button>
+
+                <div className="text-center text-sm">
+                  <Link to="/signup" className="text-eco-green hover:text-eco-green-dark underline-offset-4 hover:underline">
+                    Don&apos;t have an account? Sign up
+                  </Link>
+                </div>
+              </form>
+
+              {/* Quick accounts */}
+              <div className="mt-8 pt-6 border-t border-gray-100">
+                <div className="text-sm text-gray-700 mb-3 font-medium">Quick accounts</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'Admin', email: 'admin@ecochain.com', pass: 'Admin@123' },
+                    { label: 'Factory', email: 'factory@ecochain.com', pass: 'Factory@123' },
+                    { label: 'Collector', email: 'collector@ecochain.com', pass: 'Collector@123' },
+                    { label: 'User', email: 'user@ecochain.com', pass: 'User@123' },
+                  ].map((q) => (
+                    <motion.button
+                      key={q.label}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => quickFill(q.email, q.pass)}
+                      className="text-xs bg-eco-green-light/10 hover:bg-eco-green-light/20 text-eco-green-dark py-2 px-3 rounded-lg border border-eco-green-light/30 flex items-center justify-center gap-1"
+                    >
+                      <Leaf className="h-3 w-3 text-eco-green" />
+                      {q.label}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>
