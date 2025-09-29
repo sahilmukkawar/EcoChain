@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, ReactNode } from 'react';
 import { authAPI } from '../services/api';
 import userDataCache from '../services/userDataCache';
 
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   // Logout function
-  const logout = () => {
+  const logout = useCallback(() => {
     try {
       // Call logout endpoint to invalidate refresh token
       if (token) {
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setToken(null);
       setRefreshToken(null);
     }
-  };
+  }, [token]);
 
   // Check if user is already logged in
   useEffect(() => {
@@ -257,16 +257,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         
         localStorage.setItem('user', JSON.stringify(userData));
-        
-        // For factory and collector users, redirect to application form
-        if ((userData.role === 'factory' || userData.role === 'collector') && !tokens) {
-          // These users need to submit an application after email verification
-          setTimeout(() => {
-            window.location.href = userData.role === 'factory' 
-              ? '/factory-application' 
-              : '/collector-application';
-          }, 100);
-        }
       } else {
         throw new Error(response.data.message || 'OTP verification failed');
       }
@@ -288,13 +278,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Resend OTP function
   const resendOTP = async (email: string) => {
-    setIsLoading(true);
     try {
       const response = await authAPI.resendOTP({ email });
       
       if (response.data.success) {
-        // OTP resent successfully
-        return;
+        return response.data;
       } else {
         throw new Error(response.data.message || 'Failed to resend OTP');
       }
@@ -309,41 +297,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       throw new Error(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  // Update user data
+  // Update user function
   const updateUser = (userData: User) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    userDataCache.updateCachedData(userData); // Update the cache with new user data
+  };
+
+  const value = {
+    user,
+    token,
+    refreshToken,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    register,
+    verifyOTP,
+    resendOTP,
+    logout,
+    refreshAccessToken,
+    updateUser
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        refreshToken,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        register,
-        verifyOTP,
-        resendOTP,
-        logout,
-        refreshAccessToken,
-        updateUser,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

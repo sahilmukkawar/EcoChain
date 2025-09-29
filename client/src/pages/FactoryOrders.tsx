@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { marketplaceAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -81,7 +81,7 @@ const FactoryOrders: React.FC = () => {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   // Fetch factory orders
-  const fetchOrders = async (isRefresh = false) => {
+  const fetchOrders = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -115,10 +115,10 @@ const FactoryOrders: React.FC = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   // Handle real-time order updates
-  const handleOrderUpdate = (message: WebSocketMessage) => {
+  const handleOrderUpdate = useCallback((message: WebSocketMessage) => {
     if (message.type === 'sync' && message.entityType === 'order' && message.changeType === 'update') {
       // Update the order in the local state if it exists
       const updatedOrders = [...orders];
@@ -140,7 +140,7 @@ const FactoryOrders: React.FC = () => {
         setOrders(updatedOrders);
       }
     }
-  };
+  }, [orders]);
 
   useEffect(() => {
     fetchOrders();
@@ -156,7 +156,7 @@ const FactoryOrders: React.FC = () => {
   }, [fetchOrders, handleOrderUpdate]);
 
   // Update order status
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+  const updateOrderStatus = useCallback(async (orderId: string, newStatus: string) => {
     try {
       setUpdatingOrderId(orderId);
       
@@ -196,7 +196,7 @@ const FactoryOrders: React.FC = () => {
     } finally {
       setUpdatingOrderId(null);
     }
-  };
+  }, []);
 
   // Get next valid status options
   const getNextStatusOptions = (currentStatus: string) => {
