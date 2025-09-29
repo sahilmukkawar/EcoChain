@@ -9,6 +9,8 @@ const getBaseURL = () => {
   }
   // For production, use the deployed backend URL
   if (process.env.NODE_ENV === 'production') {
+    // When deployed on Vercel, we need to use the Render backend URL
+    // When deployed on Render, we can use the relative path
     return 'https://ecochain-j1nj.onrender.com/api';
   }
   // For development, use the proxy setting
@@ -44,6 +46,17 @@ api.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
+    // Log detailed error information for debugging
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      baseURL: error.config?.baseURL,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    
     // Handle 401 Unauthorized errors (token expired, etc.)
     if (error.response && error.response.status === 401) {
       // Don't redirect immediately - let AuthContext handle token refresh

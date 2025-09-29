@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://ecochain-j1nj.onrender.com/api/$1"
+    },
+    {
+      "src": "/ws",
+      "dest": "https://ecochain-j1nj.onrender.com/ws"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "REACT_APP_API_BASE_URL": "https://ecochain-j1nj.onrender.com/api",
+    "REACT_APP_WS_URL": "wss://ecochain-j1nj.onrender.com"
+  }
+}

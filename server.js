@@ -101,7 +101,11 @@ connectDB().catch(err => {
 
 // Basic route for testing
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to EcoChain API' });
+  res.json({ 
+    message: 'Welcome to EcoChain API',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Health check endpoint for monitoring

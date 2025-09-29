@@ -58,6 +58,11 @@ class WebSocketService {
     } else {
       this.url = `${baseUrl}/ws`;
     }
+    
+    // Ensure WebSocket URL uses wss:// in production when using https
+    if (process.env.NODE_ENV === 'production' && window.location.protocol === 'https:' && this.url.startsWith('ws://')) {
+      this.url = this.url.replace('ws://', 'wss://');
+    }
   }
   
   /**
@@ -133,8 +138,11 @@ class WebSocketService {
         this.socket.onerror = (error) => {
           this.isConnecting = false;
           console.error('WebSocket error:', error);
+          console.error('WebSocket URL:', wsUrl);
+          console.error('Current environment:', process.env.NODE_ENV);
+          console.error('REACT_APP_WS_URL:', process.env.REACT_APP_WS_URL);
           if (!this.isConnected) {
-            reject(new Error('Failed to connect to sync service'));
+            reject(new Error('Failed to connect to sync service. Check console for details.'));
           }
         };
         

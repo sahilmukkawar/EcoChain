@@ -162,6 +162,7 @@ const Navigation: React.FC = () => {
           { to: "/admin-dashboard/factory", label: "Factory Management", icon: Factory },
           { to: "/users", label: "Manage Users", icon: Users },
           { to: "/system-config", label: "System Config", icon: Settings },
+          { to: "/connection-test", label: "Connection Test", icon: Settings },
         ];
       case "factory":
         return [

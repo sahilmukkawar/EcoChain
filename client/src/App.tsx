@@ -34,6 +34,8 @@ import PendingApproval from './pages/PendingApproval';
 import FactoryApplicationForm from './pages/FactoryApplicationForm';
 import CollectorApplicationForm from './pages/CollectorApplicationForm';
 import Materials from './pages/Materials';
+import ConnectionTest from './pages/ConnectionTest';
+import { testConnections } from './utils/connectionTest';
 
 function App() {
   const location = useLocation();
@@ -42,6 +44,13 @@ function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
+  
+  // Test connections in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      testConnections();
+    }
+  }, []);
 
   return (
     <AuthProvider>
@@ -78,6 +87,7 @@ function App() {
                 <Route path="/achievements" element={<Achievements />} />
                 <Route path="/wallet" element={<ProtectedRoute element={<Wallet />} allowedRoles={['user']} />} />
                 <Route path="/profile" element={<ProtectedRoute element={<Profile />} allowedRoles={['user', 'admin', 'factory', 'collector']} />} />
+                <Route path="/connection-test" element={<ConnectionTest />} />
               </Routes>
             </AnimatePresence>
           </main>

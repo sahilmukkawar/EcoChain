@@ -249,6 +249,21 @@ The platform is production-ready with:
      - `JWT_REFRESH_SECRET` - Your JWT refresh secret key
      - Any other environment variables from `.env.example`
 
+### Frontend Deployment (Vercel)
+
+1. Create a new project on Vercel
+2. Connect your GitHub repository
+3. Set the following configuration:
+   - **Framework Preset**: Create React App
+   - **Root Directory**: `client`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `build`
+4. Add environment variables:
+   - `REACT_APP_API_BASE_URL` - Your backend API URL (`https://ecochain-j1nj.onrender.com/api`)
+   - `REACT_APP_WS_URL` - Your WebSocket URL (`wss://ecochain-j1nj.onrender.com`)
+
+Alternatively, you can use the provided `vercel.json` file which includes these settings.
+
 ### Frontend Deployment (Netlify)
 
 1. Create a new site on Netlify
@@ -258,7 +273,8 @@ The platform is production-ready with:
    - **Build command**: `npm run build`
    - **Publish directory**: `build`
 4. Add environment variables if needed:
-   - `REACT_APP_API_URL` - Your backend API URL (https://ecochain-j1nj.onrender.com/api)
+   - `REACT_APP_API_BASE_URL` - Your backend API URL (`https://ecochain-j1nj.onrender.com/api`)
+   - `REACT_APP_WS_URL` - Your WebSocket URL (`wss://ecochain-j1nj.onrender.com`)
 
 ### Frontend Deployment (Render Alternative)
 
