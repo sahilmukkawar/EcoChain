@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import wasteService, { WasteSubmission } from '../services/wasteService';
-import userService from '../services/userService';
+import userService, { User } from '../services/userService';
 import websocketService from '../services/websocketService';
 
 interface EnvironmentalImpact {
@@ -108,7 +108,7 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
   }, [user]);
 
   // Refresh user data including token balance
-  const refreshUserData = useCallback(async () => {
+  const refreshUserData = async () => {
     try {
       if (user) {
         const updatedUser = await userService.getCurrentUser();
@@ -120,10 +120,10 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
     } catch (error) {
       console.error('Failed to refresh user data:', error);
     }
-  }, [user]);
+  };
 
   // Calculate environmental impact based on waste collections
-  const calculateEnvironmentalImpact = useCallback((collections: WasteSubmission[]) => {
+  const calculateEnvironmentalImpact = (collections: WasteSubmission[]) => {
     // Ensure collections is always an array
     const safeCollections = Array.isArray(collections) ? collections : [];
     
@@ -167,7 +167,7 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
       treesEquivalent: Math.round(treesEquivalent * 10) / 10,
       waterSaved: Math.round(waterSaved)
     });
-  }, []);
+  };
 
   // WebSocket handler for real-time updates
   useEffect(() => {

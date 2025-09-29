@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from "framer-motion";
+import { motion, useInView, useAnimation } from "framer-motion";
 import {
   Leaf,
   Factory,
@@ -219,7 +219,32 @@ const EcoChainLanding = () => {
     fetchFeaturedProducts();
   }, []);
 
-  const animateCounter = useCallback((
+  // Intersection Observer for stats
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !statsInView) {
+          setStatsInView(true);
+          // Animate counters with real-time data
+          animateCounter(factoriesRef.current, 0, realTimeStats.factories, 2000, '+');
+          animateCounter(carbonRef.current, 0, realTimeStats.carbonSaved, 2000, '%');
+          animateCounter(transparencyRef.current, 0, realTimeStats.transparency, 2000, '%');
+          animateCounter(tokensRef.current, 0, realTimeStats.tokensEarned, 2500, '');
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (statsRef.current) {
+      observer.observe(statsRef.current);
+    }
+    return () => {
+      if (statsRef.current) {
+        observer.unobserve(statsRef.current);
+      }
+    };
+  }, [statsInView, realTimeStats]);
+
+  const animateCounter = (
     element: HTMLSpanElement | null,
     start: number,
     end: number,
@@ -244,32 +269,7 @@ const EcoChainLanding = () => {
         element.textContent = current.toFixed(suffix === '%' ? 1 : 0) + suffix;
       }
     }, 16);
-  }, []);
-
-  // Intersection Observer for stats
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !statsInView) {
-          setStatsInView(true);
-          // Animate counters with real-time data
-          animateCounter(factoriesRef.current, 0, realTimeStats.factories, 2000, '+');
-          animateCounter(carbonRef.current, 0, realTimeStats.carbonSaved, 2000, '%');
-          animateCounter(transparencyRef.current, 0, realTimeStats.transparency, 2000, '%');
-          animateCounter(tokensRef.current, 0, realTimeStats.tokensEarned, 2500, '');
-        }
-      },
-      { threshold: 0.1 }
-    );
-    if (statsRef.current) {
-      observer.observe(statsRef.current);
-    }
-    return () => {
-      if (statsRef.current) {
-        observer.unobserve(statsRef.current);
-      }
-    };
-  }, [statsInView, realTimeStats, animateCounter]);
+  };
 
   const nextDashboard = () => {
     setCurrentDashboard((prev) => (prev + 1) % dashboards.length);
@@ -311,13 +311,13 @@ const EcoChainLanding = () => {
     }, 2000);
   };
 
-  const calculateImpact = useCallback((investment: number) => {
+  const calculateImpact = (investment: number) => {
     return {
       tokensEarned: Math.floor(investment * 0.1),
       carbonSaved: (investment * 0.05).toFixed(1),
       treesPlanted: Math.floor(investment / 100)
     };
-  }, []);
+  };
 
   const currentImpact = calculateImpact(impactValue);
 

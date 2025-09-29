@@ -1,121 +1,181 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  AlertCircle, 
-  RefreshCw, 
-  PieChart, 
-  BarChart,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Search,
-  Filter
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertCircle, RefreshCw, BarChart, PieChart } from 'lucide-react';
 import adminService, { MaterialRequest } from '../services/adminService';
 
-interface WasteCollection {
+interface GarbageCollection {
   _id: string;
-  userId: string;
-  type: string;
-  weight: number;
-  quality: string;
-  status: string;
-  collectedAt: string;
-}
-
-interface WasteTypeData {
-  type: string;
-  weight: number;
-  count: number;
-}
-
-interface QualityData {
-  quality: string;
-  weight: number;
-  count: number;
-}
-
-interface TimeSeriesData {
-  date: string;
-  weight: number;
-  count: number;
-}
-
-interface FulfillmentData {
-  requestId: string;
   collectionId: string;
-  quantity: number;
-  agreedPrice: number;
+  userId: {
+    _id: string;
+    personalInfo: {
+      name: string;
+      email: string;
+    };
+  } | null;
+  collectorId: {
+    _id: string;
+    personalInfo: {
+      name: string;
+      email: string;
+    };
+  } | null;
+  collectionDetails: {
+    type: string;
+    subType?: string;
+    weight: number;
+    quality: string;
+    description?: string;
+  };
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Interface for aggregated waste data
+interface AggregatedWaste {
+  type: string;
+  totalWeight: number;
+  totalCount: number;
+  qualityDistribution: Record<string, { count: number; weight: number }>;
 }
 
 const FactoryManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'requests' | 'waste' | 'inventory'>('requests');
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<MaterialRequest[]>([]);
-  const [showFulfillModal, setShowFulfillModal] = useState(false);
-  const [fulfillmentData, setFulfillmentData] = useState<FulfillmentData>({
+  const [collectedWaste, setCollectedWaste] = useState<GarbageCollection[]>([]);
+  const [aggregatedWaste, setAggregatedWaste] = useState<AggregatedWaste[]>([]);
+  const [activeTab, setActiveTab] = useState<'requests' | 'waste' | 'inventory'>('requests');
+  const [fulfillmentData, setFulfillmentData] = useState({
     requestId: '',
     collectionId: '',
     quantity: 0,
     agreedPrice: 0
   });
-  
-  // Waste analytics data
-  const [wasteTypeData, setWasteTypeData] = useState<WasteTypeData[]>([]);
-  const [qualityData, setQualityData] = useState<QualityData[]>([]);
-  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
-  
-  // Filters
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'partially_filled' | 'fulfilled' | 'expired' | 'cancelled'>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showFulfillModal, setShowFulfillModal] = useState(false);
+  const [wasteTypeData, setWasteTypeData] = useState<Array<{type: string, count: number, weight: number}>>([]);
+  const [qualityData, setQualityData] = useState<Array<{quality: string, count: number, weight: number}>>([]);
+  const [timeSeriesData, setTimeSeriesData] = useState<Array<{date: string, count: number, weight: number}>>([]);
 
-  const fetchData = useCallback(async () => {
+  // Process data for charts
+  const processDataForCharts = (collections: GarbageCollection[]) => {
+    // Waste type distribution
+    const typeMap: Record<string, {count: number, weight: number}> = {};
+    collections.forEach(collection => {
+      const type = collection.collectionDetails.type;
+      if (!typeMap[type]) {
+        typeMap[type] = { count: 0, weight: 0 };
+      }
+      typeMap[type].count += 1;
+      typeMap[type].weight += collection.collectionDetails.weight || 0;
+    });
+    
+    const wasteTypeData = Object.entries(typeMap).map(([type, data]) => ({
+      type,
+      count: data.count,
+      weight: Math.round(data.weight)
+    }));
+    
+    // Quality distribution
+    const qualityMap: Record<string, {count: number, weight: number}> = {};
+    collections.forEach(collection => {
+      const quality = collection.collectionDetails.quality || 'unknown';
+      if (!qualityMap[quality]) {
+        qualityMap[quality] = { count: 0, weight: 0 };
+      }
+      qualityMap[quality].count += 1;
+      qualityMap[quality].weight += collection.collectionDetails.weight || 0;
+    });
+    
+    const qualityData = Object.entries(qualityMap).map(([quality, data]) => ({
+      quality,
+      count: data.count,
+      weight: Math.round(data.weight)
+    }));
+    
+    // Time series data (collections per day)
+    const dateMap: Record<string, {count: number, weight: number}> = {};
+    collections.forEach(collection => {
+      const date = new Date(collection.createdAt).toISOString().split('T')[0];
+      if (!dateMap[date]) {
+        dateMap[date] = { count: 0, weight: 0 };
+      }
+      dateMap[date].count += 1;
+      dateMap[date].weight += collection.collectionDetails.weight || 0;
+    });
+    
+    const timeSeriesData = Object.entries(dateMap)
+      .map(([date, data]) => ({
+        date,
+        count: data.count,
+        weight: Math.round(data.weight)
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    setWasteTypeData(wasteTypeData);
+    setQualityData(qualityData);
+    setTimeSeriesData(timeSeriesData);
+  };
+
+  // Aggregate waste data by type
+  const aggregateWasteData = (collections: GarbageCollection[]) => {
+    const aggregated: Record<string, AggregatedWaste> = {};
+    
+    collections.forEach(collection => {
+      const type = collection.collectionDetails.type;
+      const quality = collection.collectionDetails.quality || 'unknown';
+      const weight = collection.collectionDetails.weight || 0;
+      
+      if (!aggregated[type]) {
+        aggregated[type] = {
+          type,
+          totalWeight: 0,
+          totalCount: 0,
+          qualityDistribution: {}
+        };
+      }
+      
+      aggregated[type].totalWeight += weight;
+      aggregated[type].totalCount += 1;
+      
+      if (!aggregated[type].qualityDistribution[quality]) {
+        aggregated[type].qualityDistribution[quality] = { count: 0, weight: 0 };
+      }
+      
+      aggregated[type].qualityDistribution[quality].count += 1;
+      aggregated[type].qualityDistribution[quality].weight += weight;
+    });
+    
+    setAggregatedWaste(Object.values(aggregated));
+  };
+
+  // Fetch material requests and collected waste
+  const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
       
       // Fetch material requests
       const requestsResponse = await adminService.getMaterialRequests();
       if (requestsResponse.success) {
         setMaterialRequests(requestsResponse.data.requests);
-        setFilteredRequests(requestsResponse.data.requests);
       }
       
-      // Fetch waste analytics data
-      const analyticsResponse = await adminService.getCollectedWaste({});
-      if (analyticsResponse.success) {
-        // For demo purposes, we'll create mock data since the actual API might not return analytics data
-        setWasteTypeData([
-          { type: 'plastic', weight: 1250, count: 42 },
-          { type: 'paper', weight: 890, count: 38 },
-          { type: 'metal', weight: 620, count: 24 },
-          { type: 'glass', weight: 430, count: 18 },
-          { type: 'electronic', weight: 210, count: 9 }
-        ]);
-        
-        setQualityData([
-          { quality: 'high', weight: 1850, count: 65 },
-          { quality: 'medium', weight: 980, count: 35 },
-          { quality: 'low', weight: 570, count: 21 }
-        ]);
-        
-        setTimeSeriesData([
-          { date: '2023-01-01', weight: 120, count: 5 },
-          { date: '2023-01-02', weight: 95, count: 4 },
-          { date: '2023-01-03', weight: 140, count: 6 },
-          { date: '2023-01-04', weight: 110, count: 5 },
-          { date: '2023-01-05', weight: 155, count: 7 }
-        ]);
+      // Fetch collected waste
+      const wasteResponse = await adminService.getCollectedWaste();
+      if (wasteResponse.success) {
+        setCollectedWaste(wasteResponse.data.collections);
+        processDataForCharts(wasteResponse.data.collections);
+        aggregateWasteData(wasteResponse.data.collections);
       }
+      
+      setError(null);
     } catch (err: any) {
       console.error('Error fetching data:', err);
       setError(err.message || 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchData();
@@ -320,78 +380,35 @@ const FactoryManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    Plastic
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    1,250 kg
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    42 collections
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center space-x-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        High (65%)
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Medium (25%)
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Low (10%)
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    Paper
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    890 kg
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    38 collections
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center space-x-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        High (55%)
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Medium (35%)
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Low (10%)
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    Metal
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    620 kg
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    24 collections
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center space-x-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        High (75%)
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Medium (20%)
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Low (5%)
-                      </span>
-                    </div>
-                  </td>
-                </tr>
+                {aggregatedWaste.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 capitalize">{item.type}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{Math.round(item.totalWeight)} kg</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{item.totalCount} collections</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(item.qualityDistribution).map(([quality, data]) => (
+                          <span key={quality} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {quality}: {Math.round(data.weight)} kg ({data.count})
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {aggregatedWaste.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No waste inventory data available
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -401,53 +418,6 @@ const FactoryManagement: React.FC = () => {
       {/* Factory Requests Tab */}
       {activeTab === 'requests' && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {/* Filters */}
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <Search className="text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search requests..."
-                className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Filter className="text-gray-400" size={18} />
-              <select
-                className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-              >
-                <option value="all">All Statuses</option>
-                <option value="open">Open</option>
-                <option value="partially_filled">Partially Filled</option>
-                <option value="fulfilled">Fulfilled</option>
-                <option value="expired">Expired</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Filter className="text-gray-400" size={18} />
-              <select
-                className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-              >
-                <option value="all">All Types</option>
-                <option value="plastic">Plastic</option>
-                <option value="paper">Paper</option>
-                <option value="metal">Metal</option>
-                <option value="glass">Glass</option>
-                <option value="electronic">Electronic</option>
-              </select>
-            </div>
-          </div>
-          
-          {/* Requests Table */}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -456,19 +426,22 @@ const FactoryManagement: React.FC = () => {
                     Request ID
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Material
+                    Factory
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Material Details
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Quantity
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
+                    Budget
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Required By
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -476,44 +449,126 @@ const FactoryManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredRequests.map((request) => (
+                {materialRequests.map((request) => (
                   <tr key={request._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {request._id.substring(0, 8)}...
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{request.requestId}</div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                      {request.materialSpecs?.materialType || 'N/A'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {request.factoryId?.companyInfo?.name || request.factoryId?.name || 'Unknown Factory'}
+                      </div>
+                      <div className="text-xs text-gray-500">{request.factoryId?.email || 'No email'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {request.materialSpecs?.quantity || 0} kg
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 capitalize">{request.materialSpecs.materialType}</div>
+                      <div className="text-xs text-gray-500">
+                        {request.materialSpecs.subType && `${request.materialSpecs.subType}, `}
+                        {request.materialSpecs.qualityRequirements}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{request.materialSpecs.quantity} kg</div>
+                      <div className="text-xs text-gray-500">
+                        ±{request.timeline.flexibilityDays} days flexibility
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        ₹{request.pricing.totalBudget.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        ₹{request.pricing.budgetPerKg}/kg
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {new Date(request.timeline.requiredBy).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(request.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(request.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {request.timeline?.requiredBy ? new Date(request.timeline.requiredBy).toLocaleDateString() : 'N/A'}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {request.status === 'open' || request.status === 'partially_filled' ? (
-                        <button
-                          onClick={() => {
-                            setFulfillmentData({
-                              ...fulfillmentData,
-                              requestId: request._id,
-                              quantity: request.materialSpecs?.quantity || 0
-                            });
-                            setShowFulfillModal(true);
-                          }}
-                          className="text-green-600 hover:text-green-900"
-                        >
-                          Fulfill
-                        </button>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                      <button
+                        onClick={() => {
+                          setFulfillmentData({
+                            requestId: request._id,
+                            collectionId: '',
+                            quantity: request.materialSpecs.quantity,
+                            agreedPrice: request.pricing.totalBudget
+                          });
+                          setShowFulfillModal(true);
+                        }}
+                        className="text-green-600 hover:text-green-900 mr-3"
+                      >
+                        Fulfill
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Collected Waste Tab */}
+      {activeTab === 'waste' && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Collection ID
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Collector
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Waste Details
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {collectedWaste.map((collection) => (
+                  <tr key={collection._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{collection.collectionId}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{collection.userId?.personalInfo?.name || 'Unknown User'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{collection.collectorId?.personalInfo?.name || 'Unknown Collector'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 capitalize">{collection.collectionDetails.type}</div>
+                      <div className="text-xs text-gray-500">
+                        {collection.collectionDetails.subType && `${collection.collectionDetails.subType}, `}
+                        {collection.collectionDetails.weight} kg • {collection.collectionDetails.quality}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                        {collection.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(collection.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}
@@ -525,66 +580,63 @@ const FactoryManagement: React.FC = () => {
 
       {/* Fulfill Request Modal */}
       {showFulfillModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Fulfill Material Request</h3>
             <form onSubmit={handleFulfillRequest}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Collection ID
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Collection ID</label>
+                  <select
                     value={fulfillmentData.collectionId}
                     onChange={(e) => setFulfillmentData({...fulfillmentData, collectionId: e.target.value})}
-                  />
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    required
+                  >
+                    <option value="">Select a collection</option>
+                    {collectedWaste.map(collection => (
+                      <option key={collection._id} value={collection._id}>
+                        {collection.collectionId} - {collection.collectionDetails.type} 
+                        {collection.collectionDetails.subType && `(${collection.collectionDetails.subType})`} 
+                        ({collection.collectionDetails.weight} kg, {collection.collectionDetails.quality})
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity (kg)</label>
                   <input
                     type="number"
-                    min="0"
-                    step="0.1"
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                     value={fulfillmentData.quantity}
-                    onChange={(e) => setFulfillmentData({...fulfillmentData, quantity: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setFulfillmentData({...fulfillmentData, quantity: Number(e.target.value)})}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    required
+                    min="0"
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Agreed Price (per unit)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Agreed Price (₹)</label>
                   <input
                     type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                     value={fulfillmentData.agreedPrice}
-                    onChange={(e) => setFulfillmentData({...fulfillmentData, agreedPrice: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => setFulfillmentData({...fulfillmentData, agreedPrice: Number(e.target.value)})}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    required
+                    min="0"
                   />
                 </div>
               </div>
-              
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setShowFulfillModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
                 >
                   Fulfill Request
                 </button>

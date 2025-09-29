@@ -5,9 +5,6 @@ const twColors = require("tailwindcss/colors");
 // Using our updated tokens
 const tokens = require(path.resolve(__dirname, "src/tokens/index.ts"));
 
-// Suppress Tailwind CSS deprecation warnings
-process.env.TAILWIND_MODE = 'build';
-
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
@@ -33,13 +30,6 @@ module.exports = {
       colors: {
         // Merge in Tailwind's colors so bg-white / text-gray-700 keep working
         ...twColors,
-        
-        // Replace deprecated color names with new ones
-        lightBlue: twColors.sky,
-        warmGray: twColors.stone,
-        trueGray: twColors.neutral,
-        coolGray: twColors.gray,
-        blueGray: twColors.slate,
         
         // New eco-friendly color palette
         'eco-green': {
@@ -187,9 +177,4 @@ module.exports = {
     },
   },
   plugins: [require("@tailwindcss/forms")],
-  // Suppress deprecation warnings
-  corePlugins: {
-    // Disable preflight to avoid conflicts with existing styles
-    preflight: false,
-  }
 };

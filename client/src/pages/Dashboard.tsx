@@ -49,7 +49,7 @@ const Dashboard: React.FC = () => {
   const [currentTokenBalance, setCurrentTokenBalance] = useState<number>(user?.ecoWallet?.currentBalance || 0);
   const [lastTokenUpdate, setLastTokenUpdate] = useState<Date | null>(null);
 
-  const fetchLatestUserData = useCallback(async () => {
+  const fetchLatestUserData = async () => {
     try {
       console.log('Fetching latest user data from cache...');
       const latestUserData = await userDataCache.getUserData();
@@ -80,7 +80,7 @@ const Dashboard: React.FC = () => {
       console.error('Error fetching latest user data:', err);
       console.error('Error details:', err.response?.data || err.message);
     }
-  }, [currentTokenBalance, user?.ecoWallet, updateUser]);
+  };
 
   const fetchWasteRequests = useCallback(async () => {
     if (!user) return;
@@ -171,7 +171,7 @@ const Dashboard: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [user, currentTokenBalance, fetchWasteRequests, fetchLatestUserData]);
+  }, [user, currentTokenBalance, fetchWasteRequests]);
 
   const handleRefresh = async () => {
     try {
