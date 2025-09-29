@@ -27,13 +27,17 @@ export type MessageHandler = (message: WebSocketMessage) => void;
 class WebSocketService {
   private socket: WebSocket | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private pingTimer: NodeJS.Timeout | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private maxReconnectAttempts = 10; // Increased from 5 to 10
   private reconnectDelay = 3000; // 3 seconds
+  private pingInterval = 25000; // 25 seconds (reduced from 30)
   private messageHandlers: Map<string, Set<MessageHandler>> = new Map();
   private entitySubscriptions: string[] = [];
   private isConnected = false;
+  private isConnecting = false;
   private url: string;
+  private lastHeartbeat = Date.now();
   
   constructor() {
     // Use environment variable or default to localhost in development
@@ -50,6 +54,12 @@ class WebSocketService {
    */
   public connect(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Prevent multiple connection attempts
+      if (this.isConnecting) {
+        reject(new Error('Connection already in progress'));
+        return;
+      }
+      
       if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
         resolve();
         return;
@@ -61,15 +71,22 @@ class WebSocketService {
         return;
       }
       
+      this.isConnecting = true;
+      
       try {
         // Append token as query parameter
-        const wsUrl = `${this.url}?token=${token}`;
+        const wsUrl = `${this.url}?token=${encodeURIComponent(token)}`;
         this.socket = new WebSocket(wsUrl);
         
         this.socket.onopen = () => {
           console.log('WebSocket connection established');
           this.isConnected = true;
+          this.isConnecting = false;
           this.reconnectAttempts = 0;
+          this.lastHeartbeat = Date.now();
+          
+          // Start ping interval to keep connection alive
+          this.startPingInterval();
           
           // Resubscribe to entity types if reconnecting
           if (this.entitySubscriptions.length > 0) {
@@ -81,15 +98,20 @@ class WebSocketService {
         
         this.socket.onclose = (event) => {
           this.isConnected = false;
+          this.isConnecting = false;
           console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
           
+          // Clear ping interval
+          this.clearPingInterval();
+          
           // Attempt to reconnect unless it was a authentication failure or manual close
-          if (event.code !== 1008 && this.reconnectAttempts < this.maxReconnectAttempts) {
+          if (event.code !== 1008 && event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.scheduleReconnect();
           }
         };
         
         this.socket.onerror = (error) => {
+          this.isConnecting = false;
           console.error('WebSocket error:', error);
           if (!this.isConnected) {
             reject(new Error('Failed to connect to sync service'));
@@ -100,11 +122,15 @@ class WebSocketService {
           try {
             const message = JSON.parse(event.data) as WebSocketMessage;
             this.handleMessage(message);
+            
+            // Update heartbeat on any message
+            this.lastHeartbeat = Date.now();
           } catch (error) {
             console.error('Error parsing WebSocket message:', error);
           }
         };
       } catch (error) {
+        this.isConnecting = false;
         console.error('Error creating WebSocket connection:', error);
         reject(error);
       }
@@ -120,12 +146,15 @@ class WebSocketService {
       this.reconnectTimer = null;
     }
     
+    this.clearPingInterval();
+    
     if (this.socket) {
       this.socket.close(1000, 'Client disconnecting');
       this.socket = null;
     }
     
     this.isConnected = false;
+    this.isConnecting = false;
   }
   
   /**
@@ -228,7 +257,8 @@ class WebSocketService {
     }
     
     this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1);
+    // Exponential backoff with max delay of 30 seconds
+    const delay = Math.min(this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts - 1), 30000);
     
     console.log(`Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
     
@@ -244,6 +274,38 @@ class WebSocketService {
         }
       });
     }, delay);
+  }
+  
+  /**
+   * Start ping interval to keep connection alive
+   */
+  private startPingInterval(): void {
+    this.clearPingInterval();
+    
+    this.pingTimer = setInterval(() => {
+      // Check if connection is still alive
+      const timeSinceLastHeartbeat = Date.now() - this.lastHeartbeat;
+      
+      // If we haven't received a message in over 60 seconds, force reconnect
+      if (timeSinceLastHeartbeat > 60000) {
+        console.warn('No heartbeat received in 60 seconds, forcing reconnect');
+        this.disconnect();
+        this.scheduleReconnect();
+        return;
+      }
+      
+      this.ping();
+    }, this.pingInterval);
+  }
+  
+  /**
+   * Clear ping interval
+   */
+  private clearPingInterval(): void {
+    if (this.pingTimer) {
+      clearInterval(this.pingTimer);
+      this.pingTimer = null;
+    }
   }
 }
 

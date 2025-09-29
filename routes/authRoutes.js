@@ -6,6 +6,15 @@ const jwt = require('jsonwebtoken');
 const { User, FactoryApplication, CollectorApplication } = require('../database/models');
 const { authenticate } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { 
+  registerValidation, 
+  loginValidation, 
+  otpValidation, 
+  refreshTokenValidation 
+} = require('../middleware/inputValidation');
+const { authLimiter } = require('../middleware/rateLimiter');
+const { asyncHandler } = require('../middleware/errorHandler');
+const { sanitizeObject } = require('../config/security');
 const { sendOTP, sendRegistrationConfirmation } = require('../client/src/utils/notificationService');
 
 // Generate a random 6-digit OTP
@@ -14,7 +23,7 @@ const generateOTP = () => {
 };
 
 // Register new user
-router.post('/register', async (req, res) => {
+router.post('/register', registerValidation, async (req, res) => {
   try {
     const {
       name,
@@ -31,9 +40,10 @@ router.post('/register', async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ 'personalInfo.email': email });
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
-        message: 'User with this email already exists'
+        message: 'User with this email already exists',
+        code: 'USER_EXISTS'
       });
     }
 
@@ -281,78 +291,81 @@ router.post('/collector-application', authenticate, async (req, res) => {
 });
 
 // Login user
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+router.post('/login', authLimiter, loginValidation, asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    // Find user and include password for verification
-    const user = await User.findOne({ 'personalInfo.email': email }).select('+password');
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // Check password
-    const isPasswordValid = await user.matchPassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-
-    // Check account status
-    if (user.accountStatus !== 'active') {
-      // For factory and collector users, provide a specific message about approval
-      if (user.role === 'factory' || user.role === 'collector') {
-        return res.status(403).json({
-          success: false,
-          message: 'Your application is pending admin approval. You will receive a notification once approved.'
-        });
-      } else {
-        return res.status(403).json({
-          success: false,
-          message: 'Account is suspended or inactive'
-        });
-      }
-    }
-
-    // Update last active
-    await user.updateLastActive();
-
-    // Generate tokens
-    const accessToken = user.generateAuthToken();
-    const refreshToken = user.generateRefreshToken();
-    
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        user: {
-          id: user._id,
-          userId: user.userId,
-          name: user.personalInfo.name,
-          email: user.personalInfo.email,
-          phone: user.personalInfo.phone,
-          profileImage: user.personalInfo.profileImage,
-          role: user.role,
-          ecoWallet: user.ecoWallet,
-          sustainabilityScore: user.sustainabilityScore
-        },
-        tokens: {
-          accessToken,
-          refreshToken
-        }
-      }
+  // Find user and include password for verification
+  const user = await User.findOne({ 'personalInfo.email': email }).select('+password');
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid email or password',
+      code: 'INVALID_CREDENTIALS'
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
   }
-});
+
+  // Check password
+  const isPasswordValid = await user.matchPassword(password);
+  if (!isPasswordValid) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid email or password',
+      code: 'INVALID_CREDENTIALS'
+    });
+  }
+
+  // Check account status
+  if (user.accountStatus !== 'active') {
+    // For factory and collector users, provide a specific message about approval
+    if (user.role === 'factory' || user.role === 'collector') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your application is pending admin approval. You will receive a notification once approved.',
+        code: 'PENDING_APPROVAL'
+      });
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is suspended or inactive',
+        code: 'ACCOUNT_INACTIVE'
+      });
+    }
+  }
+
+  // Update last active
+  await user.updateLastActive();
+
+  // Generate tokens
+  const accessToken = user.generateAuthToken();
+  const refreshToken = user.generateRefreshToken();
+  
+  await user.save();
+
+  // Sanitize user object before sending response
+  const sanitizedUserData = {
+    id: user._id,
+    userId: user.userId,
+    name: user.personalInfo.name,
+    email: user.personalInfo.email,
+    phone: user.personalInfo.phone,
+    profileImage: user.personalInfo.profileImage,
+    role: user.role,
+    ecoWallet: user.ecoWallet,
+    sustainabilityScore: user.sustainabilityScore
+  };
+
+  res.json({
+    success: true,
+    message: 'Login successful',
+    data: {
+      user: sanitizedUserData,
+      tokens: {
+        accessToken,
+        refreshToken
+      }
+    }
+  });
+}));
 
 // Refresh token
 router.post('/refresh', async (req, res) => {
@@ -395,11 +408,44 @@ router.post('/refresh', async (req, res) => {
 });
 
 // Alias for client compatibility
-router.post('/refresh-token', async (req, res, next) => {
-  // Delegate to /refresh handler logic
-  req.url = '/refresh';
-  next();
-});
+router.post('/refresh-token', authLimiter, refreshTokenValidation, asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+  
+  // Verify refresh token
+  let decoded;
+  try {
+    decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+  } catch (error) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid refresh token', 
+      code: 'INVALID_TOKEN' 
+    });
+  }
+  
+  // Find user with matching refresh token
+  const user = await User.findOne({ _id: decoded.userId, refreshToken });
+  if (!user) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid refresh token', 
+      code: 'INVALID_TOKEN' 
+    });
+  }
+  
+  // Generate new access token
+  const accessToken = jwt.sign(
+    { userId: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '15m' }
+  );
+  
+  res.status(200).json({
+    success: true,
+    message: 'Token refreshed successfully',
+    accessToken
+  });
+}));
 
 // Logout
 router.post('/logout', authenticate, async (req, res) => {
@@ -652,7 +698,7 @@ router.put('/change-password', authenticate, async (req, res) => {
 });
 
 // Verify OTP
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', otpValidation, async (req, res) => {
   try {
     const { email, otp } = req.body;
 
@@ -661,7 +707,8 @@ router.post('/verify-otp', async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
       });
     }
 
@@ -669,7 +716,8 @@ router.post('/verify-otp', async (req, res) => {
     if (!user.otp || !user.otp.code || !user.otp.expiresAt) {
       return res.status(400).json({
         success: false,
-        message: 'No OTP found for this user'
+        message: 'No OTP found for this user',
+        code: 'OTP_NOT_FOUND'
       });
     }
 
@@ -677,7 +725,8 @@ router.post('/verify-otp', async (req, res) => {
     if (user.otp.expiresAt < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'OTP has expired. Please request a new one.'
+        message: 'OTP has expired. Please request a new one.',
+        code: 'OTP_EXPIRED'
       });
     }
 
@@ -685,7 +734,8 @@ router.post('/verify-otp', async (req, res) => {
     if (user.otp.code !== otp) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP'
+        message: 'Invalid OTP',
+        code: 'INVALID_OTP'
       });
     }
 
@@ -733,7 +783,13 @@ router.post('/verify-otp', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('OTP verification error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during OTP verification',
+      code: 'SERVER_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

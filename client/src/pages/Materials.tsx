@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Leaf, Recycle, Factory, AlertCircle, CheckCircle, Clock, Plus, Search } from 'lucide-react';
+import { AlertCircle, Plus, Recycle } from 'lucide-react';
 import factoryService from '../services/factoryService';
 
 import { MaterialRequest } from '../services/factoryService';
@@ -11,7 +11,6 @@ const Materials: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'requests' | 'create'>('requests');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -71,14 +70,6 @@ const Materials: React.FC = () => {
     { value: 'fair', label: 'Fair' },
     { value: 'good', label: 'Good' },
     { value: 'excellent', label: 'Excellent' }
-  ];
-
-  // Payment terms options
-  const paymentTermsOptions = [
-    { value: 'advance', label: 'Advance Payment' },
-    { value: 'on_delivery', label: 'On Delivery' },
-    { value: '15_days', label: 'Within 15 Days' },
-    { value: '30_days', label: 'Within 30 Days' }
   ];
 
   // Transportation mode options

@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const { Product, Factory, ProductReview } = require('../database/models');
 const { authenticate } = require('../middleware/auth');
+const { cacheMiddleware, clearCache } = require('../middleware/cache');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 // Get factory's products (must be before :id route)
 router.get('/my-products', authenticate, async (req, res) => {
@@ -29,7 +31,7 @@ router.get('/my-products', authenticate, async (req, res) => {
 });
 
 // Get all products with filters and pagination
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(600), async (req, res) => {
   try {
     const {
       page = 1,

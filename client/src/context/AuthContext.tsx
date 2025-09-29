@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { authAPI } from '../services/api';
+import userDataCache from '../services/userDataCache';
 
 interface User {
   id: string;
@@ -48,6 +49,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Logout function
+  const logout = () => {
+    try {
+      // Call logout endpoint to invalidate refresh token
+      if (token) {
+        authAPI.logout().catch(error => {
+          console.error('Logout API error:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear local storage and state
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      userDataCache.clearCache(); // Clear the user data cache
+      setUser(null);
+      setToken(null);
+      setRefreshToken(null);
+    }
+  };
+
   // Check if user is already logged in
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -59,11 +83,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setToken(storedToken);
           setRefreshToken(storedRefreshToken);
           
-          // Try to get current user with stored token
-          const response = await authAPI.getCurrentUser();
+          // Try to get current user with stored token using cache
+          const userData = await userDataCache.getUserData();
           
-          if (response.data.success) {
-            setUser(response.data.data);
+          if (userData) {
+            setUser(userData);
           } else {
             throw new Error('Failed to get user data');
           }
@@ -77,7 +101,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     checkAuthStatus();
-  }, []);
+  }, [logout]);
 
   // Refresh access token
   const refreshAccessToken = async () => {
@@ -98,10 +122,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
         
-        // Get updated user data
-        const userResponse = await authAPI.getCurrentUser();
-        if (userResponse.data.success) {
-          setUser(userResponse.data.data);
+        // Get updated user data using cache
+        const userData = await userDataCache.refreshUserData();
+        if (userData) {
+          setUser(userData);
         }
       } else {
         throw new Error('Token refresh failed');
@@ -290,32 +314,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Update user function
+  // Update user data
   const updateUser = (userData: User) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-  };
-
-  // Logout function
-  const logout = () => {
-    try {
-      // Call logout endpoint to invalidate refresh token
-      if (token) {
-        authAPI.logout().catch(error => {
-          console.error('Logout API error:', error);
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear local storage and state
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      setUser(null);
-      setToken(null);
-      setRefreshToken(null);
-    }
+    userDataCache.updateCachedData(userData); // Update the cache with new user data
   };
 
   return (

@@ -22,31 +22,11 @@ import {
   Smartphone,
   Award,
   Users,
-  Send,
   ExternalLink
 } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [isSubscribing, setIsSubscribing] = useState(false);
-  const [subscribeSuccess, setSubscribeSuccess] = useState(false);
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setIsSubscribing(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubscribing(false);
-      setSubscribeSuccess(true);
-      setEmail('');
-      
-      // Reset success message after 3 seconds
-      setTimeout(() => setSubscribeSuccess(false), 3000);
-    }, 1000);
-  };
 
   const quickLinks = [
     { name: 'Home', link: '/', icon: Home },

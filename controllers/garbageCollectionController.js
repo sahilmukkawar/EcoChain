@@ -3,6 +3,32 @@ const GarbageCollection = require('../database/models/GarbageCollection');
 const User = require('../database/models/User');
 const logger = require('../utils/logger');
 
+// Simple in-memory rate limiting for collections endpoint
+const rateLimitStore = new Map();
+
+const checkRateLimit = (userId, maxRequests = 10, windowMs = 60000) => {
+  const now = Date.now();
+  const key = `${userId}:${Math.floor(now / windowMs)}`;
+  const current = rateLimitStore.get(key) || 0;
+  
+  if (current >= maxRequests) {
+    return false; // Rate limit exceeded
+  }
+  
+  rateLimitStore.set(key, current + 1);
+  
+  // Clean up old entries
+  const cleanupThreshold = now - (windowMs * 2);
+  for (const [storedKey, ] of rateLimitStore.entries()) {
+    const timestamp = parseInt(storedKey.split(':')[1]) * windowMs;
+    if (timestamp < cleanupThreshold) {
+      rateLimitStore.delete(storedKey);
+    }
+  }
+  
+  return true;
+};
+
 /**
  * Create a new garbage collection
  */
@@ -153,6 +179,14 @@ const getAllCollections = async (req, res) => {
     const userId = req.user.id;
     const { status, page = 1, limit = 10, assignedToMe } = req.query;
     
+    // Check rate limit
+    if (!checkRateLimit(userId)) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many requests. Please try again later.'
+      });
+    }
+    
     console.log('=== GET ALL COLLECTIONS DEBUG ===');
     console.log('getAllCollections - User:', req.user.role, 'UserId:', userId);
     console.log('getAllCollections - Query params:', { status, page, limit, assignedToMe });
@@ -281,6 +315,16 @@ const updateCollection = async (req, res) => {
     if (status) collection.status = status;
     
     await collection.save();
+    
+    // Broadcast update via WebSocket
+    if (global.broadcastUpdate) {
+      global.broadcastUpdate('garbage_collection', 'updated', {
+        collectionId: collection.collectionId,
+        userId: collection.userId,
+        status: collection.status
+      });
+    }
+    
     res.status(200).json(collection);
   } catch (error) {
     logger.error('Error updating garbage collection:', error);
@@ -305,6 +349,15 @@ const deleteCollection = async (req, res) => {
     }
     
     await collection.remove();
+    
+    // Broadcast update via WebSocket
+    if (global.broadcastUpdate) {
+      global.broadcastUpdate('garbage_collection', 'deleted', {
+        collectionId: collection.collectionId,
+        userId: collection.userId
+      });
+    }
+    
     res.status(200).json({ message: 'Garbage collection deleted successfully' });
   } catch (error) {
     logger.error('Error deleting garbage collection:', error);

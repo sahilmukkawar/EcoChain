@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import wasteService, { WasteSubmission } from '../services/wasteService';
 import userService, { User } from '../services/userService';
+import websocketService from '../services/websocketService';
 
 interface EnvironmentalImpact {
   co2Saved: number;
@@ -17,9 +18,16 @@ interface EcoChainContextType {
   environmentalImpact: EnvironmentalImpact;
   refreshCollections: () => Promise<void>;
   refreshUserData: () => Promise<void>;
+  loading: boolean;
+  error: string | null;
 }
 
 const EcoChainContext = createContext<EcoChainContextType | undefined>(undefined);
+
+// Cache for collections data to reduce API calls
+let collectionsCache: WasteSubmission[] | null = null;
+let lastFetchTime: number | null = null;
+const CACHE_DURATION = 30000; // 30 seconds cache
 
 export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -29,33 +37,75 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
     treesEquivalent: 0,
     waterSaved: 0
   });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Derived states
   const pendingCollections = Array.isArray(collectionHistory) ? collectionHistory.filter(
-    collection => ['pending', 'approved'].includes(collection.status)
+    collection => ['requested', 'scheduled', 'in_progress'].includes(collection.status)
   ) : [];
   
   const completedCollections = Array.isArray(collectionHistory) ? collectionHistory.filter(
-    collection => collection.status === 'collected'
+    collection => collection.status === 'completed'
   ) : [];
 
   const totalEcoTokens = user?.ecoWallet?.currentBalance || 0;
 
-  // Fetch user's waste collection history
-  const refreshCollections = async () => {
+  // Fetch user's waste collection history with caching
+  const refreshCollections = useCallback(async () => {
+    if (!user) return;
+    
+    // Check if we have valid cached data
+    const now = Date.now();
+    if (collectionsCache && lastFetchTime && (now - lastFetchTime) < CACHE_DURATION) {
+      setCollectionHistory(collectionsCache);
+      calculateEnvironmentalImpact(collectionsCache);
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
     try {
-      const collections = await wasteService.getUserSubmissions();
-      // Ensure we always set an array
-      setCollectionHistory(Array.isArray(collections) ? collections : []);
+      // Retry up to 3 times with exponential backoff
+      let attempts = 0;
+      const maxAttempts = 3;
       
-      // Calculate environmental impact based on collections
-      calculateEnvironmentalImpact(Array.isArray(collections) ? collections : []);
-    } catch (error) {
+      while (attempts < maxAttempts) {
+        try {
+          const collections = await wasteService.getUserSubmissions();
+          // Ensure we always set an array
+          const collectionData = Array.isArray(collections?.data?.collections) ? collections.data.collections : [];
+          
+          // Update cache
+          collectionsCache = collectionData;
+          lastFetchTime = now;
+          
+          setCollectionHistory(collectionData);
+          
+          // Calculate environmental impact based on collections
+          calculateEnvironmentalImpact(collectionData);
+          break; // Success, exit the retry loop
+        } catch (err) {
+          attempts++;
+          if (attempts >= maxAttempts) {
+            throw err; // Re-throw if we've exhausted all attempts
+          }
+          
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempts) * 1000));
+        }
+      }
+    } catch (error: any) {
       console.error('Failed to fetch collection history:', error);
+      const errorMessage = error.message || 'Failed to load collection history. Please try again later.';
+      setError(errorMessage);
       // Set empty array on error to prevent filter errors
       setCollectionHistory([]);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [user]);
 
   // Refresh user data including token balance
   const refreshUserData = async () => {
@@ -119,12 +169,40 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
   };
 
+  // WebSocket handler for real-time updates
+  useEffect(() => {
+    if (!user) return;
+    
+    // Set up WebSocket handler for garbage collection updates
+    const handleSyncMessage = (message: any) => {
+      if (message.entityType === 'garbage_collection') {
+        console.log('Received garbage collection update:', message);
+        // Refresh collections when we get an update
+        refreshCollections();
+      }
+    };
+    
+    // Subscribe to garbage collection updates
+    websocketService.on('sync', handleSyncMessage);
+    
+    // Clean up WebSocket handler
+    return () => {
+      websocketService.off('sync', handleSyncMessage);
+    };
+  }, [user, refreshCollections]);
+
+  // Clear cache when user changes
+  useEffect(() => {
+    collectionsCache = null;
+    lastFetchTime = null;
+  }, [user?.id]);
+
   // Initial data load
   useEffect(() => {
     if (user) {
       refreshCollections();
     }
-  }, [user]);
+  }, [user, refreshCollections]);
 
   const contextValue: EcoChainContextType = {
     collectionHistory,
@@ -133,7 +211,9 @@ export const EcoChainProvider: React.FC<{ children: ReactNode }> = ({ children }
     totalEcoTokens,
     environmentalImpact,
     refreshCollections,
-    refreshUserData
+    refreshUserData,
+    loading,
+    error
   };
 
   return (

@@ -153,7 +153,7 @@ const FactoryOrders: React.FC = () => {
     return () => {
       websocketService.off('sync', handleOrderUpdate);
     };
-  }, []);
+  }, [fetchOrders, handleOrderUpdate]);
 
   // Update order status
   const updateOrderStatus = async (orderId: string, newStatus: string) => {

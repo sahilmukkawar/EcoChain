@@ -3,12 +3,20 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const morgan = require('morgan');
 const http = require('http');
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
 const connectDB = require('./database/connection');
 const logger = require('./utils/logger');
+
+// Import performance optimization middleware
+const compressionMiddleware = require('./middleware/compression');
+const { cacheMiddleware } = require('./middleware/cache');
+const { apiLimiter } = require('./middleware/rateLimiter');
+
+// Import monitoring and logging middleware
+const requestLogger = require('./middleware/requestLogger');
+const { monitoringMiddleware, healthCheck } = require('./middleware/monitoring');
 
 // Provide development defaults for JWT if not set
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
@@ -23,24 +31,51 @@ const PORT = process.env.PORT || 4002; // Changed from 4001 to 4002 to avoid con
 // Create HTTP server
 const server = http.createServer(app);
 
-// Initialize WebSocket server
-const wss = new WebSocket.Server({ server, path: '/ws' });
+// Initialize WebSocket server with options for production stability
+const wss = new WebSocket.Server({ 
+  server, 
+  path: '/ws',
+  // Add options for better production stability
+  clientTracking: true,
+  perMessageDeflate: {
+    zlibDeflateOptions: {
+      chunkSize: 1024,
+      memLevel: 7,
+      level: 3
+    },
+    zlibInflateOptions: {
+      chunkSize: 10 * 1024
+    },
+    // Other options set to defaults
+    clientNoContextTakeover: true, // Defaults to negotiated value.
+    serverNoContextTakeover: true, // Defaults to negotiated value.
+    serverMaxWindowBits: 10, // Defaults to negotiated value.
+    concurrencyLimit: 10, // Limits zlib concurrency for perf.
+    threshold: 1024 // Size (in bytes) below which messages should not be compressed.
+  }
+});
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const { corsOptions, securityHeaders } = require('./config/security');
+app.use(cors(corsOptions));
+app.use(compressionMiddleware());
+app.use(express.json({ limit: '10mb' })); // Increased limit for image uploads
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Increased limit
 
-// Request logging
-app.use(morgan('combined', { stream: logger.stream }));
+// Request logging and monitoring
+app.use(requestLogger());
+app.use(monitoringMiddleware);
 
-// Security middleware (can be expanded later)
+// Apply security headers
 app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
   next();
 });
+
+// Apply global rate limiting to all routes
+app.use(apiLimiter);
 
 // Connect to MongoDB
 connectDB().catch(err => {
@@ -55,22 +90,31 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to EcoChain API' });
 });
 
+// Health check endpoint for monitoring
+app.get('/health', healthCheck);
+
 // API routes
 const apiRoutes = require('./routes');
 // Serve static assets under API for dev proxy compatibility
 app.use('/api/assets', express.static('public'));
 // Serve product images specifically (this should come before general uploads)
 app.use('/uploads/product-images', express.static('public/uploads/product-images'));
-// Serve uploaded files
-app.use('/uploads', express.static('public/uploads'));
+// Serve uploaded files with cache control for production
+app.use('/uploads', express.static('public/uploads', {
+  maxAge: '1d', // Cache for 1 day in production
+  etag: true
+}));
 app.use('/api', apiRoutes);
 
 // Import error handling middleware
-const { errorHandler, notFound } = require('./middleware/errorHandler');
+const { errorHandler, notFound, asyncHandler } = require('./middleware/errorHandler');
 
 // Error handling middleware (must be after all routes)
 app.use(notFound);
 app.use(errorHandler);
+
+// Keep track of heartbeat for each client
+const heartbeats = new Map();
 
 // WebSocket connection handling
 wss.on('connection', (ws, req) => {
@@ -96,6 +140,9 @@ wss.on('connection', (ws, req) => {
       ws.userId = decoded.id;
       ws.isAuthenticated = true;
       
+      // Initialize heartbeat tracking
+      heartbeats.set(ws, Date.now());
+      
       logger.info(`WebSocket client connected: ${ws.userId}`);
       
       // Send welcome message
@@ -104,6 +151,29 @@ wss.on('connection', (ws, req) => {
         message: 'Connected to EcoChain sync service',
         timestamp: Date.now()
       }));
+      
+      // Set up heartbeat timeout check
+      const heartbeatCheck = setInterval(() => {
+        const lastHeartbeat = heartbeats.get(ws) || 0;
+        const now = Date.now();
+        
+        // If no heartbeat in over 90 seconds, close connection
+        if (now - lastHeartbeat > 90000) {
+          logger.info(`WebSocket client timeout: ${ws.userId}`);
+          clearInterval(heartbeatCheck);
+          heartbeats.delete(ws);
+          ws.close(1000, 'Connection timeout');
+        }
+      }, 30000); // Check every 30 seconds
+      
+      // Clean up on close
+      ws.on('close', () => {
+        clearInterval(heartbeatCheck);
+        heartbeats.delete(ws);
+        if (ws.userId) {
+          logger.info(`WebSocket client disconnected: ${ws.userId}`);
+        }
+      });
     });
   } catch (error) {
     logger.error('WebSocket connection error:', error);
@@ -118,6 +188,9 @@ wss.on('connection', (ws, req) => {
       }
       
       const data = JSON.parse(message);
+      
+      // Update heartbeat on any message
+      heartbeats.set(ws, Date.now());
       
       // Handle different message types
       switch (data.type) {
@@ -151,6 +224,11 @@ wss.on('connection', (ws, req) => {
       logger.info(`WebSocket client disconnected: ${ws.userId}`);
     }
   });
+  
+  // Handle errors
+  ws.on('error', (error) => {
+    logger.error('WebSocket error:', error);
+  });
 });
 
 // Function to broadcast updates to subscribed clients
@@ -167,7 +245,13 @@ global.broadcastUpdate = (entityType, changeType, changes) => {
     if (client.readyState === WebSocket.OPEN && 
         client.isAuthenticated && 
         (!client.subscriptions || client.subscriptions.includes(entityType))) {
-      client.send(message);
+      try {
+        client.send(message);
+      } catch (error) {
+        logger.error('Error sending WebSocket message:', error);
+        // Close the connection if we can't send messages
+        client.close(1011, 'Send error');
+      }
     }
   });
 };
@@ -181,6 +265,11 @@ server.listen(PORT, () => {
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
+  logger.info('Shutting down WebSocket server...');
+  wss.close(() => {
+    logger.info('WebSocket server closed');
+  });
+  
   mongoose.connection.close(() => {
     logger.info('MongoDB connection closed due to app termination');
     process.exit(0);

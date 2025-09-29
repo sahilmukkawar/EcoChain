@@ -1,5 +1,6 @@
 // services/wasteService.ts
 import api from './api';
+import { retryApiCall } from '../utils/apiUtils';
 
 // Interface matching the database schema exactly
 export interface CreateWasteSubmissionData {
@@ -123,12 +124,12 @@ class WasteService {
         });
       }
 
-      // Make the API request
-      const response = await api.post(this.baseURL, formData, {
+      // Make the API request with retry mechanism
+      const response = await retryApiCall(() => api.post(this.baseURL, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-      });
+      }), 3, 2000); // 3 retries with 2 second base delay
 
       return response.data;
     } catch (error: any) {
@@ -161,8 +162,9 @@ class WasteService {
         params.append('status', status);
       }
 
-      const response = await api.get(`${this.baseURL}/user?${params.toString()}`);
-      
+      // Make the API request with retry mechanism and increased timeout
+      const response = await retryApiCall(() => api.get(`${this.baseURL}/user?${params.toString()}`), 3, 2000);
+
       // Validate response structure
       if (!response || !response.data) {
         throw new Error('Invalid response received from server');
@@ -183,7 +185,7 @@ class WasteService {
   // Get submission by ID
   async getSubmissionById(id: string) {
     try {
-      const response = await api.get(`${this.baseURL}/${id}`);
+      const response = await retryApiCall(() => api.get(`${this.baseURL}/${id}`), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Get submission error:', error);
@@ -194,7 +196,7 @@ class WasteService {
   // Update submission (only for requested status)
   async updateSubmission(id: string, updateData: Partial<CreateWasteSubmissionData>) {
     try {
-      const response = await api.put(`${this.baseURL}/${id}`, updateData);
+      const response = await retryApiCall(() => api.put(`${this.baseURL}/${id}`, updateData), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Update submission error:', error);
@@ -205,7 +207,7 @@ class WasteService {
   // Delete submission (only for requested status)
   async deleteSubmission(id: string) {
     try {
-      const response = await api.delete(`${this.baseURL}/${id}`);
+      const response = await retryApiCall(() => api.delete(`${this.baseURL}/${id}`), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Delete submission error:', error);
@@ -224,7 +226,7 @@ class WasteService {
         limit: limit.toString(),
       });
 
-      const response = await api.get(`${this.baseURL}?${params.toString()}`);
+      const response = await retryApiCall(() => api.get(`${this.baseURL}?${params.toString()}`), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Get available collections error:', error);
@@ -241,7 +243,7 @@ class WasteService {
         limit: limit.toString(),
       });
 
-      const response = await api.get(`${this.baseURL}?${params.toString()}`);
+      const response = await retryApiCall(() => api.get(`${this.baseURL}?${params.toString()}`), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Get assigned collections error:', error);
@@ -252,7 +254,7 @@ class WasteService {
   // Assign collector to a collection
   async assignCollector(collectionId: string) {
     try {
-      const response = await api.post(`${this.baseURL}/${collectionId}/assign`);
+      const response = await retryApiCall(() => api.post(`${this.baseURL}/${collectionId}/assign`), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Assign collector error:', error);
@@ -263,10 +265,10 @@ class WasteService {
   // Update collection status
   async updateCollectionStatus(collectionId: string, status: string, notes?: string) {
     try {
-      const response = await api.put(`${this.baseURL}/${collectionId}/status`, {
+      const response = await retryApiCall(() => api.put(`${this.baseURL}/${collectionId}/status`, {
         status,
         notes
-      });
+      }), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Update collection status error:', error);
@@ -277,7 +279,7 @@ class WasteService {
   // Complete a collection and issue tokens
   async completeCollection(collectionId: string, completionData?: any) {
     try {
-      const response = await api.post(`${this.baseURL}/${collectionId}/complete`, completionData || {});
+      const response = await retryApiCall(() => api.post(`${this.baseURL}/${collectionId}/complete`, completionData || {}), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Complete collection error:', error);
@@ -288,7 +290,7 @@ class WasteService {
   // Mark collection as collected (collector action)
   async markAsCollected(collectionId: string) {
     try {
-      const response = await api.post(`${this.baseURL}/${collectionId}/collected`);
+      const response = await retryApiCall(() => api.post(`${this.baseURL}/${collectionId}/collected`), 3, 2000);
       return response.data;
     } catch (error: any) {
       console.error('Mark as collected error:', error);

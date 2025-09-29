@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEcoChain } from '../contexts/EcoChainContext';
 import wasteService, { WasteSubmission } from '../services/wasteService';
-import { authAPI } from '../services/api';
+import userDataCache from '../services/userDataCache';
+
+// Cache for waste requests to reduce API calls
+let wasteRequestsCache: WasteSubmission[] | null = null;
+let lastWasteFetchTime: number | null = null;
+const WASTE_CACHE_DURATION = 30000; // 30 seconds cache
 
 // Helper function to get CSS classes for waste request status
 const getWasteRequestStatusClass = (status: string) => {
@@ -32,7 +37,9 @@ const Dashboard: React.FC = () => {
   const { user, updateUser } = useAuth();
   const { 
     environmentalImpact, 
-    refreshCollections 
+    refreshCollections,
+    loading: ecoChainLoading,
+    error: ecoChainError
   } = useEcoChain();
   
   const [wasteRequests, setWasteRequests] = useState<WasteSubmission[]>([]);
@@ -42,38 +49,86 @@ const Dashboard: React.FC = () => {
   const [currentTokenBalance, setCurrentTokenBalance] = useState<number>(user?.ecoWallet?.currentBalance || 0);
   const [lastTokenUpdate, setLastTokenUpdate] = useState<Date | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      console.log('Dashboard useEffect - User detected, initializing...');
-      console.log('User initial token balance:', user.ecoWallet?.currentBalance);
-      
-      setLoading(false);
-      
-      const userTokenBalance = user.ecoWallet?.currentBalance || 0;
-      if (userTokenBalance !== currentTokenBalance) {
-        setCurrentTokenBalance(userTokenBalance);
+  const fetchLatestUserData = async () => {
+    try {
+      console.log('Fetching latest user data from cache...');
+      const latestUserData = await userDataCache.getUserData();
+      if (latestUserData) {
+        const newTokenBalance = latestUserData.ecoWallet?.currentBalance || 0;
+        
+        console.log('Previous token balance:', currentTokenBalance);
+        console.log('New token balance from database:', newTokenBalance);
+        
+        if (newTokenBalance !== currentTokenBalance) {
+          setCurrentTokenBalance(newTokenBalance);
+          setLastTokenUpdate(new Date());
+          console.log('Token balance updated from', currentTokenBalance, 'to', newTokenBalance);
+        } else {
+          console.log('Token balance unchanged, skipping update');
+        }
+        
+        if (newTokenBalance !== currentTokenBalance || !user?.ecoWallet) {
+          updateUser(latestUserData);
+          console.log('Updated user in AuthContext with fresh data');
+        }
+        
+        return newTokenBalance;
+      } else {
+        console.error('Failed to fetch user data');
       }
-      
-      fetchWasteRequests();
-      fetchLatestUserData();
-    } else {
-      setLoading(false);
+    } catch (err: any) {
+      console.error('Error fetching latest user data:', err);
+      console.error('Error details:', err.response?.data || err.message);
     }
-  }, [user, currentTokenBalance]); // fetchLatestUserData is intentionally omitted as it's defined after this useEffect
-  
-  const fetchWasteRequests = async () => {
+  };
+
+  const fetchWasteRequests = useCallback(async () => {
+    if (!user) return;
+    
+    // Check if we have valid cached data
+    const now = Date.now();
+    if (wasteRequestsCache && lastWasteFetchTime && (now - lastWasteFetchTime) < WASTE_CACHE_DURATION) {
+      setWasteRequests(wasteRequestsCache);
+      setWasteLoading(false);
+      return;
+    }
+    
     try {
       setWasteLoading(true);
       setWasteError(null); // Clear previous errors
-      const response = await wasteService.getUserSubmissions();
       
-      // Check if response.data exists and has collections property
-      if (response && response.data) {
-        setWasteRequests(response.data.collections || []);
-      } else {
-        // Handle empty or unexpected response format
-        setWasteRequests([]);
-        throw new Error('No waste submissions data available');
+      // Retry up to 3 times with exponential backoff
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const response = await wasteService.getUserSubmissions();
+          
+          // Check if response.data exists and has collections property
+          if (response && response.data) {
+            const requestData = response.data.collections || [];
+            
+            // Update cache
+            wasteRequestsCache = requestData;
+            lastWasteFetchTime = now;
+            
+            setWasteRequests(requestData);
+          } else {
+            // Handle empty or unexpected response format
+            setWasteRequests([]);
+            throw new Error('No waste submissions data available');
+          }
+          break; // Success, exit the retry loop
+        } catch (err) {
+          attempts++;
+          if (attempts >= maxAttempts) {
+            throw err; // Re-throw if we've exhausted all attempts
+          }
+          
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempts) * 1000));
+        }
       }
     } catch (err: any) {
       console.error('Error fetching waste requests:', err);
@@ -97,76 +152,38 @@ const Dashboard: React.FC = () => {
     } finally {
       setWasteLoading(false);
     }
-  };
-  
-  const fetchLatestUserData = async () => {
-    try {
-      console.log('Fetching latest user data from database...');
-      const response = await authAPI.getCurrentUser();
-      if (response.data.success) {
-        const latestUserData = response.data.data;
-        const newTokenBalance = latestUserData.ecoWallet?.currentBalance || 0;
-        
-        console.log('Previous token balance:', currentTokenBalance);
-        console.log('New token balance from database:', newTokenBalance);
-        
-        if (newTokenBalance !== currentTokenBalance) {
-          setCurrentTokenBalance(newTokenBalance);
-          setLastTokenUpdate(new Date());
-          console.log('Token balance updated from', currentTokenBalance, 'to', newTokenBalance);
-        } else {
-          console.log('Token balance unchanged, skipping update');
-        }
-        
-        if (newTokenBalance !== currentTokenBalance || !user?.ecoWallet) {
-          updateUser(latestUserData);
-          console.log('Updated user in AuthContext with fresh data');
-        }
-        
-        return newTokenBalance;
-      } else {
-        console.error('Failed to fetch user data:', response.data.message);
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      console.log('Dashboard useEffect - User detected, initializing...');
+      console.log('User initial token balance:', user.ecoWallet?.currentBalance);
+      
+      setLoading(false);
+      
+      const userTokenBalance = user.ecoWallet?.currentBalance || 0;
+      if (userTokenBalance !== currentTokenBalance) {
+        setCurrentTokenBalance(userTokenBalance);
       }
-    } catch (err: any) {
-      console.error('Error fetching latest user data:', err);
-      console.error('Error details:', err.response?.data || err.message);
+      
+      fetchWasteRequests();
+      fetchLatestUserData();
+    } else {
+      setLoading(false);
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-eco-green-600 mx-auto mb-4"></div>
-          <p className="text-lg font-medium text-gray-700">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-red-200">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Dashboard</h3>
-            <p className="text-red-600 text-sm mb-6 leading-relaxed">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [user, currentTokenBalance, fetchWasteRequests]);
 
   const handleRefresh = async () => {
     try {
       console.log('Dashboard refresh initiated...');
       setRefreshing(true);
       setError(null);
+      
+      // Clear caches to force fresh data fetch
+      collectionsCache = null;
+      lastFetchTime = null;
+      wasteRequestsCache = null;
+      lastWasteFetchTime = null;
       
       await Promise.all([
         refreshCollections(),
@@ -182,6 +199,43 @@ const Dashboard: React.FC = () => {
       setRefreshing(false);
     }
   };
+
+  if (loading || ecoChainLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-eco-green-600 mx-auto mb-4"></div>
+          <p className="text-lg font-medium text-gray-700">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || ecoChainError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-red-200">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Dashboard</h3>
+            <p className="text-red-600 text-sm mb-6 leading-relaxed">
+              {error || ecoChainError}
+            </p>
+            <button
+              onClick={handleRefresh}
+              className="bg-eco-green-600 hover:bg-eco-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -223,7 +277,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Error Alert */}
-      {error && (
+      {(error || ecoChainError || wasteError) && (
         <div className="bg-red-50 border-b border-red-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between">
@@ -233,10 +287,15 @@ const Dashboard: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-red-800 font-medium text-sm">{error}</p>
+                <p className="text-red-800 font-medium text-sm">
+                  {error || ecoChainError || wasteError}
+                </p>
               </div>
               <button
-                onClick={() => setError(null)}
+                onClick={() => {
+                  setError(null);
+                  setWasteError(null);
+                }}
                 className="text-red-600 hover:text-red-800 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -541,5 +600,9 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
+
+// Cache variables for collections (needed for handleRefresh function)
+let collectionsCache: WasteSubmission[] | null = null;
+let lastFetchTime: number | null = null;
 
 export default Dashboard;

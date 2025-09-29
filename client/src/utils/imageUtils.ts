@@ -99,6 +99,9 @@ export const preloadImage = (imageUrl: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     
+    // Add timestamp to prevent caching issues
+    const urlWithTimestamp = `${imageUrl}?t=${Date.now()}`;
+    
     img.onload = () => {
       resolve();
     };
@@ -107,6 +110,63 @@ export const preloadImage = (imageUrl: string): Promise<void> => {
       reject(new Error(`Failed to load image: ${imageUrl}`));
     };
     
-    img.src = imageUrl;
+    img.src = urlWithTimestamp;
   });
+};
+
+/**
+ * Creates a stable image loader with retry mechanism
+ * @param imageUrl - The image URL to load
+ * @param maxRetries - Maximum number of retry attempts
+ * @returns Promise that resolves when image loads or rejects if all retries fail
+ */
+export const loadImageWithRetry = (imageUrl: string, maxRetries = 3): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    
+    const tryLoad = () => {
+      attempts++;
+      const img = new Image();
+      
+      // Add timestamp to prevent caching issues
+      const urlWithTimestamp = `${imageUrl}?t=${Date.now()}`;
+      
+      img.onload = () => {
+        resolve(img);
+      };
+      
+      img.onerror = () => {
+        if (attempts < maxRetries) {
+          // Wait before retrying (exponential backoff)
+          setTimeout(tryLoad, Math.min(1000 * Math.pow(2, attempts), 5000));
+        } else {
+          reject(new Error(`Failed to load image after ${maxRetries} attempts: ${imageUrl}`));
+        }
+      };
+      
+      img.src = urlWithTimestamp;
+    };
+    
+    tryLoad();
+  });
+};
+
+/**
+ * Creates a fallback image URL for when the primary image fails to load
+ * @param imageUrl - The primary image URL
+ * @param fallbackUrl - The fallback image URL
+ * @returns Promise that resolves to the working image URL
+ */
+export const getImageWithFallback = async (imageUrl: string, fallbackUrl: string): Promise<string> => {
+  try {
+    await preloadImage(imageUrl);
+    return imageUrl;
+  } catch (error) {
+    try {
+      await preloadImage(fallbackUrl);
+      return fallbackUrl;
+    } catch (fallbackError) {
+      throw new Error(`Both primary and fallback images failed to load`);
+    }
+  }
 };

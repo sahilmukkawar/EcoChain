@@ -1,5 +1,5 @@
 // client/src/contexts/SyncContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import syncService from '../services/syncService';
 import { isAuthenticated } from '../utils/auth';
 import websocketService, { SyncMessage, NotificationMessage } from '../services/websocketService';
@@ -15,6 +15,7 @@ interface SyncContextType {
   queueUpdate: (entityType: string, update: any) => void;
   clearSyncError: () => void;
   isWebSocketConnected: () => boolean;
+  reconnectWebSocket: () => Promise<void>;
 }
 
 // Create the context with default values
@@ -27,7 +28,8 @@ const SyncContext = createContext<SyncContextType>({
   startSync: async () => ({}),
   queueUpdate: () => {},
   clearSyncError: () => {},
-  isWebSocketConnected: () => false
+  isWebSocketConnected: () => false,
+  reconnectWebSocket: async () => {}
 });
 
 // Custom hook to use the sync context
@@ -40,6 +42,7 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [syncProgress, setSyncProgress] = useState<number>(0);
   const [pendingUpdatesCount, setPendingUpdatesCount] = useState<number>(0);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [webSocketConnected, setWebSocketConnected] = useState<boolean>(false);
   
   // Update pending updates count
   useEffect(() => {
@@ -56,69 +59,77 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(interval);
   }, []);
   
+  // Function to reconnect WebSocket
+  const reconnectWebSocket = useCallback(async () => {
+    try {
+      websocketService.disconnect();
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+      await connectWebSocket();
+    } catch (error) {
+      console.error('Failed to reconnect WebSocket:', error);
+    }
+  }, []);
+
   // Auto-sync when user is authenticated and there are pending updates
-useEffect(() => {
-  const autoSync = async () => {
-    if (isAuthenticated() && syncService.hasPendingUpdates() && !isSyncing) {
-      try {
-        await startSync({ silent: true });
-      } catch (error) {
-        console.error('Auto-sync failed:', error);
+  useEffect(() => {
+    const autoSync = async () => {
+      if (isAuthenticated() && syncService.hasPendingUpdates() && !isSyncing) {
+        try {
+          await startSync({ silent: true });
+        } catch (error) {
+          console.error('Auto-sync failed:', error);
+        }
       }
+    };
+    
+    // Run auto-sync on mount and when pendingUpdatesCount changes
+    autoSync();
+    
+    // Connect to WebSocket for real-time updates
+    if (isAuthenticated()) {
+      connectWebSocket();
+    }
+  }, [pendingUpdatesCount, isSyncing]);
+
+  // Connect to WebSocket and set up handlers
+  const connectWebSocket = async () => {
+    try {
+      await websocketService.connect();
+      
+      // Subscribe to entity types
+      websocketService.subscribe(['users', 'collections', 'marketplace', 'transactions']);
+      
+      // Set up handler for sync messages
+      websocketService.on('sync', (message: any) => {
+        console.log('Received sync update:', message);
+        
+        // Update last sync time to reflect we have the latest data
+        setLastSyncTime(new Date());
+        
+        // Trigger sync to refresh data
+        setPendingUpdatesCount(syncService.getPendingUpdatesCount());
+      });
+      
+      // Set up handler for notifications
+      websocketService.on('notification', (message: any) => {
+        // Handle notifications (could be expanded)
+        console.log('Received notification:', message);
+      });
+      
+      // Set connection status
+      setWebSocketConnected(true);
+      
+      // Clean up on unmount
+      return () => {
+        websocketService.disconnect();
+        setWebSocketConnected(false);
+      };
+    } catch (error) {
+      console.error('Failed to connect to WebSocket:', error);
+      setWebSocketConnected(false);
     }
   };
-  
-  // Run auto-sync on mount and when pendingUpdatesCount changes
-  autoSync();
-  
-  // Connect to WebSocket for real-time updates
-  if (isAuthenticated()) {
-    connectWebSocket();
-  }
-}, [pendingUpdatesCount, isSyncing]);
-
-// Connect to WebSocket and set up handlers
-const connectWebSocket = async () => {
-  try {
-    await websocketService.connect();
     
-    // Subscribe to entity types
-    websocketService.subscribe(['users', 'collections', 'marketplace', 'transactions']);
-    
-    // Set up handler for sync messages
-    websocketService.on('sync', (message: any) => {
-      console.log('Received sync update:', message);
-      
-      // Update last sync time to reflect we have the latest data
-      setLastSyncTime(new Date());
-      
-      // Trigger sync to refresh data
-      setPendingUpdatesCount(syncService.getPendingUpdatesCount());
-    });
-    
-    // Set up handler for notifications
-    websocketService.on('notification', (message: any) => {
-      // Handle notifications (could be expanded)
-      console.log('Received notification:', message);
-    });
-    
-    // Set up ping interval to keep connection alive
-    const pingInterval = setInterval(() => {
-      if (websocketService.isConnectedToServer()) {
-        websocketService.ping();
-      }
-    }, 30000); // 30 seconds
-    
-    // Clean up on unmount
-    return () => {
-      clearInterval(pingInterval);
-      websocketService.disconnect();
-    };
-  } catch (error) {
-    console.error('Failed to connect to WebSocket:', error);
-  }
-};
-  
   // Start synchronization
   const startSync = async (options: any = {}) => {
     if (isSyncing) return;
@@ -171,7 +182,8 @@ const connectWebSocket = async () => {
     startSync,
     queueUpdate,
     clearSyncError,
-    isWebSocketConnected: websocketService.isConnectedToServer
+    isWebSocketConnected: () => webSocketConnected && websocketService.isConnectedToServer(),
+    reconnectWebSocket
   };
   
   return (

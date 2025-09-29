@@ -529,7 +529,7 @@ const AdminDashboard: React.FC = () => {
       setError('You do not have permission to access this dashboard');
       setLoading(false);
     }
-  }, [user]);
+  }, [user, fetchPaymentHistory, fetchPaymentStats]);
 
   // WebSocket for real-time updates
   useEffect(() => {
