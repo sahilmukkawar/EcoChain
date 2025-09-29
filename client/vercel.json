@@ -19,6 +19,13 @@
       "dest": "https://ecochain-j1nj.onrender.com/ws"
     },
     {
+      "src": "/static/(.*)",
+      "headers": {
+        "cache-control": "public,max-age=31536000,immutable"
+      },
+      "dest": "/static/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

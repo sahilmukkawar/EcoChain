@@ -7,6 +7,7 @@ import { EcoChainProvider } from './contexts/EcoChainContext';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Marketplace from './pages/Marketplace';
 import WasteSubmission from './pages/WasteSubmission';
@@ -35,6 +36,7 @@ import FactoryApplicationForm from './pages/FactoryApplicationForm';
 import CollectorApplicationForm from './pages/CollectorApplicationForm';
 import Materials from './pages/Materials';
 import ConnectionTest from './pages/ConnectionTest';
+import RedirectToHome from './pages/RedirectToHome';
 import { testConnections } from './utils/connectionTest';
 
 function App() {
@@ -56,42 +58,45 @@ function App() {
     <AuthProvider>
       <EcoChainProvider>
         <CartProvider>
-          <Navigation />
-          <main className="flex-grow">
-            <AnimatePresence mode="wait">
-              <Routes location={location} key={location.pathname}>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/pending-approval" element={<ProtectedRoute element={<PendingApproval />} allowedRoles={['factory', 'collector']} />} />
-                <Route path="/factory-application" element={<ProtectedRoute element={<FactoryApplicationForm />} allowedRoles={['factory']} />} />
-                <Route path="/collector-application" element={<ProtectedRoute element={<CollectorApplicationForm />} allowedRoles={['collector']} />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/waste-submission" element={<WasteSubmission />} />
-                <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['user']} />} />
-                <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
-                <Route path="/admin-dashboard/analytics" element={<ProtectedRoute element={<Analytics />} allowedRoles={['admin']} />} />
-                <Route path="/admin-dashboard/factory" element={<ProtectedRoute element={<FactoryManagement />} allowedRoles={['admin']} />} />
-                <Route path="/factory-dashboard" element={<ProtectedRoute element={<FactoryDashboard />} allowedRoles={['factory']} />} />
-                <Route path="/factory-product-management" element={<ProtectedRoute element={<FactoryProductManagement />} allowedRoles={['factory']} />} />
-                <Route path="/factory-orders" element={<ProtectedRoute element={<FactoryOrders />} allowedRoles={['factory']} />} />
-                <Route path="/materials" element={<ProtectedRoute element={<Materials />} allowedRoles={['factory']} />} />
-                <Route path="/collector-dashboard" element={<ProtectedRoute element={<CollectorDashboard />} allowedRoles={['collector']} />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
-                <Route path="/order-tracking/:trackingNumber" element={<OrderTracking />} />
-                <Route path="/pickup-scheduling/:collectionId" element={<PickupScheduling />} />
-                <Route path="/help" element={<CustomerHelpCenter />} />
-                <Route path="/orders" element={<ProtectedRoute element={<Orders />} allowedRoles={['user']} />} />
-                <Route path="/achievements" element={<Achievements />} />
-                <Route path="/wallet" element={<ProtectedRoute element={<Wallet />} allowedRoles={['user']} />} />
-                <Route path="/profile" element={<ProtectedRoute element={<Profile />} allowedRoles={['user', 'admin', 'factory', 'collector']} />} />
-                <Route path="/connection-test" element={<ConnectionTest />} />
-              </Routes>
-            </AnimatePresence>
-          </main>
-          <Footer />
+          <ErrorBoundary>
+            <Navigation />
+            <main className="flex-grow">
+              <AnimatePresence mode="wait">
+                <Routes location={location} key={location.pathname}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/pending-approval" element={<ProtectedRoute element={<PendingApproval />} allowedRoles={['factory', 'collector']} />} />
+                  <Route path="/factory-application" element={<ProtectedRoute element={<FactoryApplicationForm />} allowedRoles={['factory']} />} />
+                  <Route path="/collector-application" element={<ProtectedRoute element={<CollectorApplicationForm />} allowedRoles={['collector']} />} />
+                  <Route path="/marketplace" element={<Marketplace />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/waste-submission" element={<WasteSubmission />} />
+                  <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['user']} />} />
+                  <Route path="/admin-dashboard" element={<ProtectedRoute element={<AdminDashboard />} allowedRoles={['admin']} />} />
+                  <Route path="/admin-dashboard/analytics" element={<ProtectedRoute element={<Analytics />} allowedRoles={['admin']} />} />
+                  <Route path="/admin-dashboard/factory" element={<ProtectedRoute element={<FactoryManagement />} allowedRoles={['admin']} />} />
+                  <Route path="/factory-dashboard" element={<ProtectedRoute element={<FactoryDashboard />} allowedRoles={['factory']} />} />
+                  <Route path="/factory-product-management" element={<ProtectedRoute element={<FactoryProductManagement />} allowedRoles={['factory']} />} />
+                  <Route path="/factory-orders" element={<ProtectedRoute element={<FactoryOrders />} allowedRoles={['factory']} />} />
+                  <Route path="/materials" element={<ProtectedRoute element={<Materials />} allowedRoles={['factory']} />} />
+                  <Route path="/collector-dashboard" element={<ProtectedRoute element={<CollectorDashboard />} allowedRoles={['collector']} />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+                  <Route path="/order-tracking/:trackingNumber" element={<OrderTracking />} />
+                  <Route path="/pickup-scheduling/:collectionId" element={<PickupScheduling />} />
+                  <Route path="/help" element={<CustomerHelpCenter />} />
+                  <Route path="/orders" element={<ProtectedRoute element={<Orders />} allowedRoles={['user']} />} />
+                  <Route path="/achievements" element={<Achievements />} />
+                  <Route path="/wallet" element={<ProtectedRoute element={<Wallet />} allowedRoles={['user']} />} />
+                  <Route path="/profile" element={<ProtectedRoute element={<Profile />} allowedRoles={['user', 'admin', 'factory', 'collector']} />} />
+                  <Route path="/connection-test" element={<ConnectionTest />} />
+                  <Route path="*" element={<RedirectToHome />} />
+                </Routes>
+              </AnimatePresence>
+            </main>
+            <Footer />
+          </ErrorBoundary>
         </CartProvider>
       </EcoChainProvider>
     </AuthProvider>

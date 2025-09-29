@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useInView, useAnimation } from "framer-motion";
 import {
   Leaf,
@@ -122,6 +122,7 @@ const mapApiProductToProduct = (apiProduct: PopulatedMarketplaceItem): ExtendedP
 });
 
 const EcoChainLanding = () => {
+  const navigate = useNavigate();
   const [statsInView, setStatsInView] = useState(false);
   const statsRef = useRef<HTMLDivElement | null>(null);
   const [featuredProducts, setFeaturedProducts] = useState<ExtendedProduct[]>(mockProducts);
