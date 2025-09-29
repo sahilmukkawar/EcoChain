@@ -55,6 +55,20 @@ const wss = new WebSocket.Server({
   }
 });
 
+// Add WebSocket upgrade handling for better proxy compatibility
+server.on('upgrade', (request, socket, head) => {
+  // Check if the request is for the WebSocket path
+  if (request.url.startsWith('/ws')) {
+    // Handle the WebSocket upgrade
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else {
+    // Destroy the socket if it's not for WebSocket
+    socket.destroy();
+  }
+});
+
 // Middleware
 const { corsOptions, securityHeaders } = require('./config/security');
 app.use(cors(corsOptions));
@@ -119,11 +133,18 @@ const heartbeats = new Map();
 // WebSocket connection handling
 wss.on('connection', (ws, req) => {
   try {
+    logger.info('WebSocket connection attempt', { 
+      url: req.url,
+      origin: req.headers.origin,
+      userAgent: req.headers['user-agent']
+    });
+    
     // Extract token from URL query parameters
-    const url = new URL(req.url, 'http://localhost');
+    const url = new URL(req.url, `http://${req.headers.host}`);
     const token = url.searchParams.get('token');
     
     if (!token) {
+      logger.warn('WebSocket connection rejected: No authentication token provided');
       ws.close(1008, 'Authentication required');
       return;
     }
@@ -171,7 +192,11 @@ wss.on('connection', (ws, req) => {
         clearInterval(heartbeatCheck);
         heartbeats.delete(ws);
         if (ws.userId) {
-          logger.info(`WebSocket client disconnected: ${ws.userId}`);
+          logger.info(`WebSocket client disconnected: ${ws.userId}`, {
+            readyState: ws.readyState
+          });
+        } else {
+          logger.info('WebSocket client disconnected: Unauthenticated connection');
         }
       });
     });
@@ -184,6 +209,7 @@ wss.on('connection', (ws, req) => {
   ws.on('message', (message) => {
     try {
       if (!ws.isAuthenticated) {
+        logger.warn('Message received from unauthenticated WebSocket connection');
         return;
       }
       
@@ -219,7 +245,13 @@ wss.on('connection', (ws, req) => {
   });
   
   // Handle disconnection
-  ws.on('close', () => {
+  ws.on('close', (code, reason) => {
+    logger.info('WebSocket connection closed', { 
+      code, 
+      reason: reason.toString(),
+      userId: ws.userId 
+    });
+    
     if (ws.userId) {
       logger.info(`WebSocket client disconnected: ${ws.userId}`);
     }

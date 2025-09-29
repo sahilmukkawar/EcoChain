@@ -26,8 +26,6 @@ import {
 } from 'lucide-react';
 
 const Footer: React.FC = () => {
-  const [email, setEmail] = useState('');
-
   const quickLinks = [
     { name: 'Home', link: '/', icon: Home },
     { name: 'Dashboard', link: '/dashboard', icon: LayoutDashboard },

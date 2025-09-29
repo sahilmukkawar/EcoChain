@@ -67,6 +67,7 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await connectWebSocket();
     } catch (error) {
       console.error('Failed to reconnect WebSocket:', error);
+      // Don't throw error to prevent cascading failures
     }
   }, []);
 
@@ -89,6 +90,11 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isAuthenticated()) {
       connectWebSocket();
     }
+    
+    // Cleanup function to disconnect WebSocket on unmount
+    return () => {
+      websocketService.disconnect();
+    };
   }, [pendingUpdatesCount, isSyncing]);
 
   // Connect to WebSocket and set up handlers

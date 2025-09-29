@@ -179,7 +179,7 @@ const FactoryManagement: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   // Get status badge
   const getStatusBadge = (status: string) => {

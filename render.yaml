@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ecochain
+    env: node
+    buildCommand: |
+      npm install
+      cd client && npm install && npm run build:prod
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4002
+      - key: REACT_APP_API_BASE_URL
+        value: https://ecochain-j1nj.onrender.com/api
+      - key: REACT_APP_WS_URL
+        value: wss://ecochain-j1nj.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://ecochain-j1nj.onrender.com,http://localhost:3000
+    healthCheckPath: /health
+    autoDeploy: true

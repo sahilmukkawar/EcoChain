@@ -17,7 +17,7 @@ const useWebSocketStatus = () => {
       const connected = isWebSocketConnected();
       setIsConnected(connected);
       setConnectionStatus(connected ? 'connected' : 'disconnected');
-    }, 5000); // Check every 5 seconds
+    }, 10000); // Check every 10 seconds instead of 5
 
     // Initial check
     const connected = isWebSocketConnected();
@@ -29,6 +29,14 @@ const useWebSocketStatus = () => {
 
   const handleReconnect = async () => {
     setConnectionStatus('connecting');
+    
+    // Prevent too many reconnect attempts
+    if (retryCount >= 5) {
+      setConnectionStatus('error');
+      console.error('Maximum retry attempts reached');
+      return;
+    }
+    
     setRetryCount(prev => prev + 1);
     
     try {

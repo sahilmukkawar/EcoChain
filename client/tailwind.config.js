@@ -31,14 +31,6 @@ module.exports = {
         // Merge in Tailwind's colors so bg-white / text-gray-700 keep working
         ...twColors,
         
-        // Updated color names to match Tailwind CSS v3.0+
-        // Replacing deprecated color names with their new equivalents
-        lightBlue: twColors.sky,
-        warmGray: twColors.stone,
-        trueGray: twColors.neutral,
-        coolGray: twColors.gray,
-        blueGray: twColors.slate,
-        
         // New eco-friendly color palette
         'eco-green': {
           DEFAULT: '#16a34a',

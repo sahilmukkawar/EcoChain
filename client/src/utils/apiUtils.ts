@@ -1,6 +1,6 @@
 // client/src/utils/apiUtils.ts
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getProfileImageUrl, preloadImage } from './imageUtils';
+import axios, { AxiosResponse } from 'axios';
+import { preloadImage } from './imageUtils';
 
 /**
  * Retry an API call with exponential backoff

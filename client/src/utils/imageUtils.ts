@@ -19,6 +19,26 @@ export const getProfileImageUrl = (imagePath?: string): string | null => {
     return cleanPath;
   }
   
+  // For production, construct the full URL
+  if (process.env.NODE_ENV === 'production') {
+    // If it starts with /uploads, prepend the API base URL
+    if (cleanPath.startsWith('/uploads/')) {
+      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://ecochain-j1nj.onrender.com/api';
+      return `${baseUrl}${cleanPath}`;
+    }
+    
+    // If it's just a filename, construct full path
+    if (!cleanPath.includes('/')) {
+      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://ecochain-j1nj.onrender.com/api';
+      return `${baseUrl}/uploads/profile-images/${cleanPath}`;
+    }
+    
+    // Otherwise, assume it needs API prefix
+    const baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://ecochain-j1nj.onrender.com/api';
+    return `${baseUrl}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+  }
+  
+  // For development
   // If it starts with /api, return as is
   if (cleanPath.startsWith('/api/')) {
     return cleanPath;
