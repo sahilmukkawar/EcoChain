@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, ReactNode } from 'react';
 import { authAPI } from '../services/api';
 import userDataCache from '../services/userDataCache';
 
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(true);
 
   // Logout function
-  const logout = () => {
+  const logout = useCallback(() => {
     try {
       // Call logout endpoint to invalidate refresh token
       if (token) {
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setToken(null);
       setRefreshToken(null);
     }
-  };
+  }, [token]);
 
   // Check if user is already logged in
   useEffect(() => {

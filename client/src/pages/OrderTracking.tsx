@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { marketplaceAPI } from '../services/api';
 import websocketService, { WebSocketMessage } from '../services/websocketService';
@@ -71,7 +71,7 @@ const OrderTracking: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Handle real-time order updates
-  const handleOrderUpdate = (message: WebSocketMessage) => {
+  const handleOrderUpdate = useCallback((message: WebSocketMessage) => {
     if (message.type === 'sync' && message.entityType === 'order' && message.changeType === 'update' && order) {
       message.changes.forEach((change: any) => {
         if (change._id === order._id) {
@@ -83,7 +83,7 @@ const OrderTracking: React.FC = () => {
         }
       });
     }
-  };
+  }, [order]);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -142,7 +142,7 @@ const OrderTracking: React.FC = () => {
     return () => {
       websocketService.off('sync', handleOrderUpdate);
     };
-  }, [trackingNumber]);
+  }, [trackingNumber, handleOrderUpdate]);
 
   const getStatusSteps = () => {
     const steps = [

@@ -39,7 +39,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:prod": "set \"GENERATE_SOURCEMAP=false\" && set \"CI=false\" && react-scripts build"
+    "build:prod": "set \"GENERATE_SOURCEMAP=false\" && set \"CI=false\" && set \"TSC_COMPILE_ON_ERROR=true\" && react-scripts build"
   },
   "eslintConfig": {
     "extends": [

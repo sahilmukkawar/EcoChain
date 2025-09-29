@@ -171,7 +171,7 @@ const Dashboard: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [user, currentTokenBalance, fetchWasteRequests]);
+  }, [user, currentTokenBalance, fetchWasteRequests, fetchLatestUserData]);
 
   const handleRefresh = async () => {
     try {

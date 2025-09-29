@@ -241,8 +241,8 @@ const Profile: React.FC = () => {
 
   const validatePhone = (phone: string): boolean => {
     if (!phone.trim()) return true; // Phone is optional
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+    const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+    return phoneRegex.test(phone.replace(/[\s\-()]/g, ''));
   };
 
   const validateProfileData = (): { isValid: boolean; errors: string[] } => {

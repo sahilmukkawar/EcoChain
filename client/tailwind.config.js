@@ -58,11 +58,6 @@ module.exports = {
           light: '#fde047',
           dark: '#eab308',
         },
-        'eco-beige': {
-          DEFAULT: '#f5f5dc',
-          light: '#f8f8e8',
-          dark: '#e6e6c3',
-        },
         
         // Your design tokens (names create classes like bg-background-primary)
         background: {

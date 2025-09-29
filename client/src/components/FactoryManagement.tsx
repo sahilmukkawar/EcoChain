@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AlertCircle, RefreshCw, BarChart, PieChart } from 'lucide-react';
 import adminService, { MaterialRequest } from '../services/adminService';
 
@@ -150,7 +150,7 @@ const FactoryManagement: React.FC = () => {
   };
 
   // Fetch material requests and collected waste
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -175,7 +175,7 @@ const FactoryManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
