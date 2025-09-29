@@ -49,7 +49,12 @@ class WebSocketService {
     
     // For production, ensure we're using the correct path
     if (process.env.NODE_ENV === 'production' && process.env.REACT_APP_WS_URL) {
-      this.url = `${process.env.REACT_APP_WS_URL}/ws`;
+      // Check if the URL already ends with /ws
+      if (process.env.REACT_APP_WS_URL.endsWith('/ws')) {
+        this.url = process.env.REACT_APP_WS_URL;
+      } else {
+        this.url = `${process.env.REACT_APP_WS_URL}/ws`;
+      }
     } else {
       this.url = `${baseUrl}/ws`;
     }

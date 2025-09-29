@@ -17,5 +17,7 @@ services:
         value: wss://ecochain-j1nj.onrender.com
       - key: ALLOWED_ORIGINS
         value: https://ecochain-j1nj.onrender.com,http://localhost:3000
+      - key: TSC_COMPILE_ON_ERROR
+        value: true
     healthCheckPath: /health
     autoDeploy: true
