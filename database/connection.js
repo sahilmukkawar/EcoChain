@@ -2,11 +2,17 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+// The application data lives in the `test` database on Atlas. Both production and
+// development point at it deliberately, so the database name is pinned here rather
+// than read from the URI - any path in MONGODB_URI is ignored (see `dbName` below).
+const DB_NAME = 'test';
+
 // MongoDB connection string - fallback to local MongoDB if no URI is provided
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ecochain';
+const MONGODB_URI = process.env.MONGODB_URI || `mongodb://localhost:27017/${DB_NAME}`;
 
 // Connection options
 const options = {
+  dbName: DB_NAME, // Overrides whatever database the URI points at
   useNewUrlParser: true,
   useUnifiedTopology: true,
   autoIndex: true, // Build indexes
@@ -20,7 +26,7 @@ const options = {
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(MONGODB_URI, options);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`MongoDB Connected: ${conn.connection.host} (db: ${conn.connection.name})`);
     return conn;
   } catch (error) {
     console.error(`Error: ${error.message}`);

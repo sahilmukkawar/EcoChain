@@ -8,6 +8,10 @@ const logger = require('../utils/logger');
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      // Pinned to the `test` database for every environment, matching
+      // database/connection.js. Overrides any path in MONGODB_URI.
+      dbName: 'test',
+
       // Connection pool size
       poolSize: 10,
       
