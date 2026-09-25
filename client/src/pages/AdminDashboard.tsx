@@ -13,6 +13,7 @@ import websocketService from '../services/websocketService';
 import Analytics from '../components/Analytics';
 import ApprovalManagement from '../services/ApprovalManagement';
 import FactoryManagement from '../components/FactoryManagement';
+import DashboardBanner from '../components/DashboardBanner';
 import {
   BarChart3,
   Users,
@@ -730,6 +731,12 @@ const AdminDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DashboardBanner
+          title={`Welcome back, ${user?.name || 'there'}`}
+          subtitle="Monitor platform activity, approvals and community growth."
+          image="/images/dashboard-admin.svg"
+        />
+
 
         {/* Overview Tab */}
         {activeTab === 'overview' && (

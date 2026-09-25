@@ -169,28 +169,28 @@ const EcoChainLanding = () => {
     {
       title: "Admin Dashboard",
       description: "Gain a centralized view of your entire supply chain with advanced analytics, sustainability insights, and operational performance metrics—all in one place.",
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop&crop=center",
+      image: "/images/carousel-admin.svg",
       icon: BarChart3,
       features: ["Real-time Analytics", "Supply Chain Overview", "Sustainability Reports"]
     },
     {
       title: "Factory Dashboard",
       description: "Monitor factory operations in real time with live production data, energy consumption tracking, and environmental impact reports for smarter decision-making.",
-      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&h=400&fit=crop&crop=center",
+      image: "/images/carousel-factory.svg",
       icon: Factory,
       features: ["Production Monitoring", "Energy Tracking", "Quality Control"]
     },
     {
       title: "User Dashboard",
       description: "Empower consumers with complete product transparency—trace items from origin to destination and verify ethical and sustainable sourcing practices.",
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop&crop=center",
+      image: "/images/carousel-user.svg",
       icon: LinkIcon,
       features: ["Product Tracing", "Impact Tracking", "Rewards Management"]
     },
     {
       title: "Collector Dashboard",
       description: "Enable waste collectors and recyclers to track collection activities, measure recovery impact, and contribute directly to a more circular and sustainable economy.",
-      image: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=600&h=400&fit=crop&crop=center",
+      image: "/images/carousel-collector.svg",
       icon: Recycle,
       features: ["Collection Tracking", "Impact Measurement", "Earnings Overview"]
     }
@@ -368,7 +368,7 @@ const EcoChainLanding = () => {
         </motion.div>
       )}
       {/* Enhanced Hero Section */}
-      <section className="relative overflow-hidden bg-white -mt-10">
+      <section className="relative overflow-hidden bg-white min-h-[calc(100vh-4rem)] flex items-center">
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
@@ -399,7 +399,7 @@ const EcoChainLanding = () => {
           />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 relative">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 relative">
           <div className="flex flex-col lg:flex-row items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -1001,7 +1001,7 @@ const EcoChainLanding = () => {
                   <img
                     src={dashboards[currentDashboard].image}
                     alt={dashboards[currentDashboard].title + " preview"}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 </motion.div>
               </div>

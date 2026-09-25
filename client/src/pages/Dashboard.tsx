@@ -5,6 +5,7 @@ import { useEcoChain } from '../contexts/EcoChainContext';
 import wasteService, { WasteSubmission } from '../services/wasteService';
 import userDataCache from '../services/userDataCache';
 
+import DashboardBanner from '../components/DashboardBanner';
 // Cache for waste requests to reduce API calls
 let wasteRequestsCache: WasteSubmission[] | null = null;
 let lastWasteFetchTime: number | null = null;
@@ -309,6 +310,12 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DashboardBanner
+          title={`Welcome back, ${user?.name || 'there'}`}
+          subtitle="Track your recycling, earn EcoTokens and watch your impact grow."
+          image="/images/dashboard-user.svg"
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar - EcoTokens & Environmental Impact */}
           <div className="lg:col-span-1 space-y-6">

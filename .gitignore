@@ -96,3 +96,5 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+# Local git identity switcher (contains personal emails - keep out of the repo)
+git-user.bat

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import ProductForm from '../components/ProductForm';
 import marketplaceService, { MarketplaceItem } from '../services/marketplaceService';
 
+import DashboardBanner from '../components/DashboardBanner';
 const FactoryDashboard: React.FC = () => {
   const { user } = useAuth();
   const [products, setProducts] = useState<MarketplaceItem[]>([]);
@@ -155,6 +156,12 @@ const FactoryDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DashboardBanner
+          title={`Welcome back, ${user?.name || 'there'}`}
+          subtitle="Source recycled materials and manage your sustainable production."
+          image="/images/dashboard-factory.svg"
+        />
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-6">

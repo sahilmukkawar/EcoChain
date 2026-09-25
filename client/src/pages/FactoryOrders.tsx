@@ -117,43 +117,50 @@ const FactoryOrders: React.FC = () => {
     }
   }, []);
 
-  // Handle real-time order updates
+  // Handle real-time order updates.
+  // NOTE: this uses the functional form of setOrders on purpose. Depending on
+  // `orders` here would rebuild this callback after every fetch, which would
+  // retrigger the effect below and fetch again - an endless request loop that
+  // only stopped when the server started answering 429.
   const handleOrderUpdate = useCallback((message: WebSocketMessage) => {
     if (message.type === 'sync' && message.entityType === 'order' && message.changeType === 'update') {
-      // Update the order in the local state if it exists
-      const updatedOrders = [...orders];
-      let hasChanges = false;
-      
-      message.changes.forEach((change: any) => {
-        const orderIndex = updatedOrders.findIndex(order => order._id === change._id);
-        if (orderIndex !== -1) {
-          updatedOrders[orderIndex] = {
-            ...updatedOrders[orderIndex],
-            status: change.status,
-            timeline: change.timeline ? { ...updatedOrders[orderIndex].timeline, ...change.timeline } : updatedOrders[orderIndex].timeline
-          };
-          hasChanges = true;
-        }
-      });
-      
-      if (hasChanges) {
-        setOrders(updatedOrders);
-      }
-    }
-  }, [orders]);
+      setOrders(prevOrders => {
+        const updatedOrders = [...prevOrders];
+        let hasChanges = false;
 
+        message.changes.forEach((change: any) => {
+          const orderIndex = updatedOrders.findIndex(order => order._id === change._id);
+          if (orderIndex !== -1) {
+            updatedOrders[orderIndex] = {
+              ...updatedOrders[orderIndex],
+              status: change.status,
+              timeline: change.timeline ? { ...updatedOrders[orderIndex].timeline, ...change.timeline } : updatedOrders[orderIndex].timeline
+            };
+            hasChanges = true;
+          }
+        });
+
+        // Returning the previous array when nothing matched avoids a needless re-render
+        return hasChanges ? updatedOrders : prevOrders;
+      });
+    }
+  }, []);
+
+  // Load the orders once on mount (fetchOrders is stable)
   useEffect(() => {
     fetchOrders();
-    
-    // Subscribe to order updates
+  }, [fetchOrders]);
+
+  // Subscribe to real-time order updates, separately from the initial fetch so
+  // that resubscribing can never cause a refetch
+  useEffect(() => {
     websocketService.subscribe(['order']);
     websocketService.on('sync', handleOrderUpdate);
-    
-    // Clean up WebSocket listener
+
     return () => {
       websocketService.off('sync', handleOrderUpdate);
     };
-  }, [fetchOrders, handleOrderUpdate]);
+  }, [handleOrderUpdate]);
 
   // Update order status
   const updateOrderStatus = async (orderId: string, newStatus: string) => {

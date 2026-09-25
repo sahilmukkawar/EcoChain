@@ -175,9 +175,9 @@ const Orders: React.FC = () => {
                           >
                             View
                           </Link>
-                          {order.trackingNumber && (
+                          {(order.shipping?.trackingNumber || order.trackingNumber) && (
                             <Link 
-                              to={`/order-tracking/${order.trackingNumber}`} 
+                              to={`/order-tracking/${order.shipping?.trackingNumber || order.trackingNumber}`} 
                               className="bg-eco-green-500 hover:bg-eco-green-600 text-white px-3 py-1 text-xs font-medium rounded-lg transition-colors"
                             >
                               Track

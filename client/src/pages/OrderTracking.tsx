@@ -70,79 +70,118 @@ const OrderTracking: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle real-time order updates
+  // Handle real-time order updates.
+  // NOTE: the functional form of setOrder keeps this callback free of an
+  // `order` dependency. Depending on `order` would rebuild the callback each
+  // time the order loaded, retriggering the effect below and refetching in a
+  // loop until the server answered 429.
   const handleOrderUpdate = useCallback((message: WebSocketMessage) => {
-    if (message.type === 'sync' && message.entityType === 'order' && message.changeType === 'update' && order) {
-      message.changes.forEach((change: any) => {
-        if (change._id === order._id) {
-          setOrder({
-            ...order,
-            status: change.status,
-            timeline: change.timeline ? { ...order.timeline, ...change.timeline } : order.timeline
-          });
-        }
+    if (message.type === 'sync' && message.entityType === 'order' && message.changeType === 'update') {
+      setOrder(prevOrder => {
+        if (!prevOrder) return prevOrder;
+
+        let updated = prevOrder;
+        message.changes.forEach((change: any) => {
+          if (change._id === prevOrder._id) {
+            updated = {
+              ...updated,
+              status: change.status,
+              timeline: change.timeline ? { ...updated.timeline, ...change.timeline } : updated.timeline
+            };
+          }
+        });
+
+        return updated;
       });
     }
-  }, [order]);
+  }, []);
 
   useEffect(() => {
     const fetchOrder = async () => {
+      if (!trackingNumber) return;
+
+      setLoading(true);
+      setError(null);
+
+      // 401 from either authenticated lookup means the order may well exist -
+      // the visitor just isn't signed in. Track that so we can say so.
+      let needsSignIn = false;
+      // 429 means the request never actually reached the lookup - saying
+      // "not found" in that case would be plainly wrong
+      let rateLimited = false;
+
+      // 1. Public lookup by tracking number
       try {
-        setLoading(true);
-        if (trackingNumber) {
-          try {
-            const response = await marketplaceAPI.trackOrder(trackingNumber);
-            if (response.data.success) {
-              setOrder(response.data.data);
-              return;
-            }
-          } catch (err) {
-            const userOrdersResponse = await marketplaceAPI.getUserOrders();
-            if (userOrdersResponse.data.success) {
-              const foundOrder = userOrdersResponse.data.data.find((order: Order) => 
-                order.shipping?.trackingNumber === trackingNumber || order._id === trackingNumber
-              );
-              
-              if (foundOrder) {
-                setOrder(foundOrder);
-                return;
-              }
-            }
-            
-            try {
-              const orderResponse = await marketplaceAPI.getOrderById(trackingNumber);
-              if (orderResponse.data.success) {
-                setOrder(orderResponse.data.data);
-                return;
-              }
-            } catch (err) {
-              // Ignore error and let the outer catch handle it
-            }
+        const response = await marketplaceAPI.trackOrder(trackingNumber);
+        if (response.data.success && response.data.data) {
+          setOrder(response.data.data);
+          setLoading(false);
+          return;
+        }
+      } catch (err: any) {
+        if (err?.response?.status === 429) rateLimited = true;
+        // Otherwise: not found by tracking number - fall through to the lookups below
+      }
+
+      // 2. Search the signed-in user's own orders
+      try {
+        const userOrdersResponse = await marketplaceAPI.getUserOrders();
+        if (userOrdersResponse.data.success) {
+          const foundOrder = userOrdersResponse.data.data.find((o: Order) =>
+            o.shipping?.trackingNumber === trackingNumber || o._id === trackingNumber
+          );
+
+          if (foundOrder) {
+            setOrder(foundOrder);
+            setLoading(false);
+            return;
           }
         }
-        
-        throw new Error('Order not found');
-      } catch (err) {
-        console.error('Error fetching order:', err);
-        setError('Failed to load order details. Please try again.');
-      } finally {
-        setLoading(false);
+      } catch (err: any) {
+        if (err?.response?.status === 401) needsSignIn = true;
+        if (err?.response?.status === 429) rateLimited = true;
       }
+
+      // 3. Direct lookup by order id - order links fall back to _id when an
+      //    order has no tracking number yet
+      try {
+        const orderResponse = await marketplaceAPI.getOrderById(trackingNumber);
+        if (orderResponse.data.success && orderResponse.data.data) {
+          setOrder(orderResponse.data.data);
+          setLoading(false);
+          return;
+        }
+      } catch (err: any) {
+        if (err?.response?.status === 401) needsSignIn = true;
+        if (err?.response?.status === 429) rateLimited = true;
+      }
+
+      console.error('Could not load order for identifier:', trackingNumber);
+      if (rateLimited) {
+        setError('Too many requests just now. Please wait a moment and try again.');
+      } else if (needsSignIn) {
+        setError('Please sign in to view this order.');
+      } else {
+        setError(`No order found for "${trackingNumber}". Check the tracking number and try again.`);
+      }
+      setLoading(false);
     };
 
     if (trackingNumber) {
       fetchOrder();
     }
-    
-    // Subscribe to order updates
+  }, [trackingNumber]);
+
+  // Subscribe to real-time order updates, kept in its own effect so that
+  // resubscribing can never trigger a refetch
+  useEffect(() => {
     websocketService.subscribe(['order']);
     websocketService.on('sync', handleOrderUpdate);
-    
-    // Clean up WebSocket listener
+
     return () => {
       websocketService.off('sync', handleOrderUpdate);
     };
-  }, [trackingNumber, handleOrderUpdate]);
+  }, [handleOrderUpdate]);
 
   const getStatusSteps = () => {
     const steps = [
@@ -269,12 +308,21 @@ const OrderTracking: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Order Progress</h2>
           </div>
           <div className="p-8">
-            <div className="flex flex-col md:flex-row justify-between items-center relative">
+            <div className="flex flex-col md:flex-row justify-between items-start relative">
               {statusSteps.map((step, index) => (
-                <div key={step.id} className="flex flex-col items-center relative z-10 mb-8 md:mb-0">
+                <div key={step.id} className="flex flex-col items-center relative flex-1 w-full mb-8 md:mb-0">
+                  {/* Progress Line - rendered before the circle so the circle sits on top.
+                      Each step is flex-1, so spanning `left-1/2 w-full` reaches exactly
+                      from this circle's centre to the next circle's centre. */}
+                  {index < statusSteps.length - 1 && (
+                    <div className={`absolute top-8 left-1/2 w-full h-1 -translate-y-1/2 hidden md:block transition-all duration-300 ${
+                      step.completed ? 'bg-eco-green-500' : 'bg-gray-300'
+                    }`}></div>
+                  )}
+
                   {/* Step Circle */}
                   <div 
-                    className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl mb-3 transition-all duration-300 ${
+                    className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center text-2xl mb-3 transition-all duration-300 ${
                       step.completed 
                         ? 'bg-eco-green-500 text-white shadow-lg' 
                         : 'bg-gray-200 text-gray-400'
@@ -304,13 +352,6 @@ const OrderTracking: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  
-                  {/* Progress Line */}
-                  {index < statusSteps.length - 1 && (
-                    <div className={`absolute top-8 left-16 w-full h-1 hidden md:block transition-all duration-300 ${
-                      step.completed ? 'bg-eco-green-500' : 'bg-gray-300'
-                    }`} style={{ width: 'calc(100vw / 5)' }}></div>
-                  )}
                 </div>
               ))}
             </div>

@@ -30,7 +30,11 @@ export interface Order {
   shippingAddress: Address;
   paymentMethod: 'cash_on_delivery' | 'online_payment' | 'token_payment' | 'mixed_payment';
   paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
-  trackingNumber?: string;
+  trackingNumber?: string; // Legacy/flat shape - the API nests this under `shipping`
+  shipping?: {
+    trackingNumber?: string;
+    estimatedDelivery?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -110,7 +114,7 @@ const orderService = {
     estimatedDelivery: string;
     updates: { status: string; timestamp: string; location: string }[];
   }> => {
-    const response = await api.get(`/orders/track/${trackingNumber}`);
+    const response = await api.get(`/orders/tracking/${trackingNumber}`);
     if (response.data.success) {
       return response.data.data;
     }

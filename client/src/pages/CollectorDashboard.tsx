@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import wasteService, { WasteSubmission } from '../services/wasteService';
 
+import DashboardBanner from '../components/DashboardBanner';
 interface PickupRequest {
   _id: string;
   collectionId: string;
@@ -677,6 +678,12 @@ const CollectorDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <DashboardBanner
+          title={`Welcome back, ${user?.name || 'there'}`}
+          subtitle="Plan your pickups, log collections and keep your routes moving."
+          image="/images/dashboard-collector.svg"
+        />
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-6">

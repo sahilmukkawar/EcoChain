@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200" role="img" aria-hidden="true" focusable="false">
+  <title>Recycling and earning EcoTokens</title>
+  <!-- soft background shapes -->
+  <circle cx="248" cy="58" r="52" fill="#dcfce7" opacity="0.55"/>
+  <circle cx="96" cy="48" r="20" fill="#fde047" opacity="0.4"/>
+  <ellipse cx="160" cy="171" rx="112" ry="13" fill="#bbf7d0" opacity="0.65"/>
+
+  <!-- recycling bin -->
+  <path d="M106 86h68l-7 74a10 10 0 0 1-10 9h-34a10 10 0 0 1-10-9z" fill="#22c55e"/>
+  <path d="M140 86h34l-7 74a10 10 0 0 1-10 9h-17z" fill="#16a34a"/>
+  <rect x="99" y="74" width="82" height="16" rx="8" fill="#15803d"/>
+  <rect x="129" y="65" width="22" height="9" rx="4.5" fill="#166534"/>
+
+  <!-- recycle arrows on the bin -->
+  <g fill="#f0fdf4">
+    <path d="M140 108l8 13h-16z"/>
+    <path d="M152 132l-13 7 8 13 6-3-4-7 7-4z"/>
+    <path d="M128 132l13 7-8 13-6-3 4-7-7-4z" transform="translate(-9 0)"/>
+  </g>
+
+  <!-- EcoTokens rising into a wallet -->
+  <g>
+    <circle cx="212" cy="120" r="15" fill="#facc15"/>
+    <circle cx="212" cy="120" r="10.5" fill="#fde047"/>
+    <path d="M212 114c4 2 5 7 0 12-5-5-4-10 0-12z" fill="#16a34a"/>
+
+    <circle cx="238" cy="92" r="11.5" fill="#eab308"/>
+    <circle cx="238" cy="92" r="8" fill="#facc15"/>
+    <path d="M238 87.5c3 1.5 3.8 5.3 0 9-3.8-3.7-3-7.5 0-9z" fill="#16a34a"/>
+
+    <circle cx="258" cy="66" r="8" fill="#facc15"/>
+    <path d="M258 62.5c2.1 1 2.6 3.7 0 6.2-2.6-2.5-2.1-5.2 0-6.2z" fill="#16a34a"/>
+  </g>
+
+  <!-- leaf accents -->
+  <path d="M84 140c13-6 24-2 28 9-13 5-23 1-28-9z" fill="#86efac"/>
+  <path d="M84 140c11 1 20 4 28 9" stroke="#16a34a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+</svg>
