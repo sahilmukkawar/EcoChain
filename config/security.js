@@ -119,17 +119,29 @@ const rateLimits = {
 /**
  * CORS configuration
  */
+// Origins that are always permitted, whatever ALLOWED_ORIGINS says. These are
+// our own deployments, so a stale or incomplete env var cannot lock the real
+// frontend out of its own API.
+// NOTE: 'https://*.vercel.app' used to sit in this list, but the cors package
+// matches plain strings exactly - the wildcard never matched anything. Add a
+// RegExp here if Vercel previews need access.
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://ecochain-j1nj.onrender.com',
+  'https://ecochain-1.onrender.com'
+];
+
+// Trim each entry: a stray space after a comma would otherwise make the origin
+// never match, which surfaces as an opaque "Network Error" in the browser.
+const envAllowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+
+const allowedOrigins = [...new Set([...DEFAULT_ALLOWED_ORIGINS, ...envAllowedOrigins])];
+
 const corsOptions = {
-  // Trim each entry: a stray space after a comma would otherwise make the
-  // origin never match, which surfaces as an opaque "Network Error" in the browser
-  origin: process.env.ALLOWED_ORIGINS ?
-    process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean) : 
-    [
-      'http://localhost:3000', 
-      'http://localhost:3001', 
-      'https://ecochain-j1nj.onrender.com',
-      'https://*.vercel.app'
-    ],
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['X-Total-Count'],
