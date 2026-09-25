@@ -120,8 +120,10 @@ const rateLimits = {
  * CORS configuration
  */
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS ? 
-    process.env.ALLOWED_ORIGINS.split(',') : 
+  // Trim each entry: a stray space after a comma would otherwise make the
+  // origin never match, which surfaces as an opaque "Network Error" in the browser
+  origin: process.env.ALLOWED_ORIGINS ?
+    process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean) : 
     [
       'http://localhost:3000', 
       'http://localhost:3001', 
