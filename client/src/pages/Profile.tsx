@@ -4,32 +4,8 @@ import { authAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { Camera, User, Lock, Save, Eye, EyeOff, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 
+import { getProfileImageUrl } from '../utils/imageUtils';
 // Utility functions for image handling
-const getProfileImageUrl = (imagePath?: string): string | null => {
-  if (!imagePath || typeof imagePath !== 'string') return null;
-
-  const cleanPath = imagePath.trim();
-  if (!cleanPath) return null;
-
-  // If it's already a full URL, return as is
-  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
-    return cleanPath;
-  }
-
-  // If it already starts with /uploads/, it's correctly formatted for static serving
-  if (cleanPath.startsWith('/uploads/')) {
-    return cleanPath;
-  }
-
-  // If it doesn't contain any path separators, it's a filename only
-  if (!cleanPath.includes('/') && !cleanPath.includes('\\')) {
-    return `/uploads/profile-images/${cleanPath}`;
-  }
-
-  // For any other path that doesn't start with /uploads/, prepend /uploads/
-  return `/uploads${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
-};
-
 const validateImageFile = (file: File): { isValid: boolean; error?: string } => {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
   if (!allowedTypes.includes(file.type)) {

@@ -37,6 +37,7 @@ import {
 import marketplaceService, { PopulatedMarketplaceItem } from '../services/marketplaceService';
 import { useCart, Product as CartProduct } from '../contexts/CartContext';
 
+import { assetUrl } from '../utils/imageUtils';
 // Extended product interface for Home page display
 interface ExtendedProduct extends CartProduct {
   factoryName?: string;
@@ -798,12 +799,12 @@ const EcoChainLanding = () => {
                   >
                     <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
                       <img
-                        src={product.imageUrl || '/uploads/default-product.svg'}
+                        src={assetUrl(product.imageUrl || '/uploads/default-product.svg')}
                         alt={product.name}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/uploads/default-product.svg';
+                          target.src = assetUrl('/uploads/default-product.svg');
                         }}
                       />
                       {/* Status Badge */}

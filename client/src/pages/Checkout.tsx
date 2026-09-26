@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useEcoChain } from '../contexts/EcoChainContext';
 import { marketplaceAPI } from '../services/api';
 
+import { assetUrl } from '../utils/imageUtils';
 interface ShippingInfo {
   fullName: string;
   address: string;
@@ -473,12 +474,12 @@ const Checkout: React.FC = () => {
                         <div key={item.product.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
                           <div className="w-16 h-16 bg-white rounded-lg overflow-hidden shadow-sm">
                             <img 
-                              src={item.product.imageUrl || '/uploads/default-product.svg'} 
+                              src={assetUrl(item.product.imageUrl || '/uploads/default-product.svg')} 
                               alt={item.product.name} 
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                target.src = '/uploads/default-product.svg';
+                                target.src = assetUrl('/uploads/default-product.svg');
                               }}
                             />
                           </div>

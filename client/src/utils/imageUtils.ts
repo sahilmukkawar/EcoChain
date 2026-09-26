@@ -3,59 +3,56 @@
  */
 
 /**
+ * Resolves a server-hosted asset path (e.g. "/uploads/product-images/x.jpg")
+ * into a URL the browser can actually fetch.
+ *
+ * Uploaded files are served from the API host's ROOT - see server.js, which
+ * mounts express.static at "/uploads", NOT at "/api/uploads". So we take the
+ * configured API base URL and strip a trailing "/api" to get the origin.
+ *
+ * This matters because the frontend and backend are separate Render services:
+ * a bare "/uploads/..." path resolves against the FRONTEND origin, where the
+ * SPA fallback returns index.html - an HTML document where an image was
+ * expected, which fails silently rather than 404ing.
+ *
+ * In development REACT_APP_API_BASE_URL is "/api", so this yields a relative
+ * "/uploads/..." path and CRA's dev proxy forwards it to the API server.
+ */
+export const assetUrl = (path?: string | null): string => {
+  if (!path || typeof path !== 'string') return '';
+
+  const cleanPath = path.trim();
+  if (!cleanPath) return '';
+
+  // Already absolute, or an inline/object URL - leave it alone
+  if (/^(https?:)?\/\//i.test(cleanPath) || cleanPath.startsWith('data:') || cleanPath.startsWith('blob:')) {
+    return cleanPath;
+  }
+
+  const origin = (process.env.REACT_APP_API_BASE_URL || '')
+    .replace(/\/+$/, '')      // drop any trailing slash
+    .replace(/\/api$/i, '');  // uploads live at the root, not under /api
+
+  return `${origin}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+};
+
+/**
  * Constructs a proper profile image URL with error handling
  * @param imagePath - The image path from the user profile
  * @returns Properly formatted image URL or null if invalid
  */
 export const getProfileImageUrl = (imagePath?: string): string | null => {
   if (!imagePath || typeof imagePath !== 'string') return null;
-  
-  // Clean the path
+
   const cleanPath = imagePath.trim();
   if (!cleanPath) return null;
-  
-  // If it's already a full URL, return as is
-  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
-    return cleanPath;
-  }
-  
-  // For production, construct the full URL
-  if (process.env.NODE_ENV === 'production') {
-    // If it starts with /uploads, prepend the API base URL
-    if (cleanPath.startsWith('/uploads/')) {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://ecochain-j1nj.onrender.com/api';
-      return `${baseUrl}${cleanPath}`;
-    }
-    
-    // If it's just a filename, construct full path
-    if (!cleanPath.includes('/')) {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://ecochain-j1nj.onrender.com/api';
-      return `${baseUrl}/uploads/profile-images/${cleanPath}`;
-    }
-    
-    // Otherwise, assume it needs API prefix
-    const baseUrl = process.env.REACT_APP_API_BASE_URL || 'https://ecochain-j1nj.onrender.com/api';
-    return `${baseUrl}${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
-  }
-  
-  // For development
-  // If it starts with /api, return as is
-  if (cleanPath.startsWith('/api/')) {
-    return cleanPath;
-  }
-  
-  // If it starts with /uploads, prepend /api
-  if (cleanPath.startsWith('/uploads/')) {
-    return `/api${cleanPath}`;
-  }
-  
-  // If it's just a filename, construct full path
-  if (!cleanPath.includes('/')) {
-    return `/api/uploads/profile-images/${cleanPath}`;
-  }
-  
-  // Otherwise, assume it needs /api prefix
-  return `/api${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
+
+  // A bare filename means it lives in the profile-images folder
+  const relative = cleanPath.includes('/') || cleanPath.includes('\\')
+    ? cleanPath
+    : `/uploads/profile-images/${cleanPath}`;
+
+  return assetUrl(relative) || null;
 };
 
 /**

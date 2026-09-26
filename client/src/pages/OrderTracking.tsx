@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { marketplaceAPI } from '../services/api';
 import websocketService, { WebSocketMessage } from '../services/websocketService';
 
+import { assetUrl } from '../utils/imageUtils';
 interface OrderItem {
   productId: {
     _id: string;
@@ -439,12 +440,12 @@ const OrderTracking: React.FC = () => {
           <div key={index} className="flex gap-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
             <div className="flex-shrink-0 w-20 h-20 bg-white rounded-lg overflow-hidden shadow-sm">
               <img 
-                src={item.productId?.productInfo?.images?.[0] || '/uploads/default-product.svg'} 
+                src={assetUrl(item.productId?.productInfo?.images?.[0] || '/uploads/default-product.svg')} 
                 alt={item.productId?.productInfo?.name || 'Product'} 
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = '/uploads/default-product.svg';
+                  target.src = assetUrl('/uploads/default-product.svg');
                 }}
               />
             </div>

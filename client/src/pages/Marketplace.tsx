@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../context/AuthContext';
 import marketplaceService, { PopulatedMarketplaceItem } from '../services/marketplaceService';
+import { assetUrl } from '../utils/imageUtils';
 import {
   Search,
   Filter,
@@ -401,12 +402,12 @@ const Marketplace: React.FC = () => {
                     {/* Product Image */}
                     <div className="relative h-48 overflow-hidden bg-gray-100">
                       <img
-                        src={product.imageUrl || '/uploads/default-product.svg'}
+                        src={assetUrl(product.imageUrl || '/uploads/default-product.svg')}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/uploads/default-product.svg';
+                          target.src = assetUrl('/uploads/default-product.svg');
                         }}
                       />
 
@@ -504,12 +505,12 @@ const Marketplace: React.FC = () => {
                       {/* Product Image */}
                       <div className="flex-shrink-0 w-32 h-32 bg-gray-100 rounded-xl overflow-hidden">
                         <img
-                          src={product.imageUrl || '/uploads/default-product.svg'}
+                          src={assetUrl(product.imageUrl || '/uploads/default-product.svg')}
                           alt={product.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.src = '/uploads/default-product.svg';
+                            target.src = assetUrl('/uploads/default-product.svg');
                           }}
                         />
                       </div>

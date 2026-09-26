@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import websocketService, { WebSocketMessage } from '../services/websocketService';
 import api from '../services/api';
 
+import { assetUrl } from '../utils/imageUtils';
 interface OrderItem {
   productId: {
     _id: string;
@@ -349,11 +350,11 @@ const FactoryOrders: React.FC = () => {
                             <img
                               key={index}
                               className="inline-block h-8 w-8 rounded-full ring-2 ring-white"
-                              src={item.productId?.productInfo?.images?.[0] || '/uploads/default-product.svg'}
+                              src={assetUrl(item.productId?.productInfo?.images?.[0] || '/uploads/default-product.svg')}
                               alt={item.productId?.productInfo?.name}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                target.src = '/uploads/default-product.svg';
+                                target.src = assetUrl('/uploads/default-product.svg');
                               }}
                             />
                           ))}

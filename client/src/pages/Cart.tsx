@@ -3,6 +3,7 @@ import { useCart } from '../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { useEcoChain } from '../contexts/EcoChainContext';
 
+import { assetUrl } from '../utils/imageUtils';
 const Cart: React.FC = () => {
   const { cart, removeFromCart, updateQuantity, clearCart, cartTotal, tokenTotal } = useCart();
   const { totalEcoTokens } = useEcoChain();
@@ -131,12 +132,12 @@ const Cart: React.FC = () => {
                       {/* Product Image */}
                       <div className="flex-shrink-0 w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
                         <img 
-                          src={item.product.imageUrl || '/uploads/default-product.svg'} 
+                          src={assetUrl(item.product.imageUrl || '/uploads/default-product.svg')} 
                           alt={item.product.name} 
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.src = '/uploads/default-product.svg';
+                            target.src = assetUrl('/uploads/default-product.svg');
                           }}
                         />
                       </div>

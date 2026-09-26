@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ProductForm from '../components/ProductForm';
 import marketplaceService, { MarketplaceItem, CreateMarketplaceItemData } from '../services/marketplaceService';
 
+import { assetUrl } from '../utils/imageUtils';
 const FactoryProductManagement: React.FC = () => {
   const [products, setProducts] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -429,12 +430,12 @@ const FactoryProductManagement: React.FC = () => {
                       {/* Product Image */}
                       <div className="relative h-48 bg-gray-100 overflow-hidden">
                         <img 
-                          src={product.productInfo.images?.[0] || '/uploads/default-product.svg'} 
+                          src={assetUrl(product.productInfo.images?.[0] || '/uploads/default-product.svg')} 
                           alt={product.productInfo.name} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            target.src = '/uploads/default-product.svg';
+                            target.src = assetUrl('/uploads/default-product.svg');
                           }}
                         />
                         
@@ -542,12 +543,12 @@ const FactoryProductManagement: React.FC = () => {
                         {/* Product Image */}
                         <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
                           <img 
-                            src={product.productInfo.images?.[0] || '/uploads/default-product.svg'} 
+                            src={assetUrl(product.productInfo.images?.[0] || '/uploads/default-product.svg')} 
                             alt={product.productInfo.name} 
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = '/uploads/default-product.svg';
+                              target.src = assetUrl('/uploads/default-product.svg');
                             }}
                           />
                         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../contexts/CartContext";
+import { getProfileImageUrl } from '../utils/imageUtils';
 import {
   User,
   Wallet,
@@ -25,31 +26,6 @@ import {
 } from "lucide-react";
 
 // Utility function for profile image URL handling
-const getProfileImageUrl = (imagePath?: string): string | null => {
-  if (!imagePath || typeof imagePath !== 'string') return null;
-
-  const cleanPath = imagePath.trim();
-  if (!cleanPath) return null;
-
-  // If it's already a full URL, return as is
-  if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
-    return cleanPath;
-  }
-
-  // If it already starts with /uploads/, it's correctly formatted for static serving
-  if (cleanPath.startsWith('/uploads/')) {
-    return cleanPath;
-  }
-
-  // If it doesn't contain any path separators, it's a filename only
-  if (!cleanPath.includes('/') && !cleanPath.includes('\\')) {
-    return `/uploads/profile-images/${cleanPath}`;
-  }
-
-  // For any other path that doesn't start with /uploads/, prepend /uploads/
-  return `/uploads${cleanPath.startsWith('/') ? cleanPath : '/' + cleanPath}`;
-};
-
 // Extended User interface to include profile image
 interface ExtendedUser {
   id: string;
