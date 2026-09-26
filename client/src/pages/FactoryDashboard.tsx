@@ -96,7 +96,7 @@ const FactoryDashboard: React.FC = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 py-3 sm:py-0 sm:h-16">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Factory Dashboard</h1>
               <p className="text-sm text-gray-500">Welcome back, {user?.name}! Manage your sustainable production</p>

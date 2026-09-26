@@ -73,7 +73,7 @@ const CustomerHelpCenter: React.FC = () => {
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 16px' }}>
       <h1>Customer Help Center</h1>
       
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
         {/* Left sidebar with support categories */}
         <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', height: 'fit-content' }}>
           <h3>Support Categories</h3>
@@ -216,7 +216,7 @@ const CustomerHelpCenter: React.FC = () => {
       </div>
 
       {/* Additional Help Section */}
-      <div style={{ marginTop: '32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+      <div style={{ marginTop: '32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '16px' }}>
         <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <h4>Email Support</h4>
           <p>For detailed inquiries, email us at:</p>

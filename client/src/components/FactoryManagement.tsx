@@ -70,11 +70,14 @@ const FactoryManagement: React.FC = () => {
       typeMap[type].weight += collection.collectionDetails.weight || 0;
     });
     
-    const wasteTypeData = Object.entries(typeMap).map(([type, data]) => ({
-      type,
-      count: data.count,
-      weight: Math.round(data.weight)
-    }));
+    const wasteTypeData = Object.keys(typeMap).map((type) => {
+      const data = typeMap[type];
+      return {
+        type,
+        count: data.count,
+        weight: Math.round(data.weight)
+      };
+    });
     
     // Quality distribution
     const qualityMap: Record<string, {count: number, weight: number}> = {};
@@ -87,11 +90,14 @@ const FactoryManagement: React.FC = () => {
       qualityMap[quality].weight += collection.collectionDetails.weight || 0;
     });
     
-    const qualityData = Object.entries(qualityMap).map(([quality, data]) => ({
-      quality,
-      count: data.count,
-      weight: Math.round(data.weight)
-    }));
+    const qualityData = Object.keys(qualityMap).map((quality) => {
+      const data = qualityMap[quality];
+      return {
+        quality,
+        count: data.count,
+        weight: Math.round(data.weight)
+      };
+    });
     
     // Time series data (collections per day)
     const dateMap: Record<string, {count: number, weight: number}> = {};
@@ -104,12 +110,15 @@ const FactoryManagement: React.FC = () => {
       dateMap[date].weight += collection.collectionDetails.weight || 0;
     });
     
-    const timeSeriesData = Object.entries(dateMap)
-      .map(([date, data]) => ({
-        date,
-        count: data.count,
-        weight: Math.round(data.weight)
-      }))
+    const timeSeriesData = Object.keys(dateMap)
+      .map((date) => {
+        const data = dateMap[date];
+        return {
+          date,
+          count: data.count,
+          weight: Math.round(data.weight)
+        };
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     setWasteTypeData(wasteTypeData);
@@ -145,8 +154,10 @@ const FactoryManagement: React.FC = () => {
       aggregated[type].qualityDistribution[quality].count += 1;
       aggregated[type].qualityDistribution[quality].weight += weight;
     });
-    
-    setAggregatedWaste(Object.values(aggregated));
+
+    setAggregatedWaste(
+      Object.keys(aggregated).map((key) => aggregated[key])
+    );
   };
 
   // Fetch material requests and collected waste
@@ -252,7 +263,7 @@ const FactoryManagement: React.FC = () => {
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
-        <nav className="flex space-x-8">
+        <nav className="flex space-x-8 overflow-x-auto whitespace-nowrap">
           <button
             onClick={() => setActiveTab('requests')}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -393,11 +404,14 @@ const FactoryManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-2">
-                        {Object.entries(item.qualityDistribution).map(([quality, data]) => (
-                          <span key={quality} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {quality}: {Math.round(data.weight)} kg ({data.count})
-                          </span>
-                        ))}
+                        {Object.keys(item.qualityDistribution).map((quality) => {
+                          const data = item.qualityDistribution[quality];
+                          return (
+                            <span key={quality} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {quality}: {Math.round(data.weight)} kg ({data.count})
+                            </span>
+                          );
+                        })}
                       </div>
                     </td>
                   </tr>

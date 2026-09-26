@@ -39,6 +39,8 @@ import ConnectionTest from './pages/ConnectionTest';
 import RedirectToHome from './pages/RedirectToHome';
 import { testConnections } from './utils/connectionTest';
 
+import About from './pages/About';
+import Contact from './pages/Contact';
 function App() {
   const location = useLocation();
 
@@ -86,6 +88,8 @@ function App() {
                   <Route path="/order-tracking/:trackingNumber" element={<OrderTracking />} />
                   <Route path="/pickup-scheduling/:collectionId" element={<PickupScheduling />} />
                   <Route path="/help" element={<CustomerHelpCenter />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
                   <Route path="/orders" element={<ProtectedRoute element={<Orders />} allowedRoles={['user']} />} />
                   <Route path="/achievements" element={<Achievements />} />
                   <Route path="/wallet" element={<ProtectedRoute element={<Wallet />} allowedRoles={['user']} />} />
